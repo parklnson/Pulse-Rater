@@ -35,10 +35,12 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "3.1"
-APP_NOTES = "Подарки друзьям, звуки интерфейса, 5 новых курсоров, заметки к оценкам"
+APP_VERSION = "4.0"
+APP_NOTES = "Общий сервер: друзья, рейтинг игроков, промокоды один на всех, защита пульсов"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
+NET_DEFAULT = ""         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
+NET_FILE = DATA_DIR / "net.json"
 APP_FILE = Path(__file__).resolve()          # запоминаем при запуске — дальше рабочая папка может смениться
 FROZEN = bool(getattr(sys, "frozen", False))  # программа собрана в .exe (PyInstaller)
 OVERLAY = DATA_DIR / "app_update.py"          # для .exe: свежая версия кладётся сюда и запускается вместо встроенной
@@ -118,6 +120,59 @@ def gift_open(code):
         return d if isinstance(d, dict) else None
     except Exception:
         return None
+
+
+# ---------- общий сервер: программа пересылает запросы, ключ аккаунта хранится в net.json ----------
+def net_cfg():
+    try:
+        d = json.loads(NET_FILE.read_text("utf-8"))
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def net_store(d):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = NET_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(d), "utf-8")
+    tmp.replace(NET_FILE)
+
+
+def net_url(c=None):
+    c = net_cfg() if c is None else c
+    return str(c.get("url") or NET_DEFAULT or "").strip().rstrip("/")
+
+
+def net_state():
+    c = net_cfg()
+    return {"url": net_url(c), "def": NET_DEFAULT, "uid": c.get("uid") or "", "on": bool(c.get("on") and c.get("uid") and c.get("tok") and net_url(c))}
+
+
+def net_req(path, body=None, key=None, timeout=25, url=None):
+    """Запрос к серверу. Возвращает (код, байты, тип). Нет связи — код 502."""
+    base = (url or net_url()).rstrip("/")
+    if not base:
+        return 502, json.dumps({"error": "Адрес сервера не указан"}, ensure_ascii=False).encode("utf-8"), "application/json"
+    hdr = {"User-Agent": UA, "Content-Type": "application/json", "Accept": "application/json"}
+    if key is None:
+        c = net_cfg()
+        if c.get("uid") and c.get("tok"):
+            key = "%s.%s" % (c["uid"], c["tok"])
+    if key:
+        hdr["Authorization"] = "Bearer " + key
+    data = None if body is None else (body if isinstance(body, bytes) else json.dumps(body, ensure_ascii=False).encode("utf-8"))
+    req = urllib.request.Request(base + path, data=data, headers=hdr, method="GET" if data is None else "POST")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, r.read(), r.headers.get("Content-Type", "application/json")
+    except urllib.error.HTTPError as e:
+        b = e.read()
+        if e.code in (403, 1010) and b"error" not in b[:200]:
+            b = json.dumps({"error": "Сервер отклонил запрос (%s)" % e.code}, ensure_ascii=False).encode("utf-8")
+        return e.code, b, e.headers.get("Content-Type", "application/json")
+    except Exception as e:
+        launch_log("сервер: %s %s" % (path, e))
+        return 502, json.dumps({"error": "Нет связи с сервером — проверь интернет"}, ensure_ascii=False).encode("utf-8"), "application/json"
 
 
 def _read_json(path):
@@ -269,7 +324,7 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="3.1";
+var APPV="4.0";
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -2452,6 +2507,79 @@ body.bye #bc{display:none}
 .qmed svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .qmed.off{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);color:rgba(255,255,255,.28)}
 .arow.on{background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.03))}
+/* общий сервер, друзья */
+.nbdg{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:auto;padding:0 5px;border-radius:999px;font-style:normal;font-size:11px;font-weight:900;color:#fff;background:var(--g2);box-shadow:0 0 12px rgba(var(--ar),.7)}
+.frtab .nbdg{margin-left:6px}
+.netst{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);margin:4px 0 10px}
+.netst>i{flex:none;width:10px;height:10px;border-radius:50%;background:#7c8494}
+.netst.on>i{background:#4be08a;box-shadow:0 0 10px #4be08a}
+html.netdown .netst.on>i{background:#ffb84a;box-shadow:0 0 10px #ffb84a}
+.netst b{display:block;font-size:14px}.netst span{display:block;margin-top:2px;font-size:12.5px;color:var(--sub);line-height:1.4}
+.netst em{font-style:normal;font-weight:800;color:#fff;letter-spacing:.08em}
+.netbtns{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.nethint{margin:0 0 12px;font-size:12px;color:var(--sub);line-height:1.45}
+.frme{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;border-radius:16px;background:linear-gradient(90deg,rgba(var(--ar),.2),rgba(255,255,255,.04));box-shadow:inset 0 0 0 1px rgba(var(--ar),.45)}
+.frme em{display:block;font-style:normal;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--sub)}
+.frme b{display:block;font-size:22px;font-weight:900;letter-spacing:.14em}
+.fradd{display:flex;gap:10px;margin:6px 0 16px}
+.fradd input{flex:1;min-width:0;padding:12px 16px;border-radius:14px;border:0;outline:0;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);color:#fff;font:inherit;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.fradd input::placeholder{text-transform:none;letter-spacing:0;font-weight:500;color:rgba(255,255,255,.35)}
+.fradd input:focus{box-shadow:inset 0 0 0 1.5px rgba(var(--ar),.85)}
+.fradd input.shake{animation:gfShake .4s}
+.frtab{margin-bottom:12px}
+.frtab em{font-style:normal;opacity:.65;margin-left:4px}
+.frbody{display:flex;flex-direction:column;gap:8px}
+.frbody>.alh{margin:10px 0 2px}
+.frr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:10px 14px 10px 10px;border-radius:14px;background:linear-gradient(90deg,rgba(255,255,255,.07),rgba(255,255,255,.03));box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);cursor:var(--cur-p);outline:0;transition:background .2s,box-shadow .2s;animation:pgItem .5s var(--ease) calc(min(var(--i,0),14)*30ms) backwards}
+.frr:hover,.frr:focus-visible{background:linear-gradient(90deg,rgba(255,255,255,.11),rgba(255,255,255,.05));box-shadow:inset 0 0 0 1px rgba(var(--ar),.4)}
+.frr.top{grid-template-columns:44px auto minmax(0,1fr) auto}
+.frr.me{box-shadow:inset 0 0 0 1.5px rgba(var(--ar),.8)}
+.frr.r1 .rkp{color:#ffd45a;text-shadow:0 0 16px rgba(255,212,90,.7)}.frr.r2 .rkp{color:#dfe6ef}.frr.r3 .rkp{color:#e9a26a}
+.frn{min-width:0}
+.frn b{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden}
+.frn span{display:block;margin-top:2px;font-size:12.5px;color:var(--sub)}
+.frn em{display:block;margin-top:2px;font-style:normal;font-size:11.5px;color:rgba(255,255,255,.4)}
+.frn em.on{color:#4be08a}
+.fra{display:flex;gap:6px}
+.frb{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;font-size:13px;font-weight:800;color:#fff;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);transition:background .15s}
+.frb .ico{width:15px;height:15px}
+.frb:hover{background:rgba(var(--ar),.3)}
+.frb.ok{background:rgba(var(--ar),.5)}
+.frv{text-align:right}.frv b{display:block;font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}.frv span{font-size:11.5px;color:var(--sub)}
+.frtop{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.frnone,.frmyr{padding:18px;text-align:center;font-size:13.5px;color:var(--sub);line-height:1.5}
+.frmyr b{color:#fff;font-size:16px}
+.frld{height:120px;border-radius:16px;background:linear-gradient(100deg,rgba(255,255,255,.03) 30%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.03) 70%);background-size:200% 100%;animation:shLd 1.1s linear infinite}
+.frempty{max-width:460px;margin:40px auto;text-align:center}
+.frempty .bigic{width:76px;height:76px;margin:0 auto 14px;border-radius:24px;display:grid;place-items:center;background:rgba(var(--ar),.18);color:var(--g3)}
+.frempty .bigic .ico{width:36px;height:36px}
+.frempty b{display:block;font-size:20px}.frempty p{color:var(--sub);font-size:14px;line-height:1.5;margin:8px 0 16px}
+#pvw{position:fixed;inset:0;z-index:61;display:grid;place-items:center;padding:20px;background:rgba(4,2,6,.62);backdrop-filter:blur(8px);animation:gfade .22s ease}
+#pvw.out{animation:gfadeOut .22s ease forwards}
+.pvc{position:relative;width:min(560px,100%);max-height:calc(100vh - 40px);overflow:auto;border-radius:22px;padding-bottom:22px;background:linear-gradient(180deg,rgba(32,16,24,.98),rgba(14,8,12,.98));box-shadow:0 40px 100px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.08);animation:gpop .35s var(--ease)}
+.pvc>.frld{margin:22px}
+.pvbn{height:130px}
+.pvx{position:absolute;top:12px;right:12px;z-index:3}
+.pvh{display:flex;align-items:flex-end;gap:16px;margin:-62px 22px 0;position:relative;z-index:2}
+.pvn{min-width:0;padding-bottom:6px}
+.pvn .pfnm{font-size:24px;font-weight:900;display:flex;align-items:center;gap:8px}
+.pvn .pfnm .mnm{font-size:26px}
+.pvn span{display:block;margin-top:4px;font-size:12.5px;color:var(--sub)}
+.pvn p{margin:8px 0 0;font-size:13.5px;color:rgba(255,255,255,.8);line-height:1.45}
+.pvs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 22px 0}
+.pvs div{padding:12px 8px;border-radius:14px;text-align:center;background:rgba(255,255,255,.05)}
+.pvs b{display:block;font-size:20px;font-weight:900}.pvs span{font-size:11.5px;color:var(--sub)}
+.pvg{margin:12px 22px 0;font-size:13.5px;color:var(--sub)}.pvg b{color:#fff}
+.pvtt{margin:16px 22px 8px;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--sub)}
+.pvtl{display:grid;gap:6px;margin:0 22px}
+.pvt{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.04)}
+.pvt span{font-weight:900;color:var(--sub)}.pvt b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pvt em{font-style:normal;font-size:12px;color:var(--sub)}.pvt i{font-style:normal;font-weight:900;font-size:17px}
+.pvact{display:flex;gap:10px;justify-content:center;margin:18px 22px 0}
+.pvact .gbtn{display:inline-flex;align-items:center;gap:8px}
+.gfon{display:flex;gap:14px;align-items:center;padding:16px;border-radius:16px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.gfon>.ico{flex:none;width:30px;height:30px;color:var(--g3)}
+.gfon b{display:block;font-size:15px}.gfon span{display:block;margin-top:3px;font-size:13px;color:var(--sub);line-height:1.45}
+.mic.ld{animation:shLd 1s linear infinite;background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.15) 50%,transparent 70%);background-size:200% 100%}
 /* подарки */
 #gft{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:rgba(4,2,6,.62);backdrop-filter:blur(8px);animation:gfade .22s ease}
 #gft.out{animation:gfadeOut .22s ease forwards}
@@ -3104,6 +3232,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
       <button class="navbtn" id="navCat"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Каталог релизов</span></button>
       <button class="navbtn" id="navGame"><svg class="ico" viewBox="0 0 24 24"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.32 5H6.68a4 4 0 0 0-3.98 3.59C2.6 9.42 2 14.46 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.41-1.41A2 2 0 0 1 9.83 16h4.34a2 2 0 0 1 1.41.59L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.55-.6-6.58-.69-7.26A4 4 0 0 0 17.32 5z"/></svg><span>Игры на пульсы</span></button>
       <button class="navbtn" id="navRoom"><svg class="ico" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Онлайн</span></button>
+      <button class="navbtn" id="navFr" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg><span>Друзья</span><em class="nbdg" id="frDot" hidden></em></button>
       <button class="navbtn" id="navQst" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>Задания</span></button>
       <button class="navbtn" id="navShop" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Магазин</span></button>
       <button class="navbtn" id="navSet" type="button"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Настройки</span></button>
@@ -3261,6 +3390,11 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
     <div class="ptop"><span class="sp"></span><button class="pround" id="rkClose" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="pbody" id="rkBody"></div>
   </section>
+  <section class="pm frp" id="frp" hidden aria-label="Друзья">
+    <div class="pm-bg"></div>
+    <div class="ptop"><span class="sp"></span><button class="pround" id="frClose" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <div class="pbody" id="frBody"></div>
+  </section>
   <section class="pm ct" id="ct" hidden aria-label="Каталог релизов">
     <div class="pm-bg"></div>
     <div class="ptop"><span class="sp"></span><button class="pround" id="ctClose" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
@@ -3380,6 +3514,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
 <div id="qa" hidden></div>
 <div id="shr" hidden></div>
 <div id="gft" hidden></div>
+<div id="pvw" hidden></div>
 <div id="rwd" hidden><div class="rwc" role="dialog" aria-label="Награда">
   <div class="rwcoin"><svg class="coin" viewBox="0 0 64 64" aria-hidden="true"><use href="#pcoin"/></svg><span class="rwlv" id="rwL"></span></div>
   <div class="rwn" id="rwN">+0</div><div class="rwt" id="rwT"></div><div class="rws" id="rwS"></div>
@@ -5640,7 +5775,7 @@ const AP=(()=>{
   PAGE_CLOSE=close;
   return{open,close,artistKey:()=>view==="artist"&&curKey?curKey:null,setImage,groups,avatar,cnt,showArtist};
 })();
-$("#navArtists").addEventListener("click",()=>{TOP.close(true);RK.close(true);CT.close(true);LB.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}AP.open()});
+$("#navArtists").addEventListener("click",()=>{TOP.close(true);RK.close(true);CT.close(true);LB.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}try{FR.close(true)}catch(e){}AP.open()});
 
 /* ---------- пьедестал: топ-3 артистов по среднему рейтингу ---------- */
 const TOP=(()=>{
@@ -5713,7 +5848,7 @@ const TOP=(()=>{
   function open(){
     clearTimeout(closeT);
     if(isOpen()) return;
-    el.classList.remove("out");AP.close(true);RK.close(true);CT.close(true);LB.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}render();
+    el.classList.remove("out");AP.close(true);RK.close(true);CT.close(true);LB.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}try{FR.close(true)}catch(e){}render();
     el.hidden=false;document.body.classList.add("pg");brand.classList.add("on");startFx();
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
   }
@@ -5790,7 +5925,7 @@ const RK=(()=>{
   function open(){
     clearTimeout(closeT);
     if(isOpen()) return;
-    el.classList.remove("out");TOP.close(true);AP.close(true);CT.close(true);LB.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}
+    el.classList.remove("out");TOP.close(true);AP.close(true);CT.close(true);LB.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}try{FR.close(true)}catch(e){}
     genre="all";render();
     el.hidden=false;document.body.classList.add("pg");navBtn.classList.add("on");
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
@@ -6406,13 +6541,19 @@ const RU=(()=>{
     pos=ORDER.indexOf(n)+ORDER.length*2;place(pos,false);             // незаметно возвращаем ленту в начало
     if(win){ME.payout(win);res.innerHTML=`<span class="${c}">Выпало ${n}</span> — выигрыш <b>+${ME.fmtN(win)}</b>`;res.className="cres win";try{QA.ev("win",{game:"roul",c,v:p.v,win})}catch(e){}}
     else{res.innerHTML=`<span class="${c}">Выпало ${n}</span> — ставка ${ME.fmtN(p.v)} сгорела`;res.className="cres lose"}
-    busy=false;pane.classList.remove("busy");
+    busy=false;pane.classList.remove("busy");ME.netSettle();
   }
-  function spin(c,btn){
+  async function spin(c,btn){
     if(busy) return;
     const v=CAS.takeBet(inp,btn);if(!v) return;
     busy=true;pane.classList.add("busy");
-    const n=Math.floor(CAS.rndU()*15);pending={n,c,v};
+    let n;
+    if(NET.on){
+      res.className="cres";res.textContent="Связываемся с сервером…";
+      try{n=(await NET.call("g/roul",{bet:v,c})).n}
+      catch(e){ME.netRefund(v);toast(e.msg,true);res.className="cres";res.textContent="Не получилось сделать ставку — попробуй ещё раз";busy=false;pane.classList.remove("busy");return}
+    }else n=Math.floor(CAS.rndU()*15);
+    pending={n,c,v};
     const target=ORDER.indexOf(n)+ORDER.length*(REP-3);
     res.className="cres";res.textContent=`Ставка ${ME.fmtN(v)} на ${c==="r"?"красное":c==="k"?"чёрное":"зелёное"}… крутим`;
     place(pos,false);void strip.offsetWidth;
@@ -6500,20 +6641,38 @@ const PU=(()=>{
     step(dt);draw(now);
   }
   function die(now){
-    st="dead";endT=now;H.push(crash);if(H.length>30) H=H.slice(-30);try{localStorage.setItem("puHist",JSON.stringify(H))}catch(e){}
+    st="dead";endT=now;rid=null;if(NET.on) setTimeout(()=>ME.netSettle(),60);H.push(crash);if(H.length>30) H=H.slice(-30);try{localStorage.setItem("puHist",JSON.stringify(H))}catch(e){}
     paintHist();beep(660,1.4,.06);
     xEl.textContent=crash.toFixed(2)+"×";wrap.classList.add("dead");wrap.classList.remove("live");
     sEl.textContent=`Сердце остановилось — ставка ${ME.fmtN(bet)} сгорела`;
     setIdle();lockT=performance.now()+1400;go.disabled=true;go.textContent="Сердце остановилось…";   // защита: клик «Забрать» не должен случайно поставить заново
     setTimeout(()=>{go.disabled=false;if(st!=="run") go.textContent="Поставить ещё"},1400);
   }
+  let rid=null;
+  function waitCrash(id){                                     // сервер сообщает, когда сердце остановилось
+    NET.call("g/pu/wait",{id}).then(r=>{if(rid!==id) return;if(r.again){waitCrash(id);return}if(r.crash&&st==="run") crash=r.crash})
+      .catch(()=>{if(rid===id&&st==="run") setTimeout(()=>waitCrash(id),1500)});
+  }
   function cash(){
     if(st!=="run") return;
-    const m=mult,win=Math.floor(bet*m);cashed=m;st="out";
+    if(NET.on){
+      st="cashing";const id=rid;go.disabled=true;
+      NET.call("g/pu/cash",{id,m:mult}).then(r=>{
+        go.disabled=false;if(r.crash) crash=r.crash;
+        if(r.lost){rid=null;st="run";if(!r.crash) crash=mult;mult=crash;die(performance.now());return}
+        rid=null;mult=r.m;won(r.m,r.win);setTimeout(()=>ME.netSettle(),60);
+      }).catch(e=>{go.disabled=false;st="run";toast(e.msg,true)});
+      return;
+    }
+    won(mult,Math.floor(bet*mult));
+  }
+  function won(m,win){
+    cashed=m;st="out";
     ME.payout(win);
     try{QA.ev("win",{game:"pulse",m,v:bet,win})}catch(e){}
     xEl.textContent=m.toFixed(2)+"×";wrap.classList.remove("live");wrap.classList.add("won");
-    sEl.innerHTML=`Забрал <b>+${ME.fmtN(win)}</b> на ${m.toFixed(2)}× · сердце остановилось бы на ${crash.toFixed(2)}×`;
+    sEl.innerHTML=`Забрал <b>+${ME.fmtN(win)}</b> на ${m.toFixed(2)}×`+(isFinite(crash)?` · сердце остановилось бы на ${crash.toFixed(2)}×`:"");
+    if(!isFinite(crash)){paintHist();beep(1320,.25,.06);setIdle();return}
     H.push(crash);if(H.length>30) H=H.slice(-30);try{localStorage.setItem("puHist",JSON.stringify(H))}catch(e){}
     paintHist();beep(1320,.25,.06);
     setIdle();
@@ -6521,9 +6680,18 @@ const PU=(()=>{
   function setIdle(){pane.classList.remove("busy");go.classList.remove("cash");go.innerHTML="Поставить ещё"}
   function start(){
     if(st==="run"){cash();return}
-    if(performance.now()<lockT) return;
+    if(st==="wait"||st==="cashing"||performance.now()<lockT) return;
     const v=CAS.takeBet(inp,go);if(!v) return;
-    bet=v;const u=CAS.rndU();crash=Math.min(1000,Math.max(1,Math.floor(.96/(1-u)*100)/100));   // шанс дожить до ×m — 96 % / m
+    if(NET.on){
+      st="wait";go.disabled=true;sEl.textContent="Связываемся с сервером…";
+      NET.call("g/pu/start",{bet:v}).then(r=>{go.disabled=false;rid=r.id;run(v,Infinity);waitCrash(r.id)})
+        .catch(e=>{st="idle";go.disabled=false;ME.netRefund(v);toast(e.msg,true);sEl.textContent="Сделай ставку — сердце запустится"});
+      return;
+    }
+    const u=CAS.rndU();run(v,Math.min(1000,Math.max(1,Math.floor(.96/(1-u)*100)/100)));   // шанс дожить до ×m — 96 % / m
+  }
+  function run(v,c){
+    bet=v;crash=c;
     st="run";t0=performance.now();mult=1;beatT=.5;wrap.classList.remove("dead","won");wrap.classList.add("live");
     pane.classList.add("busy");go.classList.add("cash");go.innerHTML=`Забрать <b>${ME.fmtN(v)}</b>`;
     sEl.textContent="Сердце бьётся…";
@@ -6561,11 +6729,22 @@ const MI=(()=>{
   $("#miCh").addEventListener("click",e=>{const b=e.target.closest("[data-mn]");if(b) setMines(+b.dataset.mn)});
   rng.addEventListener("input",()=>setMines(+rng.value));
   function reset(){cells.forEach(c=>{c.className="mic";c.disabled=true;c.innerHTML="<i></i>"})}
+  let rid=null,req=false;
   function start(){
     if(st==="run"){cash();return}
+    if(st==="wait") return;
     const v=CAS.takeBet(inp,go);if(!v) return;
-    bet=v;open=0;st="run";bomb=new Set();
-    while(bomb.size<mines) bomb.add(Math.floor(CAS.rndU()*N));
+    if(NET.on){
+      st="wait";go.disabled=true;
+      NET.call("g/mi/start",{bet:v,mines}).then(r=>{rid=r.id;begin(v,new Set())})
+        .catch(e=>{st="idle";go.disabled=false;ME.netRefund(v);toast(e.msg,true)});
+      return;
+    }
+    const b=new Set();while(b.size<mines) b.add(Math.floor(CAS.rndU()*N));
+    begin(v,b);
+  }
+  function begin(v,b){
+    bet=v;open=0;st="run";bomb=b;
     reset();cells.forEach(c=>c.disabled=false);
     pane.classList.add("busy");hud.className="mihud live";
     go.classList.add("cash");go.disabled=true;go.innerHTML="Открой клетку";
@@ -6575,28 +6754,54 @@ const MI=(()=>{
     cells.forEach((c,i)=>{if(c.classList.contains("ok")||i===hit) return;c.disabled=true;c.classList.add("rv",bomb.has(i)?"bm":"gm")});
   }
   function pick(i){
-    if(st!=="run") return;const c=cells[i];if(c.classList.contains("ok")) return;
-    if(bomb.has(i)){
+    if(st!=="run"||req) return;const c=cells[i];if(c.classList.contains("ok")) return;
+    if(NET.on){
+      req=true;c.classList.add("ld");
+      NET.call("g/mi/pick",{id:rid,i}).then(r=>{
+        req=false;c.classList.remove("ld");
+        if(r.boom){bomb=new Set(r.bombs);boom(i);return}
+        safe(i);if(r.cash){bomb=new Set(r.bombs);finish(r.win,r.m)}
+      }).catch(e=>{req=false;c.classList.remove("ld");toast(e.msg,true)});
+      return;
+    }
+    if(bomb.has(i)){boom(i);return}
+    safe(i);if(open>=N-mines) cash();
+  }
+  function boom(i){
+    const c=cells[i];
+    {
       st="dead";c.classList.add("boom","bm");revealAll(i);hud.className="mihud dead";
       xEl.textContent="Мина!";sEl.textContent=`Ставка ${ME.fmtN(bet)} сгорела на ${open+1}-й клетке`;
       grid.classList.remove("shake");void grid.offsetWidth;grid.classList.add("shake");
-      end();return;
+      end();ME.netSettle();return;
     }
+  }
+  function safe(i){
+    const c=cells[i];
     open++;c.classList.add("ok");c.disabled=true;
     const m=mult(open,mines),win=Math.floor(bet*m);
     xEl.textContent=fx(m);sEl.textContent=`Открыто ${open} из ${N-mines} · забрать сейчас: ${ME.fmtN(win)}`;
     nxt.textContent=open<N-mines?fx(mult(open+1,mines)):"—";
     go.disabled=false;go.innerHTML=`Забрать <b>${ME.fmtN(win)}</b>`;
-    if(open>=N-mines) cash();
   }
   function cash(){
-    if(st!=="run") return;
+    if(st!=="run"||req) return;
+    if(NET.on){
+      req=true;go.disabled=true;
+      NET.call("g/mi/cash",{id:rid}).then(r=>{req=false;bomb=new Set(r.bombs||[]);
+        if(r.refund){ME.payout(bet);st="idle";reset();end();sEl.textContent="Ставка возвращена";ME.netSettle();return}
+        finish(r.win,r.m)}).catch(e=>{req=false;go.disabled=false;toast(e.msg,true)});
+      return;
+    }
     if(!open){ME.payout(bet);st="idle";reset();end();sEl.textContent="Ставка возвращена";return}   // ни одной клетки — ставка возвращается
-    const m=mult(open,mines),win=Math.floor(bet*m);st="out";
+    const m=mult(open,mines);finish(Math.floor(bet*m),m);
+  }
+  function finish(win,m){
+    st="out";
     ME.payout(win);revealAll(-1);hud.className="mihud won";
     xEl.textContent=fx(m);sEl.innerHTML=`Забрал <b>+${ME.fmtN(win)}</b> · ${open} ${plural(open,"клетка","клетки","клеток")} при ${mines} ${plural(mines,"мине","минах","минах")}`;
     try{QA.ev("win",{game:"mines",m,v:bet,win,mines,open})}catch(e){}
-    end();
+    end();ME.netSettle();
   }
   function end(){pane.classList.remove("busy");go.classList.remove("cash");go.disabled=false;go.textContent="Играть ещё";cells.forEach(c=>c.disabled=true)}
   grid.addEventListener("click",e=>{const c=e.target.closest(".mic");if(c) pick(+c.dataset.i)});
@@ -6627,7 +6832,7 @@ const PL=(()=>{
   let rows=12,risk="mid",balls=[],raf=0,last=0,hits=[],flash={},H_=[];
   const geo=()=>{const s=Math.min((W*.97)/(rows+2),(H*.9)/(rows*.86+1.1)),top=H*.04;return{s,top,by:top+rows*s*.86+s*.25}};
   const bucketCol=m=>m>=10?"#ff3d5a":m>=3?"#ff7a2e":m>=1.4?"#ffb62e":m>=1?"#e9d23a":"#7ad06b";
-  function busy(){return balls.length>0}
+  function busy(){return balls.length>0||req>0}
   function setOpt(){
     pane.querySelectorAll("#plRows button").forEach(b=>b.classList.toggle("on",+b.dataset.r===rows));
     pane.querySelectorAll("#plRisk button").forEach(b=>b.classList.toggle("on",b.dataset.k===risk));
@@ -6637,11 +6842,18 @@ const PL=(()=>{
     if((r||k)&&busy()){toast("Дождись, пока упадут все шарики",true);return}
     if(r){rows=+r.dataset.r;setOpt()}else if(k){risk=k.dataset.k;setOpt()}
   });
-  function drop(){
+  let req=0;
+  async function drop(){
     const v=CAS.takeBet(inp,go);if(!v) return;
-    const path=[];let right=0;
-    for(let i=0;i<rows;i++){const d=CAS.rndU()<.5?0:1;path.push(d);right+=d}
-    balls.push({v,path,right,i:0,t:0,rows,risk,dur:.13+CAS.rndU()*.03,trail:[]});
+    let path=[];const R=rows,K=risk;
+    if(NET.on){
+      req++;
+      try{path=(await NET.call("g/pl",{bet:v,rows:R,risk:K})).path}
+      catch(e){req--;ME.netRefund(v);toast(e.msg,true);return}
+      req--;
+    }else for(let i=0;i<R;i++) path.push(CAS.rndU()<.5?0:1);
+    const right=path.reduce((a,c)=>a+c,0);
+    balls.push({v,path,right,i:0,t:0,rows:R,risk:K,dur:.13+CAS.rndU()*.03,trail:[]});
     if(!raf){last=performance.now();raf=requestAnimationFrame(frame)}
   }
   function land(b){
@@ -6651,6 +6863,7 @@ const PL=(()=>{
     hist.innerHTML=H_.slice(-8).map(x=>`<em class="${x>=1?"g":"r"}">×${x}</em>`).join("");
     hits.push({x:0,b:b.right,txt:(win>=b.v?"+":"")+ME.fmtN(win),good:m>=1,life:1});
     try{QA.ev("win",{game:"plinko",m,v:b.v,win})}catch(e){}
+    if(NET.on&&!req&&balls.length<=1) setTimeout(()=>{if(!req&&!balls.length) ME.netSettle()},50);
   }
   function pos(b,level,r){const g=geo();return{x:W/2+(r-level/2)*g.s,y:g.top+level*g.s*.86-g.s*.42}}
   function frame(now){
@@ -6745,34 +6958,64 @@ const HL=(()=>{
     xEl.textContent="×"+mult.toFixed(2);
   }
   function btns(on){pane.querySelectorAll(".hlb").forEach(b=>b.disabled=!on)}
+  let rid=null,req=false;
   function start(){
     if(st==="run"){cash();return}
+    if(st==="wait") return;
     const v=CAS.takeBet(inp,go);if(!v) return;
-    bet=v;mult=1;steps=0;trail=[];st="run";card=draw();
+    if(NET.on){
+      st="wait";go.disabled=true;
+      NET.call("g/hl/start",{bet:v}).then(r=>{rid=r.id;begin(v,r.card)}).catch(e=>{st="idle";go.disabled=false;ME.netRefund(v);toast(e.msg,true)});
+      return;
+    }
+    begin(v,draw());
+  }
+  function begin(v,c){
+    bet=v;mult=1;steps=0;trail=[];st="run";card=c;
     pane.classList.add("busy");btns(true);go.classList.add("cash");go.disabled=true;go.textContent="Угадай следующую карту";
     sEl.textContent=`Ставка ${ME.fmtN(bet)} · выше или ниже?`;paint(true);
   }
   function guess(dir){
-    if(st!=="run") return;
-    const prev=card,nx=draw();
+    if(st!=="run"||req) return;
+    if(NET.on){
+      req=true;btns(false);
+      NET.call("g/hl/guess",{id:rid,dir}).then(r=>{req=false;apply(dir,r.card,r.ok!==false,r.m);if(st==="run") btns(true)})
+        .catch(e=>{req=false;btns(true);toast(e.msg,true)});
+      return;
+    }
+    const nx=draw();
+    if(dir==="skip"){apply(dir,nx,true);return}
+    const b=bets(card.r)[dir];apply(dir,nx,b.win(nx.r),Math.round(mult*mOf(b.p)*100)/100);
+  }
+  function apply(dir,nx,ok,m){
+    const prev=card;
     if(dir==="skip"){trail.push({c:prev,dir,ok:true});card=nx;paint(true);return}
-    const b=bets(prev.r)[dir],ok=b.win(nx.r);
     trail.push({c:prev,dir,ok});card=nx;
     if(!ok){
       st="dead";paint(true);xEl.textContent="×0";cardEl.classList.remove("lose");void cardEl.offsetWidth;cardEl.classList.add("lose");
-      sEl.textContent=`Не угадал: ${RK[prev.r]} → ${RK[nx.r]} — ставка ${ME.fmtN(bet)} сгорела`;end();return;
+      sEl.textContent=`Не угадал: ${RK[prev.r]} → ${RK[nx.r]} — ставка ${ME.fmtN(bet)} сгорела`;end();ME.netSettle();return;
     }
-    mult=Math.round(mult*mOf(b.p)*100)/100;steps++;paint(true);
+    mult=m;steps++;paint(true);
     const win=Math.floor(bet*mult);sEl.innerHTML=`Угадано ${steps} подряд · забрать сейчас: <b>${ME.fmtN(win)}</b>`;
     go.disabled=false;go.innerHTML=`Забрать <b>${ME.fmtN(win)}</b>`;
   }
   function cash(){
-    if(st!=="run") return;
+    if(st!=="run"||req) return;
+    if(NET.on){
+      req=true;go.disabled=true;btns(false);
+      NET.call("g/hl/cash",{id:rid}).then(r=>{req=false;
+        if(r.refund){ME.payout(bet);st="idle";end();sEl.textContent="Ставка возвращена";ME.netSettle();return}
+        mult=r.m;cashOut(r.win)}).catch(e=>{req=false;go.disabled=false;btns(true);toast(e.msg,true)});
+      return;
+    }
     if(!steps){ME.payout(bet);st="idle";end();sEl.textContent="Ставка возвращена";return}
-    const win=Math.floor(bet*mult);st="out";ME.payout(win);
+    cashOut(Math.floor(bet*mult));
+  }
+  function cashOut(win){
+    st="out";ME.payout(win);
     sEl.innerHTML=`Забрал <b>+${ME.fmtN(win)}</b> · ${steps} ${plural(steps,"карта","карты","карт")} подряд, ×${mult.toFixed(2)}`;
     try{QA.ev("win",{game:"hilo",m:mult,v:bet,win})}catch(e){}
-    end();
+    end();ME.netSettle();
   }
   function end(){pane.classList.remove("busy");btns(false);go.classList.remove("cash");go.disabled=false;go.textContent="Играть ещё"}
   pane.addEventListener("click",e=>{const b=e.target.closest("[data-h]");if(b&&!b.disabled) guess(b.dataset.h)});
@@ -6965,7 +7208,7 @@ const RM=(()=>{
   function open(){
     clearTimeout(closeT);
     if(isOpen()){show("menu");return}
-    try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}
+    try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}try{FR.close(true)}catch(e){}
     el.classList.remove("out");el.hidden=false;document.body.classList.add("pg");navBtn.classList.add("on");
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
     show("menu");
@@ -7308,7 +7551,7 @@ const CT=(()=>{
   function open(){
     clearTimeout(closeT);
     if(isOpen()) return;
-    el.classList.remove("out");TOP.close(true);AP.close(true);RK.close(true);LB.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}
+    el.classList.remove("out");TOP.close(true);AP.close(true);RK.close(true);LB.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}try{FR.close(true)}catch(e){}
     stack=[];cur={t:"home",g:0};shell();show(cur);
     el.hidden=false;document.body.classList.add("pg");navBtn.classList.add("on");
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
@@ -7533,7 +7776,7 @@ const LB=(()=>{
 
   function open(m){
     clearTimeout(closeT);
-    AP.close(true);TOP.close(true);RK.close(true);CT.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}
+    AP.close(true);TOP.close(true);RK.close(true);CT.close(true);try{RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}try{FR.close(true)}catch(e){}
     el.classList.remove("out");el.hidden=false;document.body.classList.add("pg");
     if(m==="singles") showSingles();else showAlbums(m==="eps"?"eps":"albums");
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
@@ -7649,6 +7892,8 @@ const SET=(()=>{
       ${tog("intro","Заставка при запуске","Анимация с логотипом. Действует со следующего запуска")}
       ${tog("outro","Анимация при выходе","Если выключить, приложение закроется сразу")}
       ${tog("sounds","Звуки заставки и выхода","Синтезированная музыка при запуске и закрытии")}
+      <div class="stsec">Общий сервер</div>
+      <div id="netBox"></div>
       <div class="stsec">Обновления</div>
       <div id="updBox"></div>
       <div class="stsec">Данные</div>
@@ -7656,6 +7901,7 @@ const SET=(()=>{
       <button class="strst" type="button">Сбросить все настройки</button>
       <div class="stnote">Настройки хранятся в папке TrackRater рядом с оценками.</div>`;
     try{UPD.paintSet()}catch(e){}
+    try{NETUI.paint()}catch(e){}
     body.scrollTop=keep;
   }
   body.addEventListener("input",e=>{
@@ -8461,6 +8707,35 @@ const FXP=(()=>{
 async function sha256(s){
   try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){return ""}
 }
+/* ---------- общий сервер: баланс, покупки, игры, друзья и рейтинг — онлайн ---------- */
+const NET=(()=>{
+  let S={on:false,url:"",uid:"",def:""},down=false,lastBv=-1,lastBal=null;
+  async function init(){try{const r=await fetch("/api/net/state",{cache:"no-store"});if(r.ok) S=await r.json()}catch(e){}paint();return S}
+  async function call(path,body){
+    let r,j=null;
+    try{r=await fetch("/api/net/x/"+path,{method:"POST",body:JSON.stringify(body||{}),headers:{"Content-Type":"application/json"}})}
+    catch(e){setDown(true);throw{msg:"Нет связи с программой"}}
+    try{j=await r.json()}catch(e){}
+    if(r.status===502||r.status===504){setDown(true);throw{msg:(j&&j.error)||"Сервер недоступен — проверь интернет"}}
+    setDown(false);
+    if(!r.ok||!j||j.error) throw{msg:(j&&j.error)||("Ошибка сервера ("+r.status+")"),code:r.status};
+    if(j.bv!=null&&j.bal!=null&&j.bv>=lastBv){lastBv=j.bv;lastBal=j.bal}
+    return j;
+  }
+  async function local(path,body){
+    let r,j=null;
+    try{r=await fetch("/api/net/"+path,{method:"POST",body:JSON.stringify(body||{}),headers:{"Content-Type":"application/json"}})}catch(e){throw{msg:"Нет связи с программой"}}
+    try{j=await r.json()}catch(e){}
+    if(!r.ok||!j||j.error) throw{msg:(j&&j.error)||("Ошибка ("+r.status+")")};
+    if(j.state){S=j.state;paint()}
+    return j;
+  }
+  function setDown(v){if(down===v) return;down=v;paint();try{NETUI.paint()}catch(e){}}
+  function paint(){const h=document.documentElement;h.classList.toggle("neton",!!S.on);h.classList.toggle("netdown",!!S.on&&down)}
+  const avUrl=(uid,v)=>v?`/api/net/av/${uid}?v=${v}`:"";
+  return{init,call,local,avUrl,reset(){lastBv=-1;lastBal=null},get on(){return !!S.on},get down(){return down},get st(){return S},get bal(){return lastBal},get bv(){return lastBv}};
+})();
+
 const ME=(()=>{
   const D={nick:"",bio:"",av:0,bal:0,earned:0,spent:0,got:[],inv:[],eq:{},init:false,favTracks:[],favArtists:[],adminKey:"",xp:0,xpInit:false};
   let ready=false,saveT=0,lastRate=0,admin=false,role=null;
@@ -8476,13 +8751,158 @@ const ME=(()=>{
       fetch("/api/profile",{method:"POST",body:JSON.stringify(D),headers:{"Content-Type":"application/json"}})
         .then(r=>r.json()).then(j=>{if(j&&j.seal) try{localStorage.setItem("meSeal",JSON.stringify(j.seal));localStorage.removeItem("meBackup")}catch(e){}}).catch(()=>{});
     },250);
+    if(ready&&NET.on) netPush();
   }
+  /* ---------- общий сервер ---------- */
+  let pushT=0,lastPush="",scanBusy=false,scanAgain=false,netErrT=0,inboxBusy=false;
+  function applyMe(j,o){
+    if(!j) return;o=o||{};const old=D.bal;
+    if(j.bal!=null) D.bal=j.bal;
+    ["earned","spent","won","bet","xp"].forEach(k=>{if(j[k]!=null) D[k]=j[k]});
+    if(Array.isArray(j.inv)){
+      const extra=role?role.items:[];
+      D.inv=[...new Set(j.inv.concat(extra).filter(id=>ITEM[id]))];
+      for(const k in D.eq) if(!owns(D.eq[k])) delete D.eq[k];
+    }
+    if(j.uid){
+      if(D.netUid!==j.uid){                               // этот аккаунт впервые на этом компьютере — берём с сервера ник и образ
+        if(j.nick&&(!D.nick||D.nick==="Меломан")) D.nick=j.nick;
+        if(j.bio&&!D.bio) D.bio=j.bio;
+        if(j.eq&&!Object.keys(D.eq).length) for(const k in j.eq) if(owns(j.eq[k])) D.eq[k]=j.eq[k];
+        D.netUid=j.uid;D.init=true;D.xpInit=true;lastPush="";
+      }
+      D.uid=j.uid;
+    }
+    save();
+    if(o.paint!==false&&ready){paintBal(old);paintLvl();try{PF.refresh()}catch(e){}try{SHOP.refresh()}catch(e){}}
+    if(j.frIn!=null) try{FR.badge(j.frIn)}catch(e){}
+    if(Array.isArray(j.inbox)&&j.inbox.length) openInbox(j.inbox);
+  }
+  const cap1=s=>s.charAt(0).toUpperCase()+s.slice(1);
+  async function openInbox(list){
+    if(inboxBusy) return;inboxBusy=true;
+    for(const g of list){
+      try{
+        const r=await NET.call("gift/open",{id:g.id}),G=r.gift,what=giftWhat(G.k,G.v),msg=G.m||"";
+        const old=D.bal;applyMe(r,{paint:false});paintAll();if(r.n) D.bal=old+0,paintBal(),D.bal=r.bal;
+        const sub=G.k==="p"?`На баланс зачислено ${what}.`:r.n?`${cap1(what)} у тебя уже есть — вместо этого зачислено ${fmtN(r.n)} ${plural(r.n,"пульс","пульса","пульсов")}.`:`${cap1(what)} — теперь в твоём гардеробе. Надень в профиле.`;
+        D.giftIn=(Array.isArray(D.giftIn)?D.giftIn:[]).concat(Object.assign({f:G.fn||"Друг",k:G.k,v:G.k==="p"?+G.v:G.v,d:Date.now()},msg?{m:msg}:{})).slice(-30);save();
+        whenFree(()=>card({n:r.n,label:r.n?"+"+fmtN(r.n):"✦",gift:true,quiet:!r.n,noShop:true,ok:"Спасибо!",title:`Подарок от ${G.fn||"друга"}!`,sub:(msg?`«${msg}» — `:"")+sub}));
+      }catch(e){}
+    }
+    inboxBusy=false;
+  }
+  function pubStats(){
+    const r=state.tracks.filter(isRated),avg=r.length?r.reduce((s,t)=>s+t.total,0)/r.length:0;
+    const ga=new Map();r.forEach(t=>{const g=(t.genre||"").trim();if(g) ga.set(g.toLowerCase(),{n:(ga.get(g.toLowerCase())||{n:0}).n+1,g})});
+    const g=[...ga.values()].sort((a,b)=>b.n-a.n)[0];
+    const fav=(D.favTracks||[]).map(id=>r.find(t=>t.id===id)).filter(Boolean);
+    const top=(fav.length?fav:r.slice().sort((a,b)=>b.total-a.total)).slice(0,3).map(t=>({t:t.title,a:t.artist,s:t.total}));
+    const arts=new Set(r.map(t=>lo(t.artist)).filter(a=>a&&a!=="—")).size;
+    return{n:r.length,avg:Math.round(avg*100)/100,g:g?g.g:"",arts,top,ach:Object.keys(D.ach||{}).length,avc:D.avGif?D.avCrop||null:null};
+  }
+  function netPush(){
+    if(!NET.on) return;clearTimeout(pushT);
+    pushT=setTimeout(async()=>{
+      const pay={nick:D.nick,bio:D.bio||"",eq:D.eq,st:pubStats()},sig=JSON.stringify(pay);
+      if(sig!==lastPush){try{await NET.call("profile",pay);lastPush=sig}catch(e){}}
+      if((D.av||0)!==(D.avSent||0)) pushAv();
+    },2500);
+  }
+  async function pushAv(){
+    const v=D.av||0;
+    try{
+      let data="",gif=false;
+      if(v){
+        const b=await (await fetch(avUrl())).blob();
+        if(b.type==="image/gif"&&b.size<=300000){gif=true;data=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b)})}
+        else{
+          const u=URL.createObjectURL(b),im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=u});
+          const c=document.createElement("canvas");c.width=c.height=200;avDraw(c.getContext("2d"),im,0,0,200);data=c.toDataURL("image/jpeg",.86);URL.revokeObjectURL(u);
+        }
+      }
+      await NET.call("profile",{av:data});D.avSent=v;D.avGif=gif;lastPush="";save();
+    }catch(e){}
+  }
+  async function netPoll(){
+    if(!NET.on||document.hidden) return;
+    try{
+      const j=await NET.call("me");
+      const busyGame=!$("#gm").hidden;
+      if(busyGame){delete j.bal;delete j.inv}
+      applyMe(j);
+      if(NET.down===false) netScan();
+    }catch(e){}
+  }
+  async function netScan(){
+    if(!ready||!NET.on) return;
+    if(scanBusy){scanAgain=true;return}
+    const tr=[],rels=[];
+    for(const t of state.tracks){
+      if(!isRated(t)) continue;
+      const k1="i:"+t.id,k2="s:"+lo(t.artist)+"|"+lo(t.title);
+      if(got.has(k1)||got.has(k2)){got.add(k1);got.add(k2);continue}
+      tr.push({k:k1,k2,a:t.albumId!=null?String(t.albumId):null});
+    }
+    const ids=new Set();state.tracks.forEach(t=>{if(t.albumId) ids.add(t.albumId)});
+    for(const id of ids){
+      const a=albumInfo(id);if(!a||!a.complete||a.n<2) continue;
+      const kind=a.n<=6?"ep":"album",k="a:"+id+":"+kind;
+      if(got.has(k)) continue;
+      if(got.has("a:"+id)&&kind==="ep"){got.add(k);continue}
+      rels.push({a:String(id),kind,n:a.n,name:a.name,k});
+    }
+    if(!tr.length&&!rels.length) return;
+    scanBusy=true;
+    try{
+      const j=await NET.call("earn",{tracks:tr.map(x=>({k:x.k,a:x.a})),rels:rels.map(x=>({a:x.a,kind:x.kind,n:x.n}))});
+      tr.forEach(x=>{got.add(x.k);got.add(x.k2)});rels.forEach(x=>got.add(x.k));D.got=[...got];
+      const old=D.bal;applyMe(j,{paint:false});
+      const tsum=j.grants.reduce((s,g)=>s+g.n,0),rsum=j.rels.reduce((s,r)=>s+r.n,0),sum=tsum+rsum+(j.up?j.up.bonus:0);
+      const fromBtn=performance.now()-lastRate<2500?$("#save"):null;
+      if(sum) fly(fromBtn,sum,old);else paintBal(old);
+      if(j.xp) flyXp(fromBtn,j.xp,!!sum);
+      paintLvl();try{PF.refresh()}catch(e){}
+      if(j.up&&j.up.after>j.up.before){const b=j.up.bonus;whenFree(()=>card({n:b,quiet:true,title:`Новый уровень ${j.up.after}!`,sub:`Опыт за оценки привёл тебя на уровень ${j.up.after}. Награда — ${b} ${plural(b,"пульс","пульса","пульсов")}.`,lvl:j.up.after}))}
+      j.rels.forEach(r=>{const R=rels.find(x=>x.a===r.a);try{QA.ev(r.kind)}catch(e){}
+        whenFree(()=>card({n:r.n,quiet:true,title:r.kind==="ep"?"EP оценён полностью":"Альбом оценён полностью",sub:`«${R?R.name:"Релиз"}» — ${r.kind==="ep"?"EP":"альбом"} целиком в твоей медиатеке. Ещё +${r.n} опыта.`}))});
+      if(!j.rels.length&&tsum) toastCoin(`+${tsum} ${plural(tsum,"пульс","пульса","пульсов")} и +${j.xp} опыта за оценку`);
+      else if(!j.rels.length&&j.grants.some(g=>g.limit)) toast("Лимит наград за оценки на сегодня исчерпан — оценка сохранена, пульсы завтра",true);
+    }catch(e){
+      if(performance.now()-netErrT>60000){netErrT=performance.now();toast("Награда за оценку пока не начислена: "+e.msg+". Начислим, когда сервер станет доступен",true)}
+    }finally{scanBusy=false;if(scanAgain){scanAgain=false;setTimeout(netScan,300)}}
+  }
+  /* награда с сервера (задания, достижения): анимация как у обычной */
+  function netReward(j,o){
+    o=o||{};const old=D.bal;applyMe(j,{paint:false});
+    const n=(j.n||0)+(j.up?j.up.bonus:0);
+    if(n&&o.from) fly(o.from,n,old);else paintBal(old);
+    if(j.xp&&o.from) flyXp(o.from,j.xp,!!n);
+    paintLvl();try{PF.refresh()}catch(e){}
+    if(j.up&&j.up.after>j.up.before){const b=j.up.bonus;whenFree(()=>card({n:b,quiet:true,title:`Новый уровень ${j.up.after}!`,sub:`Награда — ${b} ${plural(b,"пульс","пульса","пульсов")}.`,lvl:j.up.after}))}
+  }
+  /* после раунда игры баланс сверяется с сервером */
+  function netSettle(){if(!NET.on||NET.bal==null) return;const old=D.bal;D.bal=NET.bal;save();if(old!==D.bal) paintBal(old)}
+  function netRefund(v){const old=D.bal;D.bal+=v;D.bet=Math.max(0,(D.bet||0)-v);save();paintBal(old)}
+  /* перенос того, что накоплено на этом компьютере, — один раз при создании аккаунта */
+  function netImport(){
+    const keys=[],byId=new Map(state.tracks.map(t=>[String(t.id),t]));
+    got.forEach(k=>{
+      let m;
+      if((m=/^i:(\d+)$/.exec(k))){const t=byId.get(m[1]);keys.push({k,a:t&&t.albumId!=null?String(t.albumId):null})}
+      else if((m=/^a:([\w-]+):(ep|album)$/.exec(k))) keys.push({k:`r:${m[1]}:${m[2]}`});
+      else if((m=/^a:([\w-]+)$/.exec(k))) keys.push({k:`r:${m[1]}:ep`});
+    });
+    return{bal:D.bal,xp:D.xp||0,earned:D.earned||0,spent:D.spent||0,inv:D.inv.filter(id=>!ADMIN_ITEMS[id]),keys,ach:Object.keys(D.ach||{})};
+  }
+  async function netStart(me){NET.reset();await NET.init();if(me) applyMe(me,{first:true});lastPush="";D.avSent=0;netPush();paintAll()}
   async function checkAdmin(){
     role=D.adminKey?ADMIN_ROLES[await sha256(D.adminKey)]||null:null;admin=!!role;
     for(const id in ADMIN_ITEMS) if(!role||!role.items.includes(id)){D.inv=D.inv.filter(x=>x!==id);if(D.eq.name===id) delete D.eq.name}
     if(role){let ch=false;role.items.forEach(id=>{if(!owns(id)){D.inv.push(id);ch=true}});if(ch||D.roleSeen!==role.items[0]){D.eq.name=role.items[0];D.roleSeen=role.items[0];save()}}
   }
   async function load(){
+    await NET.init();
     let j=null,tamper=false;
     try{const r=await fetch("/api/profile",{cache:"no-store"});if(r.ok) j=await r.json()}catch(e){}
     if(j&&j._tamper){tamper=true;delete j._tamper}
@@ -8515,7 +8935,12 @@ const ME=(()=>{
     }
     try{const c=+localStorage.getItem("rateCd")||0;if(c>(+D.cdUntil||0)) D.cdUntil=c}catch(e){}
     if(newUid) save();
+    if(NET.on){
+      try{applyMe(await NET.call("me"),{paint:false,first:true})}
+      catch(e){setTimeout(()=>toast("Общий сервер недоступен: "+e.msg+". Награды и игры заработают, когда связь вернётся",true),3500)}
+    }
     ready=true;paintAll();
+    if(NET.on){netPush();setInterval(netPoll,60000)}
     if(refund){save();setTimeout(()=>toastCoin(`Рамку «Радуга» убрали из магазина — ${refund} пульсов вернули на баланс`),2500)}
     scan(true);
   }
@@ -8539,6 +8964,7 @@ const ME=(()=>{
   /* ---------- награды ---------- */
   function scan(first){
     if(!ready) return;
+    if(NET.on){netScan();return}
     const out=[];
     for(const t of state.tracks){
       if(!isRated(t)) continue;                          // пульсы за каждый трек — и сингл, и трек из EP/альбома
@@ -8649,13 +9075,17 @@ const ME=(()=>{
   $("#rwd").addEventListener("pointerdown",e=>{if(e.target.id==="rwd") closeCard(false)});
   document.addEventListener("keydown",e=>{if(!$("#rwd").hidden&&(e.key==="Escape"||e.key==="Enter")){e.preventDefault();e.stopImmediatePropagation();closeCard(false)}},true);
   /* ---------- покупки ---------- */
-  function buy(ids,price){
+  function buy(ids,price,ref){
     ids=ids.filter(id=>!owns(id));
     if(!ids.length) return true;
     if(D.bal<price) return false;
     const old=D.bal;D.bal-=price;D.spent=(D.spent||0)+price;D.inv.push(...ids);save();paintBal(old);
     try{SND.play("buy")}catch(e){}
     try{QA.ev("buy")}catch(e){}
+    if(NET.on&&ref) NET.call("buy",ref).then(j=>applyMe(j,{paint:false})).catch(e=>{   // сервер не принял — откатываем
+      D.inv=D.inv.filter(x=>!ids.includes(x));for(const k in D.eq) if(!owns(D.eq[k])) delete D.eq[k];
+      D.bal+=price;D.spent=Math.max(0,(D.spent||0)-price);save();paintAll();toast("Покупка не прошла: "+e.msg,true);
+    });
     return true;
   }
   /* награды заданий и достижений: пульсы + опыт (с повышением уровня) */
@@ -8674,6 +9104,12 @@ const ME=(()=>{
   async function redeem(code){
     if(/^\s*GIFT-/i.test(String(code||""))) return giftOpen(code);      // в поле промокода можно вставить и код подарка
     const c=String(code||"").trim().toUpperCase().replace(/\s+/g,"");
+    if(NET.on){                                          // онлайн: каждый промокод — один на всех игроков
+      if(!c) return{ok:false,msg:"Введи промокод"};
+      try{const j=await NET.call("promo",{code:c});const old=D.bal;applyMe(j,{paint:false});paintBal(old);
+        card({n:j.n,quiet:true,noShop:false,title:"Промокод активирован!",sub:`На баланс зачислено ${fmtN(j.n)} ${plural(j.n,"пульс","пульса","пульсов")}. Ты успел первым!`});return{ok:true,n:j.n}}
+      catch(e){return{ok:false,msg:e.msg}}
+    }
     if(!c) return{ok:false,msg:"Введи промокод"};
     const h=await sha256("promo:"+c),n=PROMO[h];
     if(!n) return{ok:false,msg:"Такого промокода нет"};
@@ -8704,6 +9140,13 @@ const ME=(()=>{
     if(!(price>0)) return{ok:false,msg:"Выбери, что подарить"};
     if(D.bal<price) return{ok:false,msg:`Не хватает ${fmtN(price-D.bal)} ${plural(price-D.bal,"пульса","пульсов","пульсов")}`};
     const m=String(o.m||"").trim().slice(0,80);
+    if(NET.on){                                          // онлайн: подарок уходит сразу, без кода
+      try{const j=await NET.call("gift/send",{to,k,v,m});applyMe(j);
+        D.giftOut=(Array.isArray(D.giftOut)?D.giftOut:[]).concat({t:to,k,v,d:Date.now()}).slice(-30);save();
+        try{SND.play("gift")}catch(e){}try{QA.ev("gift")}catch(e){}
+        return{ok:true,online:true,what:giftWhat(k,v),to:uidFmt(to)}}
+      catch(e){return{ok:false,f:/ID/.test(e.msg)?"to":"",msg:e.msg}}
+    }
     const g={f:String(D.nick||"Меломан").slice(0,24),fi:D.uid,t:to,k,v,n:mkUid()+mkUid(),d:Date.now()};if(m) g.m=m;
     let code="";
     try{const r=await fetch("/api/gift/make",{method:"POST",body:JSON.stringify(g),headers:{"Content-Type":"application/json"}});if(r.ok) code=(await r.json()).code||""}catch(e){}
@@ -8718,6 +9161,7 @@ const ME=(()=>{
   async function giftOpen(code){
     const c=String(code||"").replace(/\s+/g,"");
     if(!c) return{ok:false,msg:"Вставь код подарка"};
+    if(NET.on) return{ok:false,msg:"С общим сервером подарки приходят сами — коды больше не нужны"};
     let g=null;
     try{const r=await fetch("/api/gift/open",{method:"POST",body:JSON.stringify({code:c}),headers:{"Content-Type":"application/json"}});if(r.ok) g=await r.json()}catch(e){}
     if(!g||!g.n||!g.t) return{ok:false,msg:"Код подарка неверный или повреждён — скопируй его целиком"};
@@ -8766,10 +9210,10 @@ const ME=(()=>{
   const SPK=new Set(["f_diamond","fx_glass","f_mythic","fx_lux","fx_neb","f_plasma","f_blackhole"]);
   function avatar(size,e,o){
     e=e||D.eq;o=o||{};
-    const u=avUrl(),fr=e.frame||"",hat=e.hat||"";
-    const img=u?`background-image:url('${u}');${avBgCss(D.avCrop)}`:(o.plain?"background:linear-gradient(160deg,#3a3440,#16131a)":`background:${coverBg(D.nick,"")}`);
+    const oth=o.u!==undefined,u=oth?o.u:avUrl(),fr=e.frame||"",hat=e.hat||"",nk=oth?o.nick||"":D.nick;
+    const img=u?`background-image:url('${u}');${avBgCss(oth?o.crop:D.avCrop)}`:(o.plain?"background:linear-gradient(160deg,#3a3440,#16131a)":`background:${coverBg(nk,"")}`);
     return `<span class="mav${fr?" fr":""}" data-fr="${fr}" style="--s:${size}px">${fr?'<span class="mav-g"></span><span class="mav-r"></span>':""}
-      <span class="mav-i" style="${img}">${u?"":o.plain?SIL:esc(initial(D.nick))}</span>
+      <span class="mav-i" style="${img}">${u?"":o.plain?SIL:esc(initial(nk))}</span>
       ${SPK.has(fr)?'<span class="mav-sp"><i></i><i></i><i></i></span>':""}
       ${hat&&HATS[hat]?`<svg class="mav-h" viewBox="-20 -40 140 140" aria-hidden="true">${HATS[hat]}</svg>`:""}</span>`;
   }
@@ -8803,7 +9247,7 @@ const ME=(()=>{
     try{PF.refresh()}catch(e){}
     try{SHOP.refresh()}catch(e){}
   }
-  return{load,scan,buy,reward,spend,payout,save,redeem,giftMake,giftOpen,giftWhat,uidFmt,equip,equipSet,setInfo,owns,eq,avatar,badge,nameH,avUrl,tryAdmin,fmtN,get role(){return role},lvl:()=>lvl(D.xp),
+  return{load,scan,buy,reward,spend,payout,save,redeem,giftMake,giftOpen,giftWhat,uidFmt,applyMe,netReward,netSettle,netRefund,netImport,netStart,netPush,equip,equipSet,setInfo,owns,eq,avatar,badge,nameH,avUrl,tryAdmin,fmtN,get role(){return role},lvl:()=>lvl(D.xp),
     cdLeft,cdStart,CD,
     get data(){return D},get admin(){return admin},noteRate(){lastRate=performance.now()},paintBal,card,toastCoin};
 })();
@@ -8972,7 +9416,7 @@ const PF=(()=>{
   });
   function open(){
     clearTimeout(closeT);if(isOpen()) return;
-    try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true);RM.close(true);SHOP.close(true)}catch(x){}
+    try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true);RM.close(true);SHOP.close(true)}catch(x){}try{FR.close(true)}catch(x){}
     edit=false;tab="all";el.classList.remove("out");el.hidden=false;document.body.classList.add("pg");btn.classList.add("on");
     render();body.scrollTop=0;
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
@@ -9100,7 +9544,7 @@ const SHOP=(()=>{
     else e.stopImmediatePropagation();
   },true);
   function buyKit(k,kit){
-    if(!ME.buy(kit.items,kit.p)){nope(k,kit.p-ME.data.bal);return}
+    if(!ME.buy(kit.items,kit.p,{kit:kit.id})){nope(k,kit.p-ME.data.bal);return}
     if(k.isConnected) boom(k);tryEq=null;ME.equipSet(kit.items);
     ME.card({n:0,label:"✦",quiet:true,noShop:true,ok:"Отлично",title:`Коллекция «${kit.n}» твоя`,sub:kit.design?"Все 6 предметов уже надеты. Можешь включить дизайн приложения в стиле коллекции — кнопка на карточке набора.":"Все 6 предметов уже надеты — загляни в профиль, чтобы полюбоваться."});
   }
@@ -9124,7 +9568,7 @@ const SHOP=(()=>{
       if(ME.data.bal<it.p){nope(b,it.p-ME.data.bal);return}
       const kt=KIT_OF[it.id],rn=kt?`Коллекция «${kt.n}»`:ADMIN_ITEMS[it.id]?"Только для админа":((RAR[it.r]||{}).n||"");
       askBuy({title:"Купить предмет?",name:`«${it.n}»`,sub:`${SLOT_ONE[it.s]}${rn?" · "+rn:""}`,price:it.p},()=>{
-        if(!ME.buy([it.id],it.p)){nope(b,it.p-ME.data.bal);return}
+        if(!ME.buy([it.id],it.p,{item:it.id})){nope(b,it.p-ME.data.bal);return}
         if(b.isConnected) boom(b);tryEq=null;ME.equip(it.id,true);toast(`«${it.n}» куплено и надето`)});
       return}
     const k=e.target.closest("[data-kit]");
@@ -9151,7 +9595,7 @@ const SHOP=(()=>{
   });
   function open(){
     clearTimeout(closeT);if(isOpen()) return;
-    try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true);RM.close(true);PF.close(true)}catch(x){}
+    try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true);RM.close(true);PF.close(true)}catch(x){}try{FR.close(true)}catch(x){}
     tab="all";rar="all";tryEq=null;el.classList.remove("out");el.hidden=false;document.body.classList.add("pg");nav.classList.add("on");pillB.classList.add("on");
     render();body.scrollTop=0;
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
@@ -9296,6 +9740,14 @@ const QA=(()=>{
   }
   function claim(id){
     const Q=q(),Qd=QUESTS[id];if(!Qd||Q.c[id]||(Q.p[id]||0)<Qd.goal) return;
+    if(NET.on){
+      const b=el.querySelector(`[data-claim="${id}"]`);if(b){if(b.disabled) return;b.disabled=true}
+      NET.call("claim",{t:"q",id,day:Q.day}).then(j=>{
+        Q.c[id]=1;D().qDone=(D().qDone||0)+1;ME.netReward(j,{from:b});
+        toast(`+${j.n} пульсов и +${j.xp} опыта за «${Qd.n}»`);render();paintDot();setTimeout(()=>checkAch(false),300);
+      }).catch(e=>{if(/уже получена/.test(e.msg)){Q.c[id]=1;ME.save();render();paintDot()}else{toast(e.msg,true);if(b) b.disabled=false}});
+      return;
+    }
     Q.c[id]=1;D().qDone=(D().qDone||0)+1;
     ME.reward(Qd.r,Qd.x,{from:el.querySelector(`[data-claim="${id}"]`)});
     toast(`+${Qd.r} пульсов и +${Qd.x} опыта за «${Qd.n}»`);
@@ -9303,6 +9755,14 @@ const QA=(()=>{
   }
   function claimBonus(){
     const Q=q();if(Q.bonus||!Q.list.every(id=>Q.c[id])) return;
+    if(NET.on){
+      const b=el.querySelector("[data-bonus]");if(b){if(b.disabled) return;b.disabled=true}
+      NET.call("claim",{t:"qb",day:Q.day}).then(j=>{
+        Q.bonus=true;ME.netReward(j,{from:b});
+        ME.card({n:j.n,quiet:true,noShop:true,title:"Все задания дня выполнены!",sub:`Бонус дня: +${j.n} пульсов и +${j.xp} опыта. Новые задания появятся завтра.`});render();paintDot();
+      }).catch(e=>{if(/уже получен/.test(e.msg)){Q.bonus=true;ME.save();render();paintDot()}else{toast(e.msg,true);if(b) b.disabled=false}});
+      return;
+    }
     Q.bonus=true;ME.reward(BONUS.r,BONUS.x,{from:el.querySelector("[data-bonus]")});
     ME.card({n:BONUS.r,quiet:true,noShop:true,title:"Все задания дня выполнены!",sub:`Бонус дня: +${BONUS.r} пульсов и +${BONUS.x} опыта. Новые задания появятся завтра.`});
     render();paintDot();
@@ -9367,6 +9827,19 @@ const QA=(()=>{
     const d=D();d.ach=d.ach||{};const S=stats(),got=[];
     for(const a of A) if(!d.ach[a.id]&&a.f(S)){d.ach[a.id]=Date.now();got.push(a)}
     if(!got.length) return;
+    if(NET.on){                                           // награды за достижения выдаёт сервер — каждую один раз
+      ME.save();
+      NET.call("claim",{t:"a",ids:got.map(a=>a.id)}).then(j=>{
+        const ok=new Set(j.got||[]),sh=got.filter(a=>ok.has(a.id));
+        ME.netReward(j,{});
+        if(!sh.length) return;
+        if(silent||sh.length>3) ME.card({n:j.n,quiet:true,noShop:true,title:`Открыто достижений: ${sh.length}`,sub:sh.map(a=>"«"+a.n+"»").join(", ")+(j.items&&j.items.length?` · плюс эксклюзивные предметы в гардеробе`:"")});
+        else sh.forEach(a=>ME.card({n:a.r,quiet:true,noShop:!a.item,title:`Достижение: «${a.n}»`,sub:a.d+(a.item?` · награда — эксклюзивный предмет «${ITEM[a.item].n}» (уже в гардеробе)`:"")}));
+        if(isOpen()) render();
+      }).catch(()=>{got.forEach(a=>delete d.ach[a.id]);ME.save()});
+      if(isOpen()) render();
+      return;
+    }
     const sum=got.reduce((s,a)=>s+a.r,0),items=got.filter(a=>a.item).map(a=>a.item);
     items.forEach(id=>{if(!d.inv.includes(id)) d.inv.push(id)});
     ME.reward(sum,0);
@@ -9695,7 +10168,7 @@ const GF=(()=>{
   const D=()=>ME.data;
   const isOpen=()=>!el.hidden&&!el.classList.contains("out");
   const dt=d=>new Date(d).toLocaleDateString("ru-RU",{day:"numeric",month:"short"});
-  function idBox(){return `<div class="gfid"><div><em>Твой ID для подарков</em><b>${ME.uidFmt(D().uid)}</b></div><button class="gbtn ghost" data-cp="id" type="button">Скопировать</button><span>Отправь его другу: подарок на этот ID сможешь открыть только ты</span></div>`}
+  function idBox(){return `<div class="gfid"><div><em>Твой ID для подарков</em><b>${ME.uidFmt(D().uid)}</b></div><button class="gbtn ghost" data-cp="id" type="button">Скопировать</button><span>${NET.on?"По этому ID тебя находят в «Друзьях» и присылают подарки":"Отправь его другу: подарок на этот ID сможешь открыть только ты"}</span></div>`}
   function price(){return kind==="p"?Math.floor(+amt||0):kind==="k"?((KITS.find(x=>x.id===pick)||{}).p||0):((ITEM[pick]||{}).p||0)}
   function listH(){
     if(kind==="k") return `<div class="gfl">${KITS.map(k=>`<button class="gfo${pick===k.id?" on":""}" data-pk="${k.id}" type="button" style="--rc:${k.c1}"><b>${esc(k.n)}</b><span>Коллекция · ${k.items.length} предметов</span><em>${COIN}${ME.fmtN(k.p)}</em></button>`).join("")}</div>`;
@@ -9714,6 +10187,9 @@ const GF=(()=>{
       <div class="gfgo"><span>Баланс: <b data-bal>${ME.fmtN(D().bal)}</b></span><button class="gbtn" data-send type="button"${p>0&&p<=D().bal?"":" disabled"}>${goH()}</button></div>`;
   }
   function doneH(r){
+    if(r.online) return `<div class="gfdone"><div class="gfbig">${GIFTI}</div><b>Подарок отправлен!</b>
+      <p>${esc(r.what.charAt(0).toUpperCase()+r.what.slice(1))} для ID <b>${r.to}</b>. Друг получит его автоматически — как только откроет приложение.</p>
+      <div class="gfact"><button class="gbtn" data-again type="button">Подарить ещё</button></div></div>`;
     return `<div class="gfdone"><div class="gfbig">${GIFTI}</div><b>Подарок готов!</b>
       <p>${esc(r.what.charAt(0).toUpperCase()+r.what.slice(1))} для ID <b>${r.to}</b>. Скопируй код и отправь другу в Telegram, Discord или куда удобно. Друг вставит его в «Подарки → Получить» или в поле промокода в магазине.</p>
       <textarea id="gfCode" readonly rows="4">${esc(r.code)}</textarea>
@@ -9723,6 +10199,9 @@ const GF=(()=>{
   function getH(){
     const inn=(D().giftIn||[]).slice().reverse(),out=(D().giftOut||[]).slice().reverse();
     const row=(a,b,c,x)=>`<div class="gfh"><b>${a}</b><span>${b}</span><em>${c}</em>${x||"<i></i>"}</div>`;
+    if(NET.on) return `${idBox()}<div class="gfon">${GIFTI}<div><b>Подарки приходят сами</b><span>С общим сервером коды не нужны: подарок от друга откроется автоматически, как только ты запустишь приложение.</span></div></div>
+      ${inn.length||out.length?`<div class="gfhs">${inn.length?`<em>Получено</em>${inn.map(g=>row("от "+esc(g.f),esc(ME.giftWhat(g.k,g.v))+(g.m?` · «${esc(g.m)}»`:""),dt(g.d))).join("")}`:""}
+        ${out.length?`<em>Отправлено</em>${out.map(g=>row("для "+ME.uidFmt(g.t),esc(ME.giftWhat(g.k,g.v)),dt(g.d))).join("")}`:""}</div>`:""}`;
     return `${idBox()}
       <label class="gff"><em>Код подарка</em><textarea id="gfIn" rows="3" placeholder="Вставь код, который прислал друг (начинается с GIFT-)" spellcheck="false"></textarea></label>
       <div class="gfgo"><span></span><button class="gbtn" data-open type="button">${GIFTI}Открыть подарок</button></div>
@@ -9736,8 +10215,8 @@ const GF=(()=>{
     el.querySelectorAll("[data-gt]").forEach(x=>x.classList.toggle("on",x.dataset.gt===tab));
   }
   function paintGo(){const b=el.querySelector("[data-send]");if(!b) return;const p=price();b.disabled=!(p>0&&p<=D().bal);b.innerHTML=goH()}
-  function open(t){
-    tab=t||"send";last=null;
+  function open(t,o){
+    tab=t||"send";last=null;if(o&&o.to){toV=ME.uidFmt(o.to);tab="send"}
     el.innerHTML=`<div class="gfc" role="dialog" aria-label="Подарки"><div class="qhd"><div><b>Подарки</b><span>Отправь другу пульсы, предмет или целую коллекцию</span></div>
       <button class="pround" data-x type="button" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="psort qtabs"><button class="psb" data-gt="send" type="button">Отправить</button><button class="psb" data-gt="get" type="button">Получить</button></div>
@@ -9785,6 +10264,196 @@ const GF=(()=>{
   document.addEventListener("keydown",e=>{if(isOpen()&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();close()}},true);
   function refresh(){if(isOpen()&&!last) render()}
   return{open,close,isOpen,refresh};
+})();
+
+/* ---------- настройки: подключение к общему серверу ---------- */
+const NETUI=(()=>{
+  let ping=null,busy=false;
+  function paint(){
+    const box=document.getElementById("netBox");if(!box) return;
+    const S=NET.st,D=ME.data,url=S.url||"";
+    const urlRow=`<label class="updurl"><span>Адрес сервера${S.def?" (по умолчанию уже вписан)":""}</span><input id="netUrl" type="text" spellcheck="false" placeholder="https://pulse-rater.ник.workers.dev" value="${esc(url)}"><button type="button" class="updbtn" data-nu="url">Сохранить</button></label>`;
+    let h;
+    if(S.on) h=`<div class="netst on"><i></i><div><b>${NET.down?"Сервер недоступен — проверь интернет":"Подключено"}</b><span>ID <em>${ME.uidFmt(S.uid)}</em> · баланс, покупки, игры и промокоды считаются на сервере</span></div></div>
+      <div class="netbtns"><button type="button" class="updbtn" data-nu="key">Ключ для другого ПК</button><button type="button" class="updbtn" data-nu="off">Отключиться</button></div>
+      <p class="nethint">Ключ — это пароль от аккаунта. Сохрани его: с ним можно войти на другом компьютере или после переустановки Windows. Никому его не отправляй.</p>`;
+    else if(url&&S.uid) h=`<div class="netst"><i></i><div><b>Отключено</b><span>Аккаунт ${ME.uidFmt(S.uid)} сохранён, но сейчас всё считается только на этом компьютере</span></div></div>
+      <div class="netbtns"><button type="button" class="updbtn hot" data-nu="on">Подключиться снова</button></div>${urlRow}`;
+    else if(url) h=`<div class="netst"><i></i><div><b>Сервер найден</b><span>Создай аккаунт — баланс (${ME.fmtN(D.bal)}), предметы и уровень перенесутся на сервер один раз</span></div></div>
+      <div class="netbtns"><button type="button" class="updbtn hot" data-nu="reg">Создать аккаунт</button></div>
+      <label class="updurl"><span>Уже есть аккаунт? Вставь ключ с другого компьютера</span><input id="netKey" type="text" spellcheck="false" placeholder="ABCD2345.XXXXXXXXXXXXXXXX…"><button type="button" class="updbtn" data-nu="login">Войти</button></label>${urlRow}`;
+    else h=`<div class="netst"><i></i><div><b>Не подключено</b><span>Всё хранится только на этом компьютере. Общий сервер добавляет друзей, рейтинг игроков, одноразовые для всех промокоды и надёжную защиту пульсов</span></div></div>${urlRow}`;
+    box.innerHTML=h;
+  }
+  async function act(k){
+    if(busy) return;busy=true;
+    try{
+      if(k==="url"){const u=($("#netUrl")||{}).value||"";toast("Проверяю сервер…");await NET.local("config",{url:u.trim()});toast(u.trim()?"Сервер найден":"Адрес сервера удалён")}
+      else if(k==="reg"){
+        const j=await NET.local("register",{nick:ME.data.nick,imp:ME.netImport()});
+        await ME.netStart(j.me);toast("Аккаунт создан — теперь пульсы хранятся на сервере");
+        try{QA.check&&QA.check()}catch(e){}
+      }
+      else if(k==="login"){const j=await NET.local("login",{key:($("#netKey")||{}).value||""});await ME.netStart(j.me);toast("Вход выполнен")}
+      else if(k==="key"){const j=await NET.local("key");try{await navigator.clipboard.writeText(j.key)}catch(e){}toast("Ключ аккаунта скопирован — сохрани его в надёжном месте")}
+      else if(k==="off"){await NET.local("off");toast("Отключено от сервера")}
+      else if(k==="on"){const j=await NET.local("on");await ME.netStart(null);try{ME.applyMe(await NET.call("me"),{first:true})}catch(e){}toast("Подключено")}
+    }catch(e){toast(e.msg||"Не получилось",true)}
+    busy=false;paint();try{FR.refresh()}catch(e){}
+  }
+  document.addEventListener("click",e=>{const b=e.target.closest("[data-nu]");if(!b) return;e.stopPropagation();act(b.dataset.nu)},true);
+  return{paint};
+})();
+
+/* ---------- друзья и рейтинг игроков ---------- */
+const FR=(()=>{
+  const el=$("#frp"),body=$("#frBody"),navBtn=$("#navFr"),dot=$("#frDot");
+  let closeT=0,tab="fr",by="lvl",scope="all",data=null,topD=null,tk=0;
+  const isOpen=()=>!el.hidden&&!el.classList.contains("out");
+  const ago=t=>{const d=Date.now()-(+t||0);if(d<3*60e3) return "в сети";if(d<3600e3) return `был(а) ${Math.round(d/60e3)} мин назад`;if(d<86400e3) return `был(а) ${Math.round(d/3600e3)} ч назад`;return "был(а) "+new Date(+t).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})};
+  const avOf=(p,size)=>ME.avatar(size,p.eq||{},{u:NET.avUrl(p.uid,p.avv),nick:p.nick,crop:p.st&&p.st.avc});
+  const sub=p=>{const st=p.st||{};return `Уровень ${p.lvl} · ${st.n||0} ${plural(st.n||0,"оценка","оценки","оценок")}${st.n?" · средняя "+fmt(st.avg||0):""}`};
+  function card(p,acts,i){
+    return `<div class="frr" data-u="${p.uid}" style="--i:${i||0}" role="button" tabindex="0">${avOf(p,52)}
+      <div class="frn"><b>${ME.nameH(p.eq||{},p.nick)}${p.eq&&p.eq.badge?ME.badge(p.eq.badge):""}</b><span>${sub(p)}</span><em class="${Date.now()-(+p.seen||0)<180e3?"on":""}">${ago(p.seen)}</em></div>
+      <div class="fra">${acts||""}</div></div>`;
+  }
+  function badge(n){dot.hidden=!n;dot.textContent=n>9?"9+":String(n||"")}
+  function shell(){
+    if(!NET.on){
+      body.innerHTML=`<div class="phead"><div><div class="eyebrow">Онлайн</div><h2>Друзья</h2></div></div>
+        <div class="frempty"><div class="bigic"><svg class="ico" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
+        <b>Нужен общий сервер</b><p>Друзья, рейтинг игроков и подарки без кодов работают через общий сервер. Подключи его в настройках — раздел «Общий сервер».</p>
+        <button class="gbtn" data-a="set" type="button">Открыть настройки</button></div>`;
+      return;
+    }
+    const n=data?data.friends.length:0,inc=data?data.inc.length:0;
+    body.innerHTML=`<div class="phead"><div><div class="eyebrow">Онлайн</div><h2>Друзья</h2></div>
+        <div class="frme"><div><em>Мой ID</em><b>${ME.uidFmt(NET.st.uid)}</b></div><button class="gbtn ghost" data-a="cp" type="button">Скопировать</button></div></div>
+      <div class="fradd"><input id="frId" maxlength="12" placeholder="ID друга, например ABCD-1234" autocomplete="off" spellcheck="false"><button class="gbtn" data-a="add" type="button">Добавить в друзья</button></div>
+      <div class="psort frtab"><button class="psb${tab==="fr"?" on":""}" data-t="fr" type="button">Друзья${n?` <em>${n}</em>`:""}${inc?` <i class="nbdg">${inc}</i>`:""}</button><button class="psb${tab==="top"?" on":""}" data-t="top" type="button">Рейтинг игроков</button></div>
+      <div class="frbody" id="frList"><div class="frld"></div></div>`;
+    paintList();
+  }
+  function paintList(){
+    const box=$("#frList");if(!box) return;
+    if(tab==="fr"){
+      if(!data){box.innerHTML=`<div class="frld"></div>`;return}
+      const A=(u,t,cls)=>`<button class="frb${cls?" "+cls:""}" data-act="${t}" data-uid="${u}" type="button">`;
+      let h="";
+      if(data.inc.length) h+=`<div class="alh">Заявки в друзья</div>`+data.inc.map((p,i)=>card(p,`${A(p.uid,"acc","ok")}Принять</button>${A(p.uid,"rm")}Отклонить</button>`,i)).join("");
+      h+=`<div class="alh">Мои друзья <span class="hint">— ${data.friends.length}</span></div>`;
+      h+=data.friends.length?data.friends.map((p,i)=>card(p,`${A(p.uid,"gift")}${GIFTI}Подарить</button>`,i)).join("")
+        :`<div class="frnone">Пока никого. Попроси друга прислать его ID — он есть у него здесь же, в «Друзьях», — и вставь в поле выше.</div>`;
+      if(data.out.length) h+=`<div class="alh">Ждут ответа</div>`+data.out.map((p,i)=>card(p,`${A(p.uid,"rm")}Отменить</button>`,i)).join("");
+      box.innerHTML=h;
+    }else{
+      const chip=(k,n)=>`<button class="rkc${by===k?" on":""}" data-by="${k}" type="button">${n}</button>`;
+      const sc=(k,n)=>`<button class="rkc${scope===k?" on":""}" data-sc="${k}" type="button">${n}</button>`;
+      let h=`<div class="frtop"><div class="rkg">${chip("lvl","Уровень")}${chip("n","Больше всех оценок")}${chip("avg","Самые щедрые")}${chip("bal","Богачи")}</div><div class="rkg">${sc("all","Все игроки")}${sc("fr","Только друзья")}</div></div>`;
+      if(!topD) h+=`<div class="frld"></div>`;
+      else{
+        const val=p=>by==="lvl"?`<b>${p.lvl}</b><span>уровень</span>`:by==="n"?`<b>${(p.st&&p.st.n)||0}</b><span>оценок</span>`:by==="avg"?`<b style="color:${rgCol((p.st&&p.st.avg)||0)}">${fmt((p.st&&p.st.avg)||0)}</b><span>средняя</span>`:`<b>${ME.fmtN(p.bal||0)}</b><span>пульсов</span>`;
+        h+=topD.rows.length?topD.rows.map((p,i)=>`<div class="frr top${p.uid===NET.st.uid?" me":""}${i<3?" r"+(i+1):""}" data-u="${p.uid}" style="--i:${i}" role="button" tabindex="0"><div class="rkp">${i+1}</div>${avOf(p,46)}
+            <div class="frn"><b>${ME.nameH(p.eq||{},p.nick)}${p.eq&&p.eq.badge?ME.badge(p.eq.badge):""}</b><span>${sub(p)}</span></div><div class="frv">${val(p)}</div></div>`).join("")
+          :`<div class="frnone">${by==="avg"?"Средняя считается у тех, у кого 10+ оценок":"Пока никого"}</div>`;
+        if(topD.rank&&scope==="all") h+=`<div class="frmyr">Твоё место: <b>${topD.rank}</b> из ${topD.total}</div>`;
+      }
+      box.innerHTML=h;
+    }
+    FXP.scan(box);
+  }
+  async function load(){
+    if(!NET.on) return;const my=++tk;
+    try{
+      if(tab==="fr"){const j=await NET.call("fr");if(my!==tk) return;data=j;badge(j.inc.length)}
+      else{const j=await NET.call("top",{by,fr:scope==="fr"});if(my!==tk) return;topD=j}
+      if(isOpen()) shell();
+    }catch(e){if(isOpen()){const b=$("#frList");if(b) b.innerHTML=`<div class="frnone">${esc(e.msg)}</div>`}}
+  }
+  function open(){
+    clearTimeout(closeT);if(isOpen()) return;
+    try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true);RM.close(true);PF.close(true);SHOP.close(true)}catch(x){}
+    el.classList.remove("out");el.hidden=false;document.body.classList.add("pg");navBtn.classList.add("on");
+    shell();body.scrollTop=0;load();
+  }
+  function close(keep){
+    if(el.hidden||el.classList.contains("out")) return;
+    if(keep!==true) document.body.classList.remove("pg");
+    navBtn.classList.remove("on");el.classList.add("out");
+    closeT=setTimeout(()=>{el.hidden=true;el.classList.remove("out")},280);
+  }
+  async function add(){
+    const i=$("#frId"),v=(i.value||"").trim();if(!v){i.focus();return}
+    try{const j=await NET.call("fr/add",{uid:v});i.value="";toast(j.friend?`Вы с ${j.nick} теперь друзья`:`Заявка отправлена игроку ${j.nick}`);tab="fr";load()}
+    catch(e){toast(e.msg,true);i.classList.remove("shake");void i.offsetWidth;i.classList.add("shake")}
+  }
+  body.addEventListener("click",async e=>{
+    const a=e.target.closest("[data-a]");
+    if(a){const k=a.dataset.a;
+      if(k==="set"){close();SET.open();setTimeout(()=>{const b=$("#netBox");if(b) b.scrollIntoView({block:"center",behavior:"smooth"})},300)}
+      else if(k==="cp"){try{await navigator.clipboard.writeText(ME.uidFmt(NET.st.uid))}catch(x){}toast("ID скопирован — отправь его другу")}
+      else if(k==="add") add();
+      return}
+    const t=e.target.closest("[data-t]");if(t){tab=t.dataset.t;shell();load();return}
+    const b=e.target.closest("[data-by]");if(b){by=b.dataset.by;topD=null;paintList();load();return}
+    const c=e.target.closest("[data-sc]");if(c){scope=c.dataset.sc;topD=null;paintList();load();return}
+    const x=e.target.closest("[data-act]");
+    if(x){e.stopPropagation();const u=x.dataset.uid,k=x.dataset.act;
+      if(k==="gift"){GF.open("send",{to:u});return}
+      x.disabled=true;
+      try{await NET.call(k==="acc"?"fr/accept":"fr/remove",{uid:u});toast(k==="acc"?"Теперь вы друзья":"Готово")}catch(er){toast(er.msg,true)}
+      load();return}
+    const r=e.target.closest("[data-u]");if(r) PV.open(r.dataset.u);
+  });
+  body.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="frId"){e.preventDefault();add()}else if(e.key==="Enter"&&e.target.classList.contains("frr")) e.target.click()});
+  $("#frClose").addEventListener("click",()=>close());
+  el.addEventListener("pointerdown",e=>{if(e.target===el) close()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&isOpen()&&$("#pvw").hidden&&$("#gft").hidden){e.preventDefault();close()}});
+  navBtn.addEventListener("click",()=>isOpen()?close():open());
+  function refresh(){data=null;topD=null;if(isOpen()){shell();load()}}
+  return{open,close,isOpen,badge,refresh,load};
+})();
+
+/* ---------- профиль другого игрока ---------- */
+const PV=(()=>{
+  const el=$("#pvw");let cur=null;
+  const isOpen=()=>!el.hidden&&!el.classList.contains("out");
+  async function open(uid){
+    el.innerHTML=`<div class="pvc"><div class="frld"></div></div>`;el.classList.remove("out");el.hidden=false;
+    try{cur=await NET.call("user",{uid})}catch(e){toast(e.msg,true);close();return}
+    paint();
+  }
+  function paint(){
+    const p=cur,st=p.st||{},e=p.eq||{},me=p.uid===NET.st.uid;
+    const tops=(st.top||[]).map((t,i)=>`<div class="pvt"><span>${i+1}</span><div><b>${esc(t.t)}</b><em>${esc(t.a)}</em></div><i style="color:${rgCol(t.s)}">${fmt(t.s)}</i></div>`).join("");
+    const rel=p.rel==="f"?`<button class="gbtn ghost" data-p="rm" type="button">Удалить из друзей</button>`:p.rel==="i"?`<button class="gbtn" data-p="acc" type="button">Принять заявку</button>`:p.rel==="o"?`<button class="gbtn ghost" disabled type="button">Заявка отправлена</button>`:`<button class="gbtn" data-p="add" type="button">Добавить в друзья</button>`;
+    el.innerHTML=`<div class="pvc" role="dialog" aria-label="Профиль игрока">${bannerHTML(e.bg,e.fx,"pvbn")}
+      <button class="pround pvx" data-p="x" type="button" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <div class="pvh">${ME.avatar(124,e,{u:NET.avUrl(p.uid,p.avv),nick:p.nick,crop:st.avc})}
+        <div class="pvn"><div class="pfnm">${ME.nameH(e,p.nick)}${e.badge?ME.badge(e.badge):""}</div><span>Уровень ${p.lvl} · ID ${ME.uidFmt(p.uid)} · ${Date.now()-(+p.seen||0)<180e3?"в сети":"был(а) "+new Date(+p.seen).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>${p.bio?`<p>${esc(p.bio)}</p>`:""}</div></div>
+      <div class="pvs"><div><b>${st.n||0}</b><span>оценок</span></div><div><b>${st.n?fmt(st.avg||0):"—"}</b><span>средняя</span></div><div><b>${st.arts||0}</b><span>артистов</span></div><div><b>${st.ach||0}</b><span>достижений</span></div></div>
+      ${st.g?`<div class="pvg">Любимый жанр: <b>${esc(st.g)}</b></div>`:""}
+      ${tops?`<div class="pvtt">Любимые треки</div><div class="pvtl">${tops}</div>`:""}
+      ${me?"":`<div class="pvact">${rel}<button class="gbtn ghost" data-p="gift" type="button">${GIFTI}Подарить</button></div>`}</div>`;
+    FXP.scan(el);
+  }
+  function close(){if(el.hidden) return;el.classList.add("out");setTimeout(()=>{el.hidden=true;el.classList.remove("out");el.innerHTML=""},220)}
+  el.addEventListener("click",async e=>{
+    if(e.target===el){close();return}
+    const b=e.target.closest("[data-p]");if(!b) return;const k=b.dataset.p;
+    if(k==="x"){close();return}
+    if(k==="gift"){const u=cur.uid;close();GF.open("send",{to:u});return}
+    b.disabled=true;
+    try{
+      if(k==="add"){const j=await NET.call("fr/add",{uid:cur.uid});cur.rel=j.friend?"f":"o";toast(j.friend?"Теперь вы друзья":"Заявка отправлена")}
+      else if(k==="acc"){await NET.call("fr/accept",{uid:cur.uid});cur.rel="f";toast("Теперь вы друзья")}
+      else if(k==="rm"){await NET.call("fr/remove",{uid:cur.uid});cur.rel="";toast("Удалено из друзей")}
+      paint();FR.load();
+    }catch(er){b.disabled=false;toast(er.msg,true)}
+  });
+  document.addEventListener("keydown",e=>{if(isOpen()&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();close()}},true);
+  return{open,close};
 })();
 
 /* ---------- автообновление: программа сама проверяет новую версию ---------- */
@@ -9951,7 +10620,7 @@ const CURS=(()=>{
 const NAV=(()=>{
   let lbMode="singles",stack=[],clr=0,ret=null,backing=false;
   const _lb=LB.open;LB.open=m=>{lbMode=m||"singles";_lb(m)};
-  const P={pf:()=>PF.open(),shop:()=>SHOP.open(),pm:()=>AP.open(),lb:()=>LB.open(lbMode),tp:()=>TOP.open(),rk:()=>RK.open(),ct:()=>CT.open(),rmp:()=>RM.open()};
+  const P={pf:()=>PF.open(),shop:()=>SHOP.open(),pm:()=>AP.open(),lb:()=>LB.open(lbMode),tp:()=>TOP.open(),rk:()=>RK.open(),ct:()=>CT.open(),rmp:()=>RM.open(),frp:()=>FR.open()};
   const NM={pf:"Мой профиль",shop:"Магазин",pm:"Профили артистов",lb:"Медиатека",tp:"Топ-3",rk:"Общий рейтинг",ct:"Каталог релизов",rmp:"Онлайн"};
   const IN={pm:"#pBack",lb:"#lbBack",rmp:"#rmBack"};             // у этих страниц есть своя «назад» внутри разделов
   const vis=id=>{const e=document.getElementById(id);return e&&!e.hidden&&!e.classList.contains("out")};
@@ -10052,7 +10721,7 @@ const NAV=(()=>{
 })();
 /* ---------- пока открыто окно с размытым фоном, живой фон замирает (и не гоняет GPU зря) ---------- */
 (()=>{
-  const IDS=["intro","welcome","gm","qc","plat","emb","rwd","fpk","nwk","bc","shop","pf","qa","shr","gft"];
+  const IDS=["intro","welcome","gm","qc","plat","emb","rwd","fpk","nwk","bc","shop","pf","qa","shr","gft","pvw"];
   const root=document.documentElement;
   function chk(){
     let on=false;
@@ -10745,6 +11414,77 @@ class Handler(BaseHTTPRequestHandler):
                 pass
         self._send(200, b"{}")
 
+    def _net_post(self):
+        try:
+            n = min(int(self.headers.get("Content-Length", 0) or 0), 600000)
+            raw = self.rfile.read(n) if n else b"{}"
+            d = json.loads(raw.decode("utf-8") or "{}")
+            if not isinstance(d, dict):
+                d = {}
+        except Exception:
+            return self._send(400)
+        jerr = lambda msg, code=400: self._send(code, json.dumps({"error": msg}, ensure_ascii=False).encode("utf-8"))
+        p = self.path[9:].split("?")[0]
+        c = net_cfg()
+        if p.startswith("x/"):                                   # обычный запрос к серверу от имени аккаунта
+            if not net_state()["on"]:
+                return jerr("Общий сервер не подключён", 409)
+            long = p.startswith("x/g/pu/wait")
+            code, body, ct = net_req("/" + p[2:], raw, timeout=75 if long else 25)
+            return self._send(code, body, ct)
+        if p == "config":
+            u = str(d.get("url") or "").strip().rstrip("/")
+            if u and not re.match(r"^https://[\w.-]+(:\d+)?(/[\w./-]*)?$|^http://(localhost|127\.0\.0\.1)(:\d+)?$", u):
+                return jerr("Нужен адрес вида https://pulse-rater.ник.workers.dev")
+            if u:
+                code, body, _ = net_req("/ping", key="", timeout=15, url=u)
+                ok = False
+                try:
+                    ok = code == 200 and json.loads(body).get("app") == "PULSE RATER"
+                except Exception:
+                    pass
+                if not ok:
+                    return jerr("По этому адресу нет сервера PULSE RATER (код %s)" % code)
+            if u != net_url(c):
+                c = {"url": u}                                  # другой сервер — другой аккаунт
+            else:
+                c["url"] = u
+            net_store(c)
+            return self._send(200, json.dumps({"state": net_state()}).encode("utf-8"))
+        if p == "register":
+            if not net_url(c):
+                return jerr("Сначала укажи адрес сервера")
+            code, body, ct = net_req("/register", d, key="", timeout=30)
+            if code != 200:
+                return self._send(code, body, ct)
+            j = json.loads(body)
+            c.update({"url": net_url(c), "uid": j.pop("uid", ""), "tok": j.pop("tok", ""), "on": True})
+            j["uid"] = c["uid"]
+            net_store(c)
+            return self._send(200, json.dumps({"me": j, "state": net_state()}, ensure_ascii=False).encode("utf-8"))
+        if p == "login":
+            key = re.sub(r"\s+", "", str(d.get("key") or ""))
+            m = re.match(r"^([A-Z0-9]{8})\.([A-Z0-9]{20,64})$", key)
+            if not m:
+                return jerr("Ключ выглядит как ABCD2345.XXXXXXXX… — скопируй его целиком")
+            code, body, ct = net_req("/me", {}, key=key)
+            if code != 200:
+                return self._send(code, body, ct)
+            c.update({"url": net_url(c), "uid": m.group(1), "tok": m.group(2), "on": True})
+            net_store(c)
+            return self._send(200, json.dumps({"me": json.loads(body), "state": net_state()}, ensure_ascii=False).encode("utf-8"))
+        if p == "key":
+            if not c.get("uid"):
+                return jerr("Аккаунта нет")
+            return self._send(200, json.dumps({"key": "%s.%s" % (c["uid"], c["tok"])}).encode("utf-8"))
+        if p in ("off", "on"):
+            if p == "on" and not c.get("uid"):
+                return jerr("Сначала создай аккаунт или войди по ключу")
+            c["on"] = p == "on"
+            net_store(c)
+            return self._send(200, json.dumps({"state": net_state()}).encode("utf-8"))
+        return self._send(404)
+
     def _room_api(self):
         """Действия хозяина комнаты — только с этого компьютера (создать комнату, сменить трек)."""
         try:
@@ -10917,6 +11657,20 @@ class Handler(BaseHTTPRequestHandler):
         STATE["bye"] = None
         if self.path in ("/", "/index.html"):
             self._send(200, page_html().encode("utf-8"), "text/html; charset=utf-8")
+        elif self.path.startswith("/api/net/state"):
+            self._send(200, json.dumps(net_state()).encode("utf-8"))
+        elif self.path.startswith("/api/net/av/"):
+            uid = re.sub(r"[^A-Z0-9]", "", self.path[12:].split("?")[0])
+            code, body, ct = net_req("/av/" + uid, key="", timeout=15)
+            if code == 200:
+                self.send_response(200)
+                self.send_header("Content-Type", ct)
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "max-age=86400")
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self._send(404)
         elif self.path.startswith("/api/img/"):
             ref = self._img_ref()
             if ref:
@@ -11034,6 +11788,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, json.dumps({"url": nu}).encode("utf-8"))
             except Exception:
                 return self._send(400)
+        if self.path.startswith("/api/net/"):
+            return self._net_post()
         if self.path.startswith("/api/gift/"):
             try:
                 n = int(self.headers.get("Content-Length", 0))
