@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "4.3"
-APP_NOTES = "Альбомы из чата можно слушать и оценивать, фильтр «Любимые», выбор лучшего трека при равных оценках"
+APP_VERSION = "4.4"
+APP_NOTES = "Окно «Что нового», прогресс загрузки треков, исправлен бонус дня"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -176,6 +176,8 @@ def net_req(path, body=None, key=None, timeout=25, url=None):
 
 
 SC_FAIL = {}
+SC_PROG = {}      # id трека SoundCloud → [скачано кусков, всего]
+AUD_PROG = {}     # id присланного аудио → [скачано кусков, всего]
 AUD_CHUNK = 1200000
 AUD_LOCK = threading.Lock()
 
@@ -242,10 +244,13 @@ def net_audio_file(aid):
             raise ValueError("Аудио не найдено")
         m = json.loads(body)
 
+        prog = AUD_PROG[aid] = [0, int(m["n"])]
+
         def get(i):
             for _ in range(3):
                 c2, b2, _ = net_req("/aud/get", {"id": aid, "i": i}, timeout=120)
                 if c2 == 200:
+                    prog[0] += 1
                     return _b64.b64decode(json.loads(b2)["d"])
             raise ValueError("Не получилось скачать аудио")
         with ThreadPoolExecutor(4) as ex:
@@ -407,7 +412,17 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="4.3";
+var APPV="4.4";
+/* что изменилось в каждой версии — показывается один раз после обновления */
+var APP_CHANGES=[
+ {v:"4.4",add:["Окно «Что нового» после каждого обновления — перед экраном «Начать»","Прогресс скачивания треков, присланных другом: в медиатеке и в треклисте альбома видно, сколько уже загрузилось","«Загрузка N%» и полоска под названием трека в плеере, пока трек скачивается (SoundCloud, присланные файлы)"],
+  chg:["Альбом от друга открывается сразу, а треки докачиваются в фоне","Поле ввода в чате поднимается, когда внизу открыт мини-плеер"],
+  fix:["«Бонус дня» больше не пишет «Сначала забери награды за все три задания», если задания уже забраны"]},
+ {v:"4.3",add:["Альбомы из чата можно слушать и оценивать: треки, аудиофайлы и SoundCloud приходят вместе с альбомом","Фильтр «♥ Любимые» в медиатеке","Выбор лучшего трека, если у нескольких одинаковая высшая оценка"],del:["Фильтры «8+», «5–7.9» и «до 5» в медиатеке"]},
+ {v:"4.2",add:["Любимые альбомы в профиле","Места для любимых: 3 бесплатно, следующие — по 5 000 пульсов","Аудиофайлы и треки SoundCloud в чате","Кнопка «Назад: рейтинг» в карточке артиста"],chg:["♥ и ★ в треклисте альбома","Звезда лучшего трека на картинке альбома — слева от названия"],del:["«Любимый жанр» в профиле — вместо него любимые альбомы"],fix:["Понятное сообщение для защищённых треков SoundCloud","Фото больше 450 КБ теперь отправляются в чат"]},
+ {v:"4.1",add:["Чат с друзьями: эмодзи, фото и оценки","Профиль друга — отдельной страницей"]},
+ {v:"4.0",add:["Общий сервер: друзья, рейтинг игроков, промокоды один на всех, защита пульсов"]}
+];
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -419,7 +434,7 @@ var DESIGNS=[
  {id:"nebula",n:"Туманность",t:"Глубокий космос: живая туманность, звёзды и метеоры"}
 ];
 var ST_DEF={design:"classic",theme:"euphoria",hue:352,cycle:true,panelA:54,neb:true,aurora:true,twinkle:true,warp:true,eco:false,
- glow:true,glowSize:100,clickFx:true,trail:false,start:5,pvVol:100,catSrc:"sc",intro:true,outro:true,sounds:true,intKey:"ShiftLeft",cursor:"classic",vol:100,decimals:false,uiSnd:true,uiVol:60,sndClick:true};
+ glow:true,glowSize:100,clickFx:true,trail:false,start:5,pvVol:100,catSrc:"sc",intro:true,outro:true,sounds:true,intKey:"ShiftLeft",cursor:"classic",vol:100,decimals:false,uiSnd:true,uiVol:60,sndClick:true,seenVer:""};
 var ST=(function(){var o={},k,u=window.__ST||{};for(k in ST_DEF)o[k]=ST_DEF[k];
  for(k in u) if(k in ST_DEF&&typeof u[k]===typeof ST_DEF[k]) o[k]=u[k];return o})();
 function stHue(){if(ST.theme==="custom") return +ST.hue||0;for(var i=0;i<THEMES.length;i++) if(THEMES[i].id===ST.theme) return THEMES[i].h;return 352}
@@ -2590,6 +2605,27 @@ body.bye #bc{display:none}
 .qmed svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .qmed.off{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);color:rgba(255,255,255,.28)}
 .arow.on{background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.03))}
+/* загрузка: плеер, медиатека; окно «Что нового» */
+.apld,.mpld{flex:none;font-style:normal;font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--g3);animation:ldPulse 1.2s ease-in-out infinite}
+.mpld{display:block;margin-top:1px}
+@keyframes ldPulse{50%{opacity:.45}}
+.aplb{position:relative;height:3px;margin:-2px 0 6px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+.aplb i{position:absolute;left:0;top:0;bottom:0;border-radius:inherit;background:linear-gradient(90deg,var(--g0),var(--g3));box-shadow:0 0 10px rgba(var(--ar),.8);transition:width .3s ease}
+.aplb.ind i{width:35%!important;animation:ldInd 1.1s ease-in-out infinite}
+@keyframes ldInd{from{left:-35%}to{left:100%}}
+.tx .dlb,.dlb{flex:none;width:max-content;max-width:max-content}
+.dlb{position:relative;display:inline-flex;align-items:center;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;color:rgba(255,255,255,.75);background:rgba(255,255,255,.08);overflow:hidden;vertical-align:1px}
+.dlb i{position:absolute;left:0;top:0;bottom:0;background:rgba(var(--ar),.45);transition:width .3s ease}
+.dlb b{position:relative;font-weight:800}
+.dlb.on{color:#fff;box-shadow:inset 0 0 0 1px rgba(var(--ar),.7)}
+#wlNew{max-width:640px}
+.wn-h{font-size:clamp(34px,5vw,58px)}
+.wn-l{display:grid;gap:12px;margin:18px 0 22px;text-align:left;max-height:46vh;overflow:auto;padding-right:4px}
+.wn-g{padding:14px 18px;border-radius:16px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.wn-g>b{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.wn-g>b i{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;font-style:normal;font-size:15px;color:#fff}
+.wn-g.add>b i{background:#2fbf71}.wn-g.chg>b i{background:#3b82f6}.wn-g.fix>b i{background:#f59e0b}.wn-g.del>b i{background:#ef4444}
+.wn-g ul{margin:8px 0 0;padding-left:20px;display:grid;gap:5px;font-size:14px;line-height:1.45;color:rgba(255,255,255,.85)}
 /* ♥ и ★ в треклисте, замок у защищённых треков, места для любимых, плеер в чате */
 .tmk{font-style:normal;margin-left:8px;font-size:15px;vertical-align:-1px}
 .tmk.fav{color:#ff4d8d;text-shadow:0 0 10px rgba(255,77,141,.7)}
@@ -2622,7 +2658,8 @@ button.tmk.pk:hover{transform:scale(1.25);background:rgba(255,212,90,.12)}
 .frst span{font-size:12.5px;color:var(--sub)}.frst span.on{color:#4be08a}
 .pfnm .admpf.sm{font-size:.4em}
 .frn .admpf.sm{font-size:11px;margin-right:4px}
-.frp.chmode .pbody{display:flex;flex-direction:column;overflow:hidden;padding-bottom:22px}
+.frp.chmode .pbody{display:flex;flex-direction:column;overflow:hidden;padding-bottom:22px;transition:padding-bottom .3s var(--ease)}
+body:has(#mp:not([hidden]):not(.out)) .frp.chmode .pbody{padding-bottom:104px}
 .chw{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .chhd{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:16px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
 .chhd .frn{flex:1}
@@ -3347,6 +3384,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
 <canvas id="dfx"></canvas>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Приветствие">
   <div class="wl-c">
+    <section class="wl-step" id="wlNew"></section>
     <section class="wl-step on" id="wlHi">
       <div class="wl-eb" style="--i:0"><span class="eq"><i></i><i></i><i></i><i></i></span>Добро пожаловать</div>
       <h1 class="wl-h" style="--i:1"><span class="wl-brand">PULSE RATER</span></h1>
@@ -4444,6 +4482,11 @@ function albCov(aid){
 }
 const albCovUrl=aid=>{const v=albCov(aid);return v?`/api/img/album/${aid}?v=${v}`:""};
 const hasCov=t=>!!(t.cover||albCov(t.albumId));
+/* скачивание треков, присланных другом: id трека → {st:"wait"|"load", p} */
+const DLS=new Map();
+const dlTxt=id=>{const d=DLS.get(id);return d?d.st==="wait"?"⏳ в очереди":`⤓ ${Math.round((d.p||0)*100)}%`:""};
+const dlBadge=id=>DLS.has(id)?`<span class="dlb${DLS.get(id).st==="load"?" on":""}" data-dl="${id}"><i style="width:${Math.round((DLS.get(id).p||0)*100)}%"></i><b>${dlTxt(id)}</b></span>`:"";
+function paintDL(){document.querySelectorAll("[data-dl]").forEach(e=>{const id=+e.dataset.dl,d=DLS.get(id);if(!d){e.remove();return}e.classList.toggle("on",d.st==="load");e.querySelector("b").textContent=dlTxt(id);e.querySelector("i").style.width=Math.round((d.p||0)*100)+"%"})}
 /* лучший трек альбома; если у нескольких одинаковая высшая оценка — тот, что выбрал пользователь */
 function albTies(items){const r=items.filter(isRated);if(r.length<2) return [];const mx=Math.max(...r.map(t=>t.total));return r.filter(t=>Math.abs(t.total-mx)<1e-9)}
 function albBest(items){const r=items.filter(isRated);if(r.length<2) return null;const c=albTies(items);return c.find(t=>t.bestPick)||c[0]}
@@ -4678,7 +4721,7 @@ function renderLib(){
     const on=t.id===state.editing;
     return `<div class="item${on?" on":""}" data-id="${t.id}">
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
-      <div class="tx"><b>${esc(t.title)}${t.note?`<i class="tnt" title="${esc(noteTip(t))}">${NTI}</i>`:""}</b><span>${esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}${t.album&&state.sort!=="album"?" · «"+esc(t.album)+"»":""}</span></div>
+      <div class="tx"><b>${esc(t.title)}${t.note?`<i class="tnt" title="${esc(noteTip(t))}">${NTI}</i>`:""}${dlBadge(t.id)}</b><span>${esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}${t.album&&state.sort!=="album"?" · «"+esc(t.album)+"»":""}</span></div>
       ${t.unrated?'<div class="sc un" title="Ещё не оценён">—</div>':`<div class="sc" style="color:${rgCol(t.total)}">${fmt(t.total)}</div>`}
       <button class="del" title="Удалить">${TRASH}</button>
     </div>`;
@@ -5616,7 +5659,28 @@ const AU=(()=>{
   au.addEventListener("error",async()=>{const s=au.getAttribute("src")||"";if(!s) return;
     if(s.includes("pulse-stream")){toast(await scErrText(s),true);return}
     toast("Не удалось воспроизвести этот файл",true)});
-  au.addEventListener("loadstart",()=>{if((au.getAttribute("src")||"").includes("pulse-stream")) toast("Загружаю трек с SoundCloud…")});
+  /* пока трек грузится — «загрузка N%» справа от названия и полоска под ним */
+  const ldLbl=document.createElement("em");ldLbl.className="apld";ldLbl.hidden=true;$("#apName").after(ldLbl);
+  const ldBar=document.createElement("div");ldBar.className="aplb";ldBar.hidden=true;ldBar.innerHTML="<i></i>";$("#ap .apn").after(ldBar);
+  const mpLd=document.createElement("em");mpLd.className="mpld";mpLd.hidden=true;$("#mpT").after(mpLd);
+  let ldT=0;
+  function ldShow(p){
+    const txt="загрузка"+(p!=null?" "+Math.round(p*100)+"%":"");
+    ldLbl.hidden=ldBar.hidden=mpLd.hidden=false;ldLbl.textContent=mpLd.textContent=txt;
+    ldBar.classList.toggle("ind",p==null);ldBar.firstChild.style.width=p!=null?Math.max(2,p*100)+"%":"";
+  }
+  function ldHide(){clearInterval(ldT);ldT=0;ldLbl.hidden=ldBar.hidden=mpLd.hidden=true}
+  async function ldPoll(){
+    const s=au.getAttribute("src")||"";let p=null;
+    try{
+      if(s.includes("/api/cat/stream")){const u=decodeURIComponent((s.split("u=")[1]||"").split("&")[0]);const j=await (await fetch("/api/cat/streamprog?u="+encodeURIComponent(u))).json();p=j.p>=0?j.p:null}
+      else if(s.includes("/api/net/aud/")){const j=await (await fetch("/api/net/audprog?aid="+(s.split("/api/net/aud/")[1]||"").split("?")[0])).json();p=j.p}
+      else if(au.duration&&au.buffered.length) p=au.buffered.end(au.buffered.length-1)/au.duration;
+    }catch(e){}
+    if(ldT) ldShow(p);
+  }
+  au.addEventListener("loadstart",()=>{if(!au.getAttribute("src")) return;clearInterval(ldT);ldShow(null);ldT=setInterval(ldPoll,350);ldPoll()});
+  ["canplay","error","abort","emptied"].forEach(n=>au.addEventListener(n,ldHide));
   seek.addEventListener("input",()=>{
     if(au.duration){au.currentTime=seek.value/1000*au.duration}
     seek.style.setProperty("--p",(seek.value/10)+"%");
@@ -7448,13 +7512,29 @@ const RM=(()=>{
 (()=>{
   const wl=$("#welcome"),appEl=$(".app");
   if(!wl||!appEl) return;
-  const steps={hi:$("#wlHi"),pick:$("#wlPick"),alb:$("#wlAlb")};
+  const steps={hi:$("#wlHi"),pick:$("#wlPick"),alb:$("#wlAlb"),nw:$("#wlNew")};
   let cur="hi",busy=false,gone=false,shown=false;
+  /* после обновления сначала показываем, что изменилось */
+  const vnum=v=>String(v||"0").split(".").map(Number);
+  const newer=(a,b)=>{const x=vnum(a),y=vnum(b);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0)}return false};
+  const seen=String(ST.seenVer||""),used=Object.keys(window.__ST||{}).length>0;
+  const fresh=APP_CHANGES.filter(c=>seen?newer(c.v,seen):c.v===APPV).slice(0,3);
+  if(seen!==APPV&&(seen||used)&&fresh.length){
+    const sec=(k,t,ic)=>{const L=fresh.flatMap(c=>c[k]||[]);return L.length?`<div class="wn-g ${k}"><b><i>${ic}</i>${t}</b><ul>${L.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""};
+    steps.nw.innerHTML=`<div class="wl-eb" style="--i:0"><span class="eq"><i></i><i></i><i></i><i></i></span>Обновление</div>
+      <h1 class="wl-h wn-h" style="--i:1">Что нового в <span class="wl-brand">${esc(APPV)}</span></h1>
+      ${fresh.length>1?`<p class="wl-p" style="--i:2">Изменения с версии ${esc(seen)}</p>`:""}
+      <div class="wn-l" style="--i:3">${sec("add","Добавлено","+")}${sec("chg","Изменено","↻")}${sec("fix","Исправлено","✓")}${sec("del","Убрано","−")}</div>
+      <div class="wl-act" style="--i:4"><button class="wl-go" id="wnGo" type="button">Продолжить <svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>`;
+    steps.hi.classList.remove("on");steps.nw.classList.add("on");cur="nw";
+    $("#wnGo").addEventListener("click",()=>{go("hi");setTimeout(()=>$("#wlStart").focus({preventScroll:true}),300)});
+  }
+  if(seen!==APPV) setST({seenVer:APPV});
   appEl.inert=true;
   function reveal(){
     if(shown) return;shown=true;
     wl.classList.add("show");
-    setTimeout(()=>$("#wlStart").focus({preventScroll:true}),450);
+    setTimeout(()=>(cur==="nw"?$("#wnGo"):$("#wlStart")).focus({preventScroll:true}),450);
   }
   const t=setTimeout(reveal,2650);                    // интро начинает таять на ~2.55 с
   new MutationObserver(()=>{if(document.body.classList.contains("skipped")){clearTimeout(t);reveal()}})
@@ -7835,7 +7915,7 @@ const LB=(()=>{
     const sub=o.sub!==undefined?o.sub:`${esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}`;
     return `<div class="item" style="--i:${i+2}" data-id="${t.id}" tabindex="0"${o.mv?' draggable="true"':""}>
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
-      <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}${o.num&&t.fav?'<i class="tmk fav" title="Любимый трек">♥</i>':""}${o.tie?`<button class="tmk best pk${o.best?" on":""}" data-bp="${t.id}" type="button" title="${o.best?"Лучший трек альбома":"Сделать лучшим треком альбома"}">${o.best?"★":"☆"}</button>`:o.best?'<i class="tmk best" title="Лучшая оценка в альбоме">★</i>':""}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
+      <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}${o.num&&t.fav?'<i class="tmk fav" title="Любимый трек">♥</i>':""}${dlBadge(t.id)}${o.tie?`<button class="tmk best pk${o.best?" on":""}" data-bp="${t.id}" type="button" title="${o.best?"Лучший трек альбома":"Сделать лучшим треком альбома"}">${o.best?"★":"☆"}</button>`:o.best?'<i class="tmk best" title="Лучшая оценка в альбоме">★</i>':""}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
       ${t.unrated?'<div class="sc un" title="Ещё не оценён">—</div>':`<div class="sc" style="color:${rgCol(t.total)}">${fmt(t.total)}</div>`}
       ${o.mv?`<div class="mv"><button type="button" data-mv="-1" title="Выше">${UP}</button><button type="button" data-mv="1" title="Ниже">${DOWN}</button></div>`:'<div class="lk"></div>'}</div>`;
   }
@@ -10020,7 +10100,15 @@ const QA=(()=>{
       NET.call("claim",{t:"qb",day:Q.day}).then(j=>{
         Q.bonus=true;ME.netReward(j,{from:b});
         ME.card({n:j.n,quiet:true,noShop:true,title:"Все задания дня выполнены!",sub:`Бонус дня: +${j.n} пульсов и +${j.xp} опыта. Новые задания появятся завтра.`});render();paintDot();
-      }).catch(e=>{if(/уже получен/.test(e.msg)){Q.bonus=true;ME.save();render();paintDot()}else{toast(e.msg,true);if(b) b.disabled=false}});
+      }).catch(async e=>{
+        if(/уже получен/.test(e.msg)){Q.bonus=true;ME.save();render();paintDot();return}
+        if(/Сначала забери/.test(e.msg)&&!claimBonus.again){        // задания забраны до подключения к серверу — отмечаем их на сервере и пробуем снова
+          claimBonus.again=true;
+          for(const id of Q.list){try{const j=await NET.call("claim",{t:"q",id,day:Q.day});ME.netReward(j,{})}catch(x){}}
+          if(b) b.disabled=false;claimBonus();claimBonus.again=false;return;
+        }
+        toast(e.msg,true);if(b) b.disabled=false;
+      });
       return;
     }
     Q.bonus=true;ME.reward(BONUS.r,BONUS.x,{from:el.querySelector("[data-bonus]")});
@@ -10944,9 +11032,10 @@ const FR=(()=>{
     try{titleEl.dispatchEvent(new Event("input",{bubbles:true}))}catch(e){}
     if(x.au){
       toast("Скачиваю аудиофайл…");
-      try{const r=await fetch(`/api/net/aud/${x.au.id}`);if(!r.ok) throw 0;const b=await r.blob();
+      const tm=setInterval(async()=>{try{const j=await (await fetch("/api/net/audprog?aid="+x.au.id)).json();if(j.p<1) toast(`Скачиваю аудиофайл… ${Math.round(j.p*100)}%`)}catch(e){}},500);
+      try{const r=await fetch(`/api/net/aud/${x.au.id}`);clearInterval(tm);if(!r.ok) throw 0;const b=await r.blob();
         AU.setFile(new File([b],x.au.name||`${x.ar} - ${x.ti}.${x.au.ext}`,{type:b.type||"audio/mpeg"}))}
-      catch(e){toast("Не удалось скачать аудиофайл",true)}
+      catch(e){clearInterval(tm);toast("Не удалось скачать аудиофайл",true)}
     }else toast(x.st?"Трек с SoundCloud уже в плеере — оцени его сам":"Название и артист уже вписаны — оцени трек сам");
   }
   /* присланный альбом → в свою медиатеку неоценённым: аудиофайлы и SoundCloud подтягиваются, оцениваешь по очереди */
@@ -10959,16 +11048,23 @@ const FR=(()=>{
     const recs=x.items.map((it,i)=>({id:base+i,artist:it.ar||x.ar||"—",title:it.ti||`Трек ${i+1}`,genre:it.ge||"",...(it.be?{beat:it.be}:{}),scores:[5,5,5,5,5],total:5,
       album:x.na,albumId:aid,ord:i,unrated:true,...(it.st?{stream:it.st}:{}),...(it.cat?{cat:it.cat}:{})}));
     if(x.c){try{const b=await (await fetch(x.c)).blob();const r=await fetch(`/api/img/album/${aid}`,{method:"POST",body:b});if(r.ok){const v=Date.now();recs.forEach(t=>t.albCover=v)}}catch(e){}}
-    recs.forEach(r=>state.tracks.push(r));ALBC.map=null;persist();renderStats();renderLib();
     const au=x.items.map((it,i)=>[it,recs[i]]).filter(([it])=>it.au);
-    let k=0,fail=0;
+    au.forEach(([,rec])=>DLS.set(rec.id,{st:"wait",p:0}));
+    recs.forEach(r=>state.tracks.push(r));ALBC.map=null;persist();renderStats();renderLib();
+    if(btn) btn.disabled=false;
+    close();stopPl();
+    try{LB.open(x.items.length<=6?"eps":"albums");LB.showAlbum(aid)}catch(e){}       // альбом открывается сразу — видно, как качаются треки
+    toast(au.length?`${x.ep?"EP":"Альбом"} «${x.na}» добавлен — скачиваю ${au.length} ${plural(au.length,"трек","трека","треков")}`:`${x.ep?"EP":"Альбом"} «${x.na}» добавлен в медиатеку — оцени треки по очереди`);
+    let fail=0;
     for(const [it,rec] of au){
-      toast(`Скачиваю аудио: ${++k} из ${au.length}…`);
+      DLS.set(rec.id,{st:"load",p:0});paintDL();
+      const tm=setInterval(async()=>{try{const j=await (await fetch("/api/net/audprog?aid="+it.au.id)).json();const d=DLS.get(rec.id);if(d){d.p=j.p;paintDL()}}catch(e){}},300);
       try{const r=await NET.local("audimport",{aid:it.au.id,tid:rec.id});rec.audio={name:it.au.name||`${rec.artist} - ${rec.title}.${r.ext}`,ext:r.ext,size:r.size}}catch(e){fail++}
+      clearInterval(tm);DLS.delete(rec.id);persist();
+      renderLib();try{const st=LB.state();if(LB.isOpen()&&st.view==="album"&&st.alb===aid) LB.showAlbum(aid,true)}catch(e){}
+      if(state.editing===rec.id){const t=state.tracks.find(x=>x.id===rec.id);if(t) fillEditor(t)}
     }
-    persist();renderLib();if(btn) btn.disabled=false;
-    close();stopPl();loadTrack(recs[0].id);
-    toast(`${x.ep?"EP":"Альбом"} «${x.na}» добавлен в медиатеку — оцени треки по очереди`+(fail?` · без аудио: ${fail}`:""),!!fail);
+    if(au.length) toast(fail?`Скачано ${au.length-fail} из ${au.length} — у ${fail} не получилось`:`Все треки «${x.na}» скачаны — можно слушать и оценивать`,!!fail);
   }
   /* прослушивание присланного трека прямо в чате */
   const plAu=new Audio();let plMid=null;
@@ -11896,7 +11992,13 @@ def sc_fetch_audio(tid):
             if not parts or len(parts) > 2000 or not all(host_ok(q) for q in parts):
                 continue
             with ThreadPoolExecutor(8) as ex:
-                chunks = list(ex.map(lambda q: http_get(q, 20, 8 * 1024 * 1024)[0], parts))
+                prog = SC_PROG[str(tid)] = [0, len(parts)]
+
+                def grab(q):
+                    b = http_get(q, 20, 8 * 1024 * 1024)[0]
+                    prog[0] += 1
+                    return b
+                chunks = list(ex.map(grab, parts))
             body = b"".join(chunks)
             if len(body) < 2000:
                 continue
@@ -12218,6 +12320,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(400)
                 body, ct = fetch_cover(url)
                 return self._send(200, body, ct)
+            if u.path == "/api/cat/streamprog":
+                mm = re.search(r"/tracks/(\d+)/pulse-stream", q.get("u", ""))
+                pr = SC_PROG.get(mm.group(1)) if mm else None
+                ok = q.get("u", "") in STREAM_CACHE
+                return self._send(200, json.dumps({"p": 1 if ok else (pr[0] / pr[1] if pr and pr[1] else -1)}).encode("utf-8"))
             if u.path == "/api/cat/streamerr":
                 return self._send(200, json.dumps({"error": SC_FAIL.get(q.get("u", ""), "")}, ensure_ascii=False).encode("utf-8"))
             if u.path == "/api/cat/stream":
@@ -12319,6 +12426,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, page_html().encode("utf-8"), "text/html; charset=utf-8")
         elif self.path.startswith("/api/net/state"):
             self._send(200, json.dumps(net_state()).encode("utf-8"))
+        elif self.path.startswith("/api/net/audprog"):
+            aid = re.sub(r"[^A-Z0-9]", "", self.path.split("aid=")[-1])[:20]
+            d = DATA_DIR / "net_audio"
+            done = d.exists() and any(d.glob(aid + ".*")) if aid else False
+            pr = AUD_PROG.get(aid)
+            self._send(200, json.dumps({"p": 1 if done else (pr[0] / pr[1] if pr and pr[1] else 0)}).encode("utf-8"))
         elif self.path.startswith("/api/net/aud/"):
             try:
                 p = net_audio_file(self.path[13:].split("?")[0])
