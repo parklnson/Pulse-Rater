@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "2.7"
-APP_NOTES = "Новая игра на пульсы — Слоты"
+APP_VERSION = "2.8"
+APP_NOTES = "Промокоды в магазине, стрелка «назад» на всех страницах"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 APP_FILE = Path(__file__).resolve()          # запоминаем при запуске — дальше рабочая папка может смениться
@@ -150,7 +150,7 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="2.7";
+var APPV="2.8";
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -2505,22 +2505,15 @@ body.bye #bc{display:none}
 .hlb:not([disabled]):hover{transform:translateY(-2px);filter:brightness(1.1)}
 .hlb[disabled]{opacity:.4;cursor:default}
 
-/* слоты */
-.slw{padding:14px;border-radius:18px;background:linear-gradient(180deg,#2a0f1a,#12060b);box-shadow:inset 0 0 0 2px rgba(255,210,110,.35),0 0 40px -14px rgba(255,190,60,.6)}
-.slm{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;height:288px;overflow:hidden;border-radius:12px}
-.slr{position:relative;overflow:hidden;border-radius:12px;background:linear-gradient(180deg,#0b0709,#1d1218 30%,#1d1218 70%,#0b0709);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),inset 0 14px 20px -8px rgba(0,0,0,.8),inset 0 -14px 20px -8px rgba(0,0,0,.8)}
-.sls{will-change:transform}
-.slc{height:96px;display:grid;place-items:center;font-size:54px;line-height:1;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
-.slc .coin{width:60px;height:60px}
-.slline{position:absolute;left:0;right:0;top:96px;height:96px;border-top:2px solid rgba(255,212,90,.55);border-bottom:2px solid rgba(255,212,90,.55);pointer-events:none;box-shadow:0 0 22px -6px rgba(255,190,60,.8)}
-.slr.win{box-shadow:inset 0 0 0 3px #ffd45a,0 0 30px -4px rgba(255,200,60,.9);animation:slWin .5s ease-in-out 3}
-@keyframes slWin{50%{filter:brightness(1.35)}}
-.slpay{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;margin:2px 0 12px;font-size:12px;font-weight:800;color:var(--sub)}
-.slpay span{display:inline-flex;align-items:center;gap:4px}
-.slpay b{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;font-size:13px;display:inline-flex;align-items:center}
-.slpay .coin{width:13px;height:13px}
-.cres .coin{width:18px;height:18px;vertical-align:-3px}
-
+.gback{flex:none}
+.gback[hidden]{display:none}
+.shtopr{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.prm{display:flex;align-items:center;gap:8px;padding:5px 5px 5px 12px;border-radius:999px;background:rgba(0,0,0,.3);box-shadow:inset 0 0 0 1px var(--line)}
+.prm .ico{width:18px;height:18px;color:#ffd45a;flex:none}
+.prm input{width:170px;font:inherit;font-size:13.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:none;border:0;outline:0}
+.prm input::placeholder{letter-spacing:0;text-transform:none;font-weight:600;color:var(--sub)}
+.prm button{height:32px;padding:0 14px;border-radius:999px;font-size:12.5px;font-weight:800;color:#2a1500;background:linear-gradient(180deg,#ffd76a,#e9a23a)}
+.prm.shake{animation:shake .4s}
 /* ---------- плавность: тяжёлое рисуем только когда оно на экране ---------- */
 .itm{content-visibility:auto;contain-intrinsic-width:auto 190px;contain-intrinsic-height:auto 290px}
 .kit2{content-visibility:auto;contain-intrinsic-width:auto 340px;contain-intrinsic-height:auto 480px}
@@ -3072,10 +3065,10 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
 <div class="gm" id="gm" hidden>
   <div class="gcard wide" role="dialog" aria-label="Игры на пульсы">
     <div class="ghead">
-      <div><b>Игры на пульсы</b><span>Рулетка, Пульс, Минки, Plinko, HiLo и Слоты · пульсы — игровая валюта приложения</span></div>
+      <div><b>Игры на пульсы</b><span>Рулетка, Пульс, Минки, Plinko и HiLo · пульсы — игровая валюта приложения</span></div>
       <button class="gx" id="gClose" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
-    <div class="gtabs" id="gtabs"><button class="gtab on" data-g="roul">Рулетка</button><button class="gtab" data-g="pulse">Пульс</button><button class="gtab" data-g="mines">Минки</button><button class="gtab" data-g="plinko">Plinko</button><button class="gtab" data-g="hilo">HiLo</button><button class="gtab" data-g="slots">Слоты</button></div>
+    <div class="gtabs" id="gtabs"><button class="gtab on" data-g="roul">Рулетка</button><button class="gtab" data-g="pulse">Пульс</button><button class="gtab" data-g="mines">Минки</button><button class="gtab" data-g="plinko">Plinko</button><button class="gtab" data-g="hilo">HiLo</button></div>
     <div class="gpane" id="pane-stars" hidden>
       <div class="gstats"><div>Счёт<b id="gScore">0</b></div><div>Рекорд<b id="gBest">0</b></div><div class="lives" id="gLives"></div></div>
       <div class="gwrap" id="gwrap">
@@ -3105,7 +3098,6 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
     <div class="gpane" id="pane-mines" hidden></div>
     <div class="gpane" id="pane-plinko" hidden></div>
     <div class="gpane" id="pane-hilo" hidden></div>
-    <div class="gpane" id="pane-slots" hidden></div>
   </div>
 </div>
 <input type="file" id="imgFile" accept="image/*" hidden>
@@ -6451,77 +6443,8 @@ const HL=(()=>{
   return{enter,pause,_t:{bets,mOf}};
 })();
 
-/* ---------- «Слоты»: три барабана с музыкальными символами ---------- */
-const SL=(()=>{
-  const pane=$("#pane-slots");
-  const S=[["n","🎵",30,5,1.4],["h","🎧",22,10,1.7],["m","🎤",16,20,2],["d","💿",12,40,3],["f","🔥",8,80,4],["c","👑",5,200,6],["p","",3,777,10]];
-  const TOT=S.reduce((a,x)=>a+x[2],0),SYM=Object.fromEntries(S.map(x=>[x[0],x]));
-  const glyph=k=>k==="p"?`<svg class="coin" viewBox="0 0 64 64"><use href="#pcoin"/></svg>`:SYM[k][1];
-  const pick=()=>{let r=CAS.rndU()*TOT;for(const x of S){if((r-=x[2])<0) return x[0]}return "n"};
-  const H=96;                                   // высота клетки барабана
-  pane.innerHTML=`<div class="gstats"><div>Баланс<b data-bal>0</b></div><div class="chist" id="slHist" title="Последние выигрыши"></div></div>
-    <div class="slw"><div class="slm"><div class="slr" data-r="0"><div class="sls"></div></div><div class="slr" data-r="1"><div class="sls"></div></div><div class="slr" data-r="2"><div class="sls"></div></div><i class="slline"></i></div></div>
-    <div class="cres" id="slRes">Три одинаковых в линию — до ×777. Два первых одинаковых или 🪙 в линии — тоже выигрыш</div>
-    <div class="slpay">${S.map(x=>`<span><b>${glyph(x[0])}${glyph(x[0])}${glyph(x[0])}</b>×${x[3]}</span>`).join("")}<span><b>${glyph("n")}${glyph("n")}·</b>×${S[0][4]}</span><span><b>${glyph("c")}${glyph("c")}·</b>×${S[5][4]}</span><span><b>${glyph("p")}</b>×1.2</span></div>
-    ${CAS.betRow("slBet")}
-    <button class="pubtn" id="slGo" type="button">Крутить</button>
-    <div class="ghint">Пробел — крутить. Пара засчитывается на первых двух барабанах, монета 🪙 — в любом месте линии</div>`;
-  const reels=[...pane.querySelectorAll(".slr")],res=$("#slRes"),go=$("#slGo"),inp=$("#slBet"),hist=$("#slHist");
-  let busy=false,cur=["n","h","m"],Hh=[];
-  function strip(r,fin,len){
-    const arr=[];for(let i=0;i<len;i++) arr.push(pick());
-    arr.push(fin);arr.push(pick());arr.unshift(cur[r]===undefined?pick():pick());
-    return arr;
-  }
-  function set(r,arr,y,anim,dur){
-    const el=reels[r].firstElementChild;
-    if(arr) el.innerHTML=arr.map(k=>`<div class="slc">${glyph(k)}</div>`).join("");
-    el.style.transition=anim?`transform ${dur}ms cubic-bezier(.15,.75,.25,1.04)`:"none";
-    el.style.transform=`translateY(${-y}px)`;
-  }
-  function idle(){for(let r=0;r<3;r++){const a=[pick(),cur[r],pick()];set(r,a,0,false)}}
-  function pay(a){
-    if(a[0]===a[1]&&a[1]===a[2]) return{m:SYM[a[0]][3],why:"три в линию"};
-    if(a[0]===a[1]) return{m:SYM[a[0]][4],why:"пара"};
-    if(a.includes("p")) return{m:1.2,why:"монета"};
-    return{m:0};
-  }
-  function spin(){
-    if(busy) return;
-    const v=CAS.takeBet(inp,go);if(!v) return;
-    busy=true;pane.classList.add("busy");go.disabled=true;go.textContent="Крутится…";
-    const fin=[pick(),pick(),pick()];
-    reels.forEach(r=>r.classList.remove("win"));res.className="cres";res.textContent="Крутим…";
-    fin.forEach((k,r)=>{
-      const len=18+r*7,arr=[pick(),...Array.from({length:len},pick),k,pick()];   // нужный символ встаёт на линию (2-я строка окна)
-      set(r,arr,0,false);void reels[r].offsetWidth;
-      set(r,null,(arr.length-3)*H,true,1100+r*450);
-    });
-    setTimeout(()=>{
-      cur=fin;const P=pay(fin),win=Math.floor(v*P.m);
-      if(win){
-        ME.payout(win);res.className="cres win";res.innerHTML=`${fin.map(glyph).join(" ")} — ${P.why}, выигрыш <b>+${ME.fmtN(win)}</b> (×${P.m})`;
-        reels.forEach((r,i)=>{if(P.why==="три в линию"||(P.why==="пара"&&i<2)||(P.why==="монета"&&fin[i]==="p")) r.classList.add("win")});
-        try{QA.ev("win",{game:"slots",m:P.m,v,win})}catch(e){}
-      }else{res.className="cres lose";res.textContent=`Мимо — ставка ${ME.fmtN(v)} сгорела`}
-      Hh.push(P.m);if(Hh.length>12) Hh.shift();
-      hist.innerHTML=Hh.slice(-8).map(m=>`<em class="${m>=1?"g":"r"}">${m?"×"+m:"—"}</em>`).join("");
-      busy=false;pane.classList.remove("busy");go.disabled=false;go.textContent="Крутить ещё";
-    },1100+2*450+120);
-  }
-  go.addEventListener("click",spin);
-  CAS.betUI(pane,inp);
-  document.addEventListener("keydown",e=>{
-    if($("#gm").hidden||GM.cur!=="slots"||e.ctrlKey||e.metaKey||e.altKey||e.target.tagName==="INPUT") return;
-    if(e.code==="Space"){e.preventDefault();e.stopPropagation();if(!e.repeat) spin()}
-  },true);
-  function enter(){if(!busy) idle()}
-  function pause(){}                                 // результат уже решён при старте — выплата придёт по таймеру
-  return{enter,pause};
-})();
-
 const M=(()=>{
-  const gm=$("#gm"),panes={roul:$("#pane-roul"),pulse:$("#pane-pulse"),mines:$("#pane-mines"),plinko:$("#pane-plinko"),hilo:$("#pane-hilo"),slots:$("#pane-slots")},games={roul:RU,pulse:PU,mines:MI,plinko:PL,hilo:HL,slots:SL};
+  const gm=$("#gm"),panes={roul:$("#pane-roul"),pulse:$("#pane-pulse"),mines:$("#pane-mines"),plinko:$("#pane-plinko"),hilo:$("#pane-hilo")},games={roul:RU,pulse:PU,mines:MI,plinko:PL,hilo:HL};
   function show(name){
     games[GM.cur].pause();
     GM.cur=name;
@@ -7868,6 +7791,7 @@ const ADMIN_ROLES={                                    // отпечатки к�
   "a2db1503aa58bcbe333cce4b12775d49867802c61e7ef497656732fe6d900851":{items:["n_stars"],nick:"7jade"}
 };
 const ADMIN_ITEMS={n_blood:"#d0001a",n_stars:"var(--g2)"};
+const PROMO={"c061948ed6b16e9ad7f511039edb40b9347f8fb6a943d778af5f2dc895f2f9a2": 10000, "049369fa3e7694651942a37ccc4c92c13894ebd3aff1757831bdae420f9610cf": 10000, "2784596a3c5e96e09143fad5e06612a6ca55eb239d1da9365e25eed0c8ce169e": 10000, "9864e2c8390b98edb1e412a706eb1ccb698cdfe13a3bdacf7b1c8687554c8a7c": 10000, "c54c47f2a779a1e2ba57075c4050980246fa75ace4979fa946e7d7fafa7e79bb": 10000, "c2da0fe926bad819d5efc1bc2c927d7087a8622f968e446a661d2536ed4b26cd": 10000, "9fb68678a13a5f3a04dd67860868d4ef987cac2a200877094f3a2a68c63962b5": 10000, "53fa1a1f4f4a69d204ce4f2005c43350f9b2e7f92d94254adaa75a3024455394": 10000, "c957a991d23bd79ce1bc1ba4c7f6ff4f363160224e466cab77137eb60bebe417": 10000, "432ae59fdde455187cd840e134117b602865a9d17f122b630547e9da54ee0ccd": 10000};   // отпечатки промокодов → сколько пульсов дают (сами коды в программе не хранятся)
 
 /* ---------- игровые коллекции и коллекции новых дизайнов ---------- */
 const KOUT="#111";
@@ -8353,6 +8277,18 @@ const ME=(()=>{
     if(up.after>up.before){const b=up.bonus;whenFree(()=>card({n:b,title:`Новый уровень ${up.after}!`,sub:`Награда — ${b} ${plural(b,"пульс","пульса","пульсов")}.`,lvl:up.after}))}
     return up;
   }
+  /* промокоды: каждый можно активировать один раз */
+  async function redeem(code){
+    const c=String(code||"").trim().toUpperCase().replace(/\s+/g,"");
+    if(!c) return{ok:false,msg:"Введи промокод"};
+    const h=await sha256("promo:"+c),n=PROMO[h];
+    if(!n) return{ok:false,msg:"Такого промокода нет"};
+    D.promo=Array.isArray(D.promo)?D.promo:[];
+    if(D.promo.includes(h)) return{ok:false,msg:"Этот промокод уже активирован"};
+    D.promo.push(h);reward(n,0);
+    card({n,quiet:true,noShop:false,title:"Промокод активирован!",sub:`На баланс зачислено ${fmtN(n)} ${plural(n,"пульс","пульса","пульсов")}.`});
+    return{ok:true,n};
+  }
   /* казино: ставка списывается сразу и сохраняется — перезапуск программы не вернёт её */
   function spend(n){n=Math.floor(n);if(!(n>0)||D.bal<n) return false;const old=D.bal;D.bal-=n;D.bet=(D.bet||0)+n;save();paintBal(old);return true}
   function payout(n){n=Math.floor(n);if(!(n>0)) return;const old=D.bal;D.bal+=n;D.won=(D.won||0)+n;save();const p=$("#balPill");if(p){p.classList.remove("bump");void p.offsetWidth;p.classList.add("bump")}paintBal(old)}
@@ -8417,7 +8353,7 @@ const ME=(()=>{
     try{PF.refresh()}catch(e){}
     try{SHOP.refresh()}catch(e){}
   }
-  return{load,scan,buy,reward,spend,payout,save,equip,equipSet,setInfo,owns,eq,avatar,badge,nameH,avUrl,tryAdmin,fmtN,get role(){return role},lvl:()=>lvl(D.xp),
+  return{load,scan,buy,reward,spend,payout,save,redeem,equip,equipSet,setInfo,owns,eq,avatar,badge,nameH,avUrl,tryAdmin,fmtN,get role(){return role},lvl:()=>lvl(D.xp),
     cdLeft,cdStart,CD,
     get data(){return D},get admin(){return admin},noteRate(){lastRate=performance.now()},paintBal,card,toastCoin};
 })();
@@ -8652,7 +8588,8 @@ const SHOP=(()=>{
     const sc=body.scrollTop,D=ME.data;
     const tabs=[["all","Все"],...SLOTS].map(([k,n])=>`<button class="psb${tab===k?" on":""}" data-tab="${k}" type="button">${n}</button>`).join("");
     body.innerHTML=`<div class="phead"><div><div class="eyebrow">Пульсы</div><h2>Магазин</h2></div>
-        <div class="shbal">${CBIG}<div><b data-bal>${ME.fmtN(D.bal)}</b><em>на балансе</em></div></div></div>
+        <div class="shtopr"><div class="shbal">${CBIG}<div><b data-bal>${ME.fmtN(D.bal)}</b><em>на балансе</em></div></div>
+        <div class="prm" id="prmF"><svg class="ico" viewBox="0 0 24 24"><path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8M2 7h20v5H2zM12 21V7M12 7S10 2 7.5 2 5 5 7.5 7M12 7s2-5 4.5-5S19 5 16.5 7"/></svg><input id="prmI" type="text" placeholder="Промокод" spellcheck="false" maxlength="40" autocomplete="off"><button type="button" data-prm>Активировать</button></div></div></div>
       <div class="alh">Коллекции дизайнов <span class="hint">— эксклюзивные наборы под каждый дизайн приложения, их нет в обычной продаже</span></div>
       <div class="kgrid2">${KITS.filter(k=>k.design).map(kitCard).join("")}</div>
       <div class="alh">Игровые коллекции <span class="hint">— наборы в стиле любимых игр: только оригинальная отрисовка, без логотипов и персонажей</span></div>
@@ -8714,6 +8651,14 @@ const SHOP=(()=>{
     if(k.isConnected) boom(k);tryEq=null;ME.equipSet(kit.items);
     ME.card({n:0,label:"✦",quiet:true,noShop:true,ok:"Отлично",title:`Коллекция «${kit.n}» твоя`,sub:kit.design?"Все 6 предметов уже надеты. Можешь включить дизайн приложения в стиле коллекции — кнопка на карточке набора.":"Все 6 предметов уже надеты — загляни в профиль, чтобы полюбоваться."});
   }
+  async function promo(){
+    const i=$("#prmI"),f=$("#prmF");if(!i) return;
+    const r=await ME.redeem(i.value);
+    if(r.ok){i.value="";boom(f.querySelector("button"))}
+    else{f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake");toast(r.msg,true)}
+  }
+  body.addEventListener("click",e=>{if(e.target.closest("[data-prm]")) promo()});
+  body.addEventListener("keydown",e=>{if(e.target.id==="prmI"&&e.key==="Enter"){e.preventDefault();e.stopPropagation();promo()}});
   body.addEventListener("click",e=>{
     const rf=e.target.closest("[data-rar]");
     if(rf){rar=rf.dataset.rar;body.querySelectorAll(".rfb").forEach(x=>x.classList.toggle("on",x===rf));const g=$("#shGrid");g.classList.add("out");
@@ -8734,7 +8679,7 @@ const SHOP=(()=>{
       if(ME.data.bal<kit.p){nope(k,kit.p-ME.data.bal);return}
       askBuy({title:"Купить коллекцию?",name:`«${kit.n}»`,sub:`${kit.items.length} предметов${kit.design?" и дизайн приложения":""}`,price:kit.p},()=>buyKit(k,kit));
       return}
-    const ds=e.target.closest("[data-design]");
+    const ds=e.target.closest("button[data-design]");
     if(ds){setST({design:ds.dataset.design});toast(`Дизайн «${DESIGN_NAME[ds.dataset.design]}» включён`);render(true);return}
     const q=e.target.closest("[data-eq]");if(q){tryEq=null;ME.equip(q.dataset.eq);return}
     const ke=e.target.closest("[data-kiteq]");if(ke){const kit=KITS.find(x=>x.id===ke.dataset.kiteq);tryEq=null;ME.equipSet(kit.items);toast(`Набор «${kit.n}» надет`);return}
@@ -9262,6 +9207,53 @@ const UPD=(()=>{
   },true);
   function init(){setTimeout(()=>check(false),9000);setInterval(()=>check(false),6*3600*1000)}
   return{check,init,paintSet};
+})();
+
+
+/* ---------- стрелка «назад»: возвращает на предыдущую страницу, с первой — на главный экран ---------- */
+const NAV=(()=>{
+  let lbMode="singles",stack=[],clr=0;
+  const _lb=LB.open;LB.open=m=>{lbMode=m||"singles";_lb(m)};
+  const P={pf:()=>PF.open(),shop:()=>SHOP.open(),pm:()=>AP.open(),lb:()=>LB.open(lbMode),tp:()=>TOP.open(),rk:()=>RK.open(),ct:()=>CT.open(),rmp:()=>RM.open()};
+  const NM={pf:"Мой профиль",shop:"Магазин",pm:"Профили артистов",lb:"Медиатека",tp:"Топ-3",rk:"Общий рейтинг",ct:"Каталог релизов",rmp:"Онлайн"};
+  const IN={pm:"#pBack",lb:"#lbBack",rmp:"#rmBack"};             // у этих страниц есть своя «назад» внутри разделов
+  const vis=id=>{const e=document.getElementById(id);return e&&!e.hidden&&!e.classList.contains("out")};
+  const cur=()=>Object.keys(P).find(vis)||null;
+  const ARR='<svg class="ico" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
+  for(const id in P){
+    const top=document.querySelector(`#${id} .ptop`);if(!top) continue;
+    const b=document.createElement("button");b.className="pround gback";b.type="button";b.innerHTML=ARR;b.dataset.p=id;
+    top.insertBefore(b,top.firstChild);
+    new MutationObserver(track).observe(document.getElementById(id),{attributes:true,attributeFilter:["hidden","class"]});
+  }
+  function inner(id){
+    if(IN[id]){const b=$(IN[id]);return b&&!b.hidden}
+    if(id==="ct") return !!document.querySelector("#ct .ctback");
+    return false;
+  }
+  function paint(){
+    const c=cur();if(!c) return;
+    const b=document.querySelector(`#${c} .gback`);if(!b) return;
+    const prev=stack[stack.length-2];
+    b.hidden=inner(c);b.title=prev?`Назад: ${NM[prev]}`:"Назад на главный экран";
+  }
+  function track(){
+    const c=cur();clearTimeout(clr);
+    if(c){
+      const i=stack.indexOf(c);
+      if(i>=0) stack=stack.slice(0,i+1);else stack.push(c);
+      if(stack.length>12) stack=stack.slice(-12);
+      paint();
+    }else clr=setTimeout(()=>{if(!cur()) stack=[]},450);   // вышли на главный экран — история сбрасывается
+  }
+  document.addEventListener("click",e=>{
+    const b=e.target.closest(".gback");if(!b) return;
+    e.preventDefault();e.stopPropagation();
+    stack.pop();const prev=stack[stack.length-1];
+    if(prev) P[prev]();else{try{if(PAGE_CLOSE) PAGE_CLOSE()}catch(x){}stack=[]}
+  },true);
+  setInterval(()=>{if(cur()) paint()},300);                 // внутренняя «назад» могла появиться/исчезнуть
+  return{get stack(){return stack.slice()}};
 })();
 
 /* ---------- плавность: если компьютер не успевает рисовать, анимации становятся легче ---------- */
