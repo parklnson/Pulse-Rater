@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "4.2"
-APP_NOTES = "Любимые альбомы, места в профиле, аудио в чате, отметки ♥ и ★ в альбомах"
+APP_VERSION = "4.3"
+APP_NOTES = "Альбомы из чата можно слушать и оценивать, фильтр «Любимые», выбор лучшего трека при равных оценках"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -407,7 +407,7 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="4.2";
+var APPV="4.3";
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -2594,6 +2594,15 @@ body.bye #bc{display:none}
 .tmk{font-style:normal;margin-left:8px;font-size:15px;vertical-align:-1px}
 .tmk.fav{color:#ff4d8d;text-shadow:0 0 10px rgba(255,77,141,.7)}
 .tmk.best{color:#ffd45a;text-shadow:0 0 10px rgba(255,200,60,.75)}
+button.tmk.pk{padding:0 4px;border-radius:6px;font-size:17px;line-height:1;transition:transform .15s,background .15s}
+button.tmk.pk:not(.on){color:rgba(255,212,90,.6);text-shadow:none}
+button.tmk.pk:hover{transform:scale(1.25);background:rgba(255,212,90,.12)}
+.albtie{display:flex;align-items:center;gap:10px;margin:4px 0 10px;padding:10px 14px;border-radius:12px;font-size:13px;color:rgba(255,255,255,.85);background:rgba(255,212,90,.08);box-shadow:inset 0 0 0 1px rgba(255,212,90,.3);animation:pgItem .5s var(--ease) backwards}
+.albtie b{color:#ffd45a;font-size:18px}
+.abst{font-style:normal;color:#ffd45a;margin-right:6px;font-size:13px}
+.chrlp{width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;font-size:8px;color:#fff;background:rgba(var(--ar),.55)}
+.chrlp.on{background:var(--g2)}
+.chrl div i{display:grid;place-items:center}
 .ctdrm{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;color:rgba(255,255,255,.65);background:rgba(255,255,255,.07)}
 #pBack.txt{width:auto;padding:0 16px 0 12px;gap:8px;display:inline-flex;align-items:center;border-radius:999px}
 #pBack.txt span{font-size:13.5px;font-weight:800;white-space:nowrap}
@@ -3447,9 +3456,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
       <div class="csw" id="catWrap"><div class="csi"><div class="cs" id="catSub"></div></div></div>
       <div class="chips" id="chips">
         <button class="chip on" data-f="all">Все</button>
-        <button class="chip" data-f="hi">8+</button>
-        <button class="chip" data-f="mid">5–7.9</button>
-        <button class="chip" data-f="lo">до 5</button>
+        <button class="chip" data-f="fav">♥ Любимые</button>
       </div>
       <div class="srow">
         <div class="sbox"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input id="q" placeholder="Поиск в медиатеке" autocomplete="off"></div>
@@ -4437,6 +4444,9 @@ function albCov(aid){
 }
 const albCovUrl=aid=>{const v=albCov(aid);return v?`/api/img/album/${aid}?v=${v}`:""};
 const hasCov=t=>!!(t.cover||albCov(t.albumId));
+/* лучший трек альбома; если у нескольких одинаковая высшая оценка — тот, что выбрал пользователь */
+function albTies(items){const r=items.filter(isRated);if(r.length<2) return [];const mx=Math.max(...r.map(t=>t.total));return r.filter(t=>Math.abs(t.total-mx)<1e-9)}
+function albBest(items){const r=items.filter(isRated);if(r.length<2) return null;const c=albTies(items);return c.find(t=>t.bestPick)||c[0]}
 /* обложка трека из каталога (Deezer / Apple Music): сервер сам скачивает её и сохраняет.
    Сначала по прямой ссылке, если не вышло — заново узнаёт ссылку у площадки по номеру трека. */
 const catCovBusy=new Set();
@@ -4614,7 +4624,8 @@ function paintAlbum(){
   if(a.complete){sc.textContent=fmt(a.avg);sc.style.color=rgCol(a.avg)}
   else{sc.textContent="—";sc.style.color=""}
   $("#albCap").textContent=a.complete?(a.n>=2&&a.n<=6?"общая оценка EP":"общая оценка альбома"):a.done?`пока ${fmt(a.avg)} — итог появится, когда оценишь все треки`:"итог появится, когда оценишь все треки";
-  $("#albList").innerHTML=a.items.slice().sort(byOrd).map(x=>`<div class="albr${x.id===state.editing?" on":""}${x.unrated?" un":""}" data-id="${x.id}"><span>${esc(x.title)}</span><i class="afav${x.fav?" on":""}" data-fav="${x.id}" title="${x.fav?"Убрать из любимых":"Отметить любимым"}">♥</i><b>${x.unrated?"—":fmt(x.total)}</b></div>`).join("");
+  const albBestE=albBest(a.items);
+  $("#albList").innerHTML=a.items.slice().sort(byOrd).map(x=>`<div class="albr${x.id===state.editing?" on":""}${x.unrated?" un":""}" data-id="${x.id}"><span>${esc(x.title)}</span>${x===albBestE?'<i class="abst" title="Лучший трек альбома">★</i>':""}<i class="afav${x.fav?" on":""}" data-fav="${x.id}" title="${x.fav?"Убрать из любимых":"Отметить любимым"}">♥</i><b>${x.unrated?"—":fmt(x.total)}</b></div>`).join("");
 }
 const artistNames=t=>{
   const seen=new Set(),out=[];
@@ -4651,9 +4662,7 @@ function renderLib(){
   const f=state.filter;
   if(state.cat&&state.catVal) list=list.filter(catMatch);
   if(f!=="all") list=list.filter(isRated);
-  if(f==="hi") list=list.filter(t=>t.total>=8);
-  else if(f==="mid") list=list.filter(t=>t.total>=5&&t.total<8);
-  else if(f==="lo") list=list.filter(t=>t.total<5);
+  if(f==="fav"){const ft=new Set((ME.data.favTracks||[]).map(String));list=list.filter(t=>t.fav||ft.has(String(t.id)))}
   const q=state.q.trim().toLowerCase();
   if(q) list=list.filter(t=>(t.title+" "+t.artist+" "+(t.beat||"")+" "+(t.genre||"")).toLowerCase().includes(q));
   const sv=t=>t.unrated?-1:t.total;
@@ -4918,7 +4927,7 @@ function save(){
     else if(state.albumId){albumId=state.albumId;state.tracks.forEach(t=>{if(t.albumId===albumId) t.album=albName})}   // переименование всего альбома
     else albumId=Date.now();
   }
-  const rec={id,artist:state.artist.trim()||"—",...(state.beat.trim()?{beat:state.beat.trim()}:{}),title,genre:state.genre.trim(),...(prev&&prev.ord!=null?{ord:prev.ord}:{}),...(prev&&prev.fav?{fav:true}:{}),...((state.note||"").trim()?{note:state.note.trim(),...(state.noteK==="q"?{noteK:"q"}:{})}:{}),scores:[...state.vals],total:total(),...(albName?{album:albName,albumId}:{}),...(audio?{audio}:{}),...(cover?{cover}:{}),...(state.cat?{cat:state.cat}:{}),...(state.catAlb?{catAlb:state.catAlb}:{}),...(state.embed?{embed:state.embed}:{}),...(state.stream?{stream:state.stream}:{})};
+  const rec={id,artist:state.artist.trim()||"—",...(state.beat.trim()?{beat:state.beat.trim()}:{}),title,genre:state.genre.trim(),...(prev&&prev.ord!=null?{ord:prev.ord}:{}),...(prev&&prev.fav?{fav:true}:{}),...(prev&&prev.bestPick?{bestPick:true}:{}),...((state.note||"").trim()?{note:state.note.trim(),...(state.noteK==="q"?{noteK:"q"}:{})}:{}),scores:[...state.vals],total:total(),...(albName?{album:albName,albumId}:{}),...(audio?{audio}:{}),...(cover?{cover}:{}),...(state.cat?{cat:state.cat}:{}),...(state.catAlb?{catAlb:state.catAlb}:{}),...(state.embed?{embed:state.embed}:{}),...(state.stream?{stream:state.stream}:{})};
   const idx=state.tracks.findIndex(x=>x.id===rec.id);
   const upd=idx>=0;
   if(upd) state.tracks[idx]=rec;else state.tracks.push(rec);
@@ -7826,7 +7835,7 @@ const LB=(()=>{
     const sub=o.sub!==undefined?o.sub:`${esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}`;
     return `<div class="item" style="--i:${i+2}" data-id="${t.id}" tabindex="0"${o.mv?' draggable="true"':""}>
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
-      <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}${o.num&&t.fav?'<i class="tmk fav" title="Любимый трек">♥</i>':""}${o.best?'<i class="tmk best" title="Лучшая оценка в альбоме">★</i>':""}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
+      <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}${o.num&&t.fav?'<i class="tmk fav" title="Любимый трек">♥</i>':""}${o.tie?`<button class="tmk best pk${o.best?" on":""}" data-bp="${t.id}" type="button" title="${o.best?"Лучший трек альбома":"Сделать лучшим треком альбома"}">${o.best?"★":"☆"}</button>`:o.best?'<i class="tmk best" title="Лучшая оценка в альбоме">★</i>':""}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
       ${t.unrated?'<div class="sc un" title="Ещё не оценён">—</div>':`<div class="sc" style="color:${rgCol(t.total)}">${fmt(t.total)}</div>`}
       ${o.mv?`<div class="mv"><button type="button" data-mv="-1" title="Выше">${UP}</button><button type="button" data-mv="1" title="Ниже">${DOWN}</button></div>`:'<div class="lk"></div>'}</div>`;
   }
@@ -7851,13 +7860,14 @@ const LB=(()=>{
     const a=albOf(k);
     if(!a){showAlbums();return}
     view="album";curAlb=a.id;
-    const items=a.items.slice().sort(byOrd),rt=items.filter(isRated),bestT=rt.length>1?rt.reduce((x,y)=>y.total>x.total?y:x):null;
+    const items=a.items.slice().sort(byOrd),bestT=albBest(items),ties=albTies(items);
     paint(`<div class="ahead" style="--i:0"><div class="lbcv big acv" data-acv="1" style="${albCover(a)}" title="Нажми, чтобы сменить обложку альбома">${albHas(a)?"":NOTE}<div class="covh"><svg class="ico" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>${isEP(a)?"Обложка EP":"Обложка альбома"}</span></div>${albCov(a.id)?'<button class="covx" data-acx="1" type="button" title="Убрать обложку"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>':""}</div>
       <div><div class="eyebrow">${isEP(a)?"EP":"Альбом"}<button class="ren" type="button" title="Изменить название">${PEN}</button></div><h3 id="lbTitle">${esc(a.name)}</h3>
       <p>${esc(artLine(a))} · ${cnt(a.n)} · ${a.complete?`общая <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:a.done?`оценено ${a.done} из ${a.n}, пока <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:`оценено 0 из ${a.n}`}</p>
       ${a.done?`<button class="ashb" data-ash="${a.id}" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>Поделиться ${isEP(a)?"EP":"альбомом"}</button>`:""}</div></div>
       <div class="alh" style="--i:1">Треки <span class="hint">— нажми, чтобы изменить оценку; перетаскивай или двигай стрелками, чтобы поменять порядок</span></div>`
-      +items.map((t,i)=>trackRow(t,i,{num:1,mv:items.length>1,best:t===bestT})).join(""),keep);
+      +(ties.length>1?`<div class="albtie" style="--i:1"><b>★</b><span>У ${ties.length} треков одинаковая высшая оценка ${fmt(ties[0].total)}. ${ties.some(t=>t.bestPick)?"Лучший выбран — можно поменять:":"Выбери лучший:"} нажми ☆ рядом с названием</span></div>`:"")
+      +items.map((t,i)=>trackRow(t,i,{num:1,mv:items.length>1,best:t===bestT,tie:ties.length>1&&ties.includes(t)})).join(""),keep);
     setNav();
   }
   let sSort="score";
@@ -8003,6 +8013,10 @@ const LB=(()=>{
     if(e.target.closest(".ren")){startRename();return}
     if(e.target.closest("[data-acx]")){removeAlbCover();return}
     if(e.target.closest("[data-acv]")){pickImage(setAlbCover);return}
+    const bp=e.target.closest("[data-bp]");
+    if(bp){e.stopPropagation();const a=albOf(curAlb);if(!a) return;const id=+bp.dataset.bp;
+      a.items.forEach(t=>{if(t.id===id) t.bestPick=true;else delete t.bestPick});persist();showAlbum(a.id,true);paintAlbum();
+      const t=a.items.find(x=>x.id===id);toast(`«${t?t.title:"Трек"}» — лучший трек альбома ★`);return}
     const mv=e.target.closest("[data-mv]");
     if(mv){const it=mv.closest(".item");if(it) move(+it.dataset.id,+mv.dataset.mv);return}
     const ss=e.target.closest("[data-ss]");
@@ -10285,7 +10299,7 @@ const SH=(()=>{
     // список треков
     const top=vy+L.ph+L.lg,bottom=H-L.fy-(story?96:70),n=r.items.length,cols=n>10?2:1,per=Math.ceil(n/cols);
     const rh=Math.min(story?66:56,(bottom-top)/per),fs=Math.max(18,Math.min(story?32:28,rh*.48)),gap=40,bx=100,cwid=(W-2*bx-(cols-1)*gap)/cols;
-    let best=null;r.items.forEach(t=>{if(!t.unrated&&(!best||t.total>best.total)) best=t});
+    const best=albBest(r.items);
     r.items.forEach((t,i)=>{
       const ci=Math.floor(i/per),ri=i%per,x=bx+ci*(cwid+gap),yy=top+ri*rh+fs;
       c.textAlign="left";c.fillStyle="rgba(255,255,255,.45)";c.font=`800 ${fs*.85}px ${F}`;c.fillText(String(i+1).padStart(2,"0"),x,yy);
@@ -10591,12 +10605,25 @@ async function rateExt(t){
   }
   return x;
 }
-const bestOf=items=>{const r=items.filter(isRated);return r.length>1?r.reduce((a,b)=>b.total>a.total?b:a):null};
 async function albExt(id){
   const a=albumInfo(id);if(!a) return null;
-  const items=a.items.slice().sort(byOrd),names=[...new Set(items.flatMap(artistNames))],ct=items.find(x=>x.cover);
-  return{t:"a",na:a.name,ar:names.slice(0,3).join(", ")||"без исполнителя",avg:a.avg,n:a.n,done:a.done,ep:a.n<=6,
-    items:items.slice(0,40).map(x=>({ti:x.title,to:x.unrated?null:x.total,f:!!x.fav,b:x===bestOf(items)})),c:await thumbData(albCovUrl(id)||covUrlOf(ct),160)};
+  const items=a.items.slice().sort(byOrd).slice(0,40),names=[...new Set(items.flatMap(artistNames))],ct=items.find(x=>x.cover),best=albBest(items);
+  const x={t:"a",na:a.name,ar:names.slice(0,3).join(", ")||"без исполнителя",avg:a.avg,n:a.n,done:a.done,ep:a.n<=6,
+    items:items.map(t=>{const it={ti:t.title,to:t.unrated?null:t.total,f:!!t.fav,b:t===best};
+      if(t.artist&&t.artist!=="—") it.ar=t.artist;if(t.genre) it.ge=t.genre;if(t.beat) it.be=t.beat;if(t.cat) it.cat=t.cat;
+      if(t.stream&&t.stream.url&&t.stream.src==="sc") it.st={url:t.stream.url,src:"sc",link:t.stream.link||"",name:t.stream.name||""};
+      return it}),
+    c:await thumbData(albCovUrl(id)||covUrlOf(ct),240)};
+  const withAu=items.map((t,i)=>[t,i]).filter(([t])=>t.audio);
+  if(withAu.length&&NET.on){                             // свои файлы альбома уходят вместе с оценкой
+    let k=0,fail=0;
+    for(const [t,i] of withAu){
+      toast(`Загружаю аудио для друга: ${++k} из ${withAu.length}…`);
+      try{const r=await NET.local("audup",{tid:t.id});x.items[i].au={id:r.id,ext:r.ext,size:r.size,name:t.audio.name||""}}catch(e){fail++}
+    }
+    if(fail) toast(`Не загрузилось аудио: ${fail} — эти треки уйдут без файла`,true);
+  }
+  return x;
 }
 function rateCardH(x,mine,mid){
   if(!x||typeof x!=="object") return "";
@@ -10606,7 +10633,8 @@ function rateCardH(x,mine,mid){
     return `<div class="chr"><div class="chrh"><div class="chrc" style="${cov}">${x.c?"":NOTE}</div>
       <div class="chrt"><em>${x.ep?"EP":"Альбом"} · ${x.n} ${plural(x.n,"трек","трека","треков")}</em><b>${esc(x.na)}</b><span>${esc(x.ar)}</span></div>
       <div class="chrs" style="color:${col}">${x.done?fmt(x.avg):"—"}</div></div>
-      <div class="chrl">${(x.items||[]).map((it,i)=>`<div><i>${i+1}</i><span>${it.f?'<s class="chf">♥</s>':""}${it.b?'<s class="chf st">★</s>':""}${esc(it.ti)}</span><b style="color:${it.to==null?"var(--sub)":rgCol(it.to)}">${it.to==null?"—":fmt(it.to)}</b></div>`).join("")}</div></div>`;
+      <div class="chrl">${(x.items||[]).map((it,i)=>`<div><i>${it.au||it.st?`<button class="chrlp" data-pl="${mid}:${i}" type="button" title="${it.au?"Слушать файл":"Слушать с SoundCloud"}">▶</button>`:i+1}</i><span>${it.f?'<s class="chf">♥</s>':""}${it.b?'<s class="chf st">★</s>':""}${esc(it.ti)}</span><b style="color:${it.to==null?"var(--sub)":rgCol(it.to)}">${it.to==null?"—":fmt(it.to)}</b></div>`).join("")}</div>
+      ${mine?"":`<button class="chrgo" data-tra="${mid}" type="button">Оценить ${x.ep?"EP":"альбом"} самому · ${x.n} ${plural(x.n,"трек","трека","треков")}${(x.items||[]).some(it=>it.au)?" с аудиофайлами":(x.items||[]).some(it=>it.st)?" с SoundCloud":""}</button>`}</div>`;
   }
   const sc=Array.isArray(x.sc)?x.sc:[];
   return `<div class="chr"><div class="chrh"><div class="chrc" style="${cov}">${x.c?"":NOTE}</div>
@@ -10921,17 +10949,39 @@ const FR=(()=>{
       catch(e){toast("Не удалось скачать аудиофайл",true)}
     }else toast(x.st?"Трек с SoundCloud уже в плеере — оцени его сам":"Название и артист уже вписаны — оцени трек сам");
   }
+  /* присланный альбом → в свою медиатеку неоценённым: аудиофайлы и SoundCloud подтягиваются, оцениваешь по очереди */
+  async function tryAlbum(x,btn){
+    if(!x||!Array.isArray(x.items)||!x.items.length) return;
+    const ex=state.tracks.find(t=>t.albumId&&low(t.album)===low(x.na));
+    if(ex){close();stopPl();toast(`«${x.na}» уже есть в медиатеке — открываю`);const f=state.tracks.filter(t=>t.albumId===ex.albumId).sort(byOrd);loadTrack((f.find(t=>t.unrated)||f[0]).id);return}
+    if(btn) btn.disabled=true;
+    const aid=Date.now(),base=aid+1;
+    const recs=x.items.map((it,i)=>({id:base+i,artist:it.ar||x.ar||"—",title:it.ti||`Трек ${i+1}`,genre:it.ge||"",...(it.be?{beat:it.be}:{}),scores:[5,5,5,5,5],total:5,
+      album:x.na,albumId:aid,ord:i,unrated:true,...(it.st?{stream:it.st}:{}),...(it.cat?{cat:it.cat}:{})}));
+    if(x.c){try{const b=await (await fetch(x.c)).blob();const r=await fetch(`/api/img/album/${aid}`,{method:"POST",body:b});if(r.ok){const v=Date.now();recs.forEach(t=>t.albCover=v)}}catch(e){}}
+    recs.forEach(r=>state.tracks.push(r));ALBC.map=null;persist();renderStats();renderLib();
+    const au=x.items.map((it,i)=>[it,recs[i]]).filter(([it])=>it.au);
+    let k=0,fail=0;
+    for(const [it,rec] of au){
+      toast(`Скачиваю аудио: ${++k} из ${au.length}…`);
+      try{const r=await NET.local("audimport",{aid:it.au.id,tid:rec.id});rec.audio={name:it.au.name||`${rec.artist} - ${rec.title}.${r.ext}`,ext:r.ext,size:r.size}}catch(e){fail++}
+    }
+    persist();renderLib();if(btn) btn.disabled=false;
+    close();stopPl();loadTrack(recs[0].id);
+    toast(`${x.ep?"EP":"Альбом"} «${x.na}» добавлен в медиатеку — оцени треки по очереди`+(fail?` · без аудио: ${fail}`:""),!!fail);
+  }
   /* прослушивание присланного трека прямо в чате */
   const plAu=new Audio();let plMid=null;
-  function plPaint(){body.querySelectorAll("[data-pl]").forEach(b=>{const on=b.dataset.pl===String(plMid);b.classList.toggle("on",on&&!plAu.paused);b.querySelector("i").textContent=on&&!plAu.paused?"❚❚":"▶"})}
+  function plPaint(){body.querySelectorAll("[data-pl]").forEach(b=>{const on=b.dataset.pl===String(plMid),p=on&&!plAu.paused;b.classList.toggle("on",p);const i=b.querySelector("i");if(i) i.textContent=p?"❚❚":"▶";else b.textContent=p?"❚❚":"▶"})}
   function stopPl(){plAu.pause();plMid=null;plPaint()}
   plAu.addEventListener("play",plPaint);plAu.addEventListener("pause",plPaint);plAu.addEventListener("ended",()=>{plMid=null;plPaint()});
   plAu.addEventListener("error",async()=>{if(!plMid) return;const s=plAu.getAttribute("src")||"";plMid=null;plPaint();toast(s.includes("pulse-stream")?await scErrText(s):"Не удалось включить трек",true)});
   function togglePl(mid){
-    const m=chat&&chat.rows.find(r=>String(r.id)===String(mid));if(!m||!m.ext) return;
+    const [id,ix]=String(mid).split(":");
+    const m=chat&&chat.rows.find(r=>String(r.id)===id);if(!m||!m.ext) return;
     if(plMid===String(mid)){plAu.paused?plAu.play().catch(()=>{}):plAu.pause();return}
     try{AU.pause()}catch(e){}
-    const x=m.ext;plMid=String(mid);
+    const x=ix!=null?(m.ext.items||[])[+ix]:m.ext;if(!x||!(x.au||x.st)) return;plMid=String(mid);
     plAu.src=x.au?`/api/net/aud/${x.au.id}`:"/api/cat/stream?u="+encodeURIComponent(x.st.url);
     plAu.volume=Math.max(0,Math.min(1,(+ST.vol||100)/100));
     toast(x.au?"Загружаю аудиофайл…":"Загружаю трек с SoundCloud…");
@@ -11005,6 +11055,7 @@ const FR=(()=>{
     const em=e.target.closest("[data-em]");if(em){addEmo(em.dataset.em);return}
     const im=e.target.closest("img.chimg");if(im){OV.open(`<img src="${im.src}" alt=""><button class="pround" data-ovx type="button" title="Закрыть"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`,"ovimg");return}
     const pl=e.target.closest("[data-pl]");if(pl){togglePl(pl.dataset.pl);return}
+    const ta=e.target.closest("[data-tra]");if(ta){const m=chat&&chat.rows.find(r=>String(r.id)===ta.dataset.tra);if(m) tryAlbum(m.ext,ta);return}
     const tr=e.target.closest("[data-try]");if(tr){const m=chat&&chat.rows.find(r=>String(r.id)===tr.dataset.try);if(m) tryRate(m.ext);return}
     if(!e.target.closest("#emoP,[data-ca=emo]")){const p=$("#emoP");if(p&&!p.hidden) p.hidden=true}
     const r=e.target.closest("[data-u]");if(r){openUser(r.dataset.u)}
@@ -12061,6 +12112,16 @@ class Handler(BaseHTTPRequestHandler):
             c.update({"url": net_url(c), "uid": m.group(1), "tok": m.group(2), "on": True})
             net_store(c)
             return self._send(200, json.dumps({"me": json.loads(body), "state": net_state()}, ensure_ascii=False).encode("utf-8"))
+        if p == "audimport":                                     # присланное аудио становится файлом своей оценки
+            try:
+                src = net_audio_file(str(d.get("aid") or ""))
+                tid = int(d.get("tid") or 0)
+                ext = src.suffix[1:].lower()
+                AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, AUDIO_DIR / f"{tid}.{ext}")
+                return self._send(200, json.dumps({"ext": ext, "size": src.stat().st_size}).encode("utf-8"))
+            except Exception as e:
+                return jerr(str(e) or "Не получилось скачать аудио")
         if p == "audup":
             try:
                 return self._send(200, json.dumps(net_audio_upload(int(d.get("tid") or 0))).encode("utf-8"))
