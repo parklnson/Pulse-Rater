@@ -35,13 +35,101 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "2.8"
-APP_NOTES = "Промокоды в магазине, стрелка «назад» на всех страницах"
+APP_VERSION = "2.9"
+APP_NOTES = "Дизайн «Полярное сияние», защита профиля, возврат к альбому из редактора"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 APP_FILE = Path(__file__).resolve()          # запоминаем при запуске — дальше рабочая папка может смениться
 FROZEN = bool(getattr(sys, "frozen", False))  # программа собрана в .exe (PyInstaller)
 OVERLAY = DATA_DIR / "app_update.py"          # для .exe: свежая версия кладётся сюда и запускается вместо встроенной
+
+
+
+# ---------- защита профиля от ручной правки: файл зашифрован и подписан ----------
+import hmac as _hmac
+import hashlib as _hashlib
+import base64 as _b64
+import zlib as _zlib
+_SEAL = bytes.fromhex("0bb2ce5fde0baf5045799db075aae72ed172160960794ced7977bcb07ebc068e")
+SEAL_FLAG = DATA_DIR / ".pr_seal"
+PROFILE_BAK = DATA_DIR / "profile.bak"
+
+
+def _ks(n, salt):
+    out, i = bytearray(), 0
+    while len(out) < n:
+        out += _hashlib.sha256(_SEAL + salt + i.to_bytes(4, "big")).digest()
+        i += 1
+    return bytes(out[:n])
+
+
+def seal_profile(data):
+    raw = _zlib.compress(json.dumps(data, ensure_ascii=False, sort_keys=True).encode("utf-8"), 6)
+    salt = secrets.token_bytes(8)
+    body = salt + bytes(a ^ b for a, b in zip(raw, _ks(len(raw), salt)))
+    p = _b64.b64encode(body).decode("ascii")
+    s = _hmac.new(_SEAL, p.encode("ascii"), _hashlib.sha256).hexdigest()
+    return {"v": 2, "p": p, "s": s}
+
+
+def unseal_profile(obj):
+    """Проверяет подпись и расшифровывает. None — если файл правили руками."""
+    if not isinstance(obj, dict) or obj.get("v") != 2:
+        return None
+    p, s = str(obj.get("p") or ""), str(obj.get("s") or "")
+    if not _hmac.compare_digest(_hmac.new(_SEAL, p.encode("ascii", "ignore"), _hashlib.sha256).hexdigest(), s):
+        return None
+    try:
+        body = _b64.b64decode(p)
+        salt, enc = body[:8], body[8:]
+        raw = bytes(a ^ b for a, b in zip(enc, _ks(len(enc), salt)))
+        d = json.loads(_zlib.decompress(raw).decode("utf-8"))
+        return d if isinstance(d, dict) else None
+    except Exception:
+        return None
+
+
+def _read_json(path):
+    try:
+        return json.loads(path.read_bytes().decode("utf-8"))
+    except Exception:
+        return None
+
+
+def load_profile():
+    """Возвращает (данные, подделка?). Подделанный файл заменяется последней честной копией."""
+    if not PROFILE_FILE.exists():
+        return {}, False
+    obj = _read_json(PROFILE_FILE)
+    d = unseal_profile(obj)
+    if d is not None:
+        return d, False
+    if isinstance(obj, dict) and "v" not in obj and not SEAL_FLAG.exists():
+        return obj, False                         # старый открытый профиль — один раз принимаем и запечатываем
+    launch_log("профиль изменён вручную — восстанавливаю последнюю честную копию")
+    b = unseal_profile(_read_json(PROFILE_BAK)) if PROFILE_BAK.exists() else None
+    if b is not None:
+        return b, True
+    safe = {k: v for k, v in (obj if isinstance(obj, dict) and "v" not in obj else {}).items()
+            if k in ("nick", "bio", "av", "favTracks", "favArtists", "adminKey", "init", "xpInit", "rw2", "achInit")}
+    safe.update(bal=0, inv=[], eq={}, earned=0, spent=0)
+    return safe, True
+
+
+def save_profile(data):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    sealed = seal_profile(data)
+    if PROFILE_FILE.exists() and unseal_profile(_read_json(PROFILE_FILE)) is not None:
+        try:
+            shutil.copy2(PROFILE_FILE, PROFILE_BAK)        # прошлая честная версия — на случай порчи
+        except Exception:
+            pass
+    tmp = PROFILE_FILE.with_suffix(".tmp")
+    tmp.write_bytes(json.dumps(sealed).encode("utf-8"))
+    tmp.replace(PROFILE_FILE)
+    if not SEAL_FLAG.exists():
+        SEAL_FLAG.write_text("1", "utf-8")
+    return sealed
 
 
 def ver_tuple(v):
@@ -150,7 +238,7 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="2.8";
+var APPV="2.9";
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -158,7 +246,7 @@ var DESIGNS=[
  {id:"glass",n:"Стекло",t:"Матовое стекло, мягкие формы и цветной туман"},
  {id:"ambient",n:"Амбиент",t:"Фон — размытая обложка трека, белые кнопки, как в плеере"},
  {id:"fireflies",n:"Светлячки",t:"Ночной лес: светлячки, туман и силуэты сосен"},
- {id:"lux",n:"Люкс",t:"Чёрный бархат и золото ар-деко, золотая пыль и блики света"},
+ {id:"polar",n:"Полярное сияние",t:"Ночное небо Севера: живое сияние, звёзды и силуэты гор"},
  {id:"nebula",n:"Туманность",t:"Глубокий космос: живая туманность, звёзды и метеоры"}
 ];
 var ST_DEF={design:"classic",theme:"euphoria",hue:352,cycle:true,panelA:54,neb:true,aurora:true,twinkle:true,warp:true,eco:false,
@@ -190,7 +278,8 @@ function paintTheme(){
  st.setProperty("--tn",hh(-8));
  st.setProperty("--pa",(Math.min(95,Math.max(30,+ST.panelA||54))/100).toFixed(2));
  st.setProperty("--gsz",(+ST.glowSize||100)+"px");
- r.setAttribute("data-design",DESIGNS.some(function(d){return d.id===ST.design})?ST.design:"classic");
+ if(!DESIGNS.some(function(d){return d.id===ST.design})) ST.design="classic";      // убранный дизайн → «Эйфория»
+ r.setAttribute("data-design",ST.design);
  c.toggle("no-glow",!(ST.glow&&!ST.eco));c.toggle("no-aurora",!layerOn("aurora"));
  c.toggle("no-twinkle",!layerOn("twinkle"));c.toggle("no-warp",!layerOn("warp"));c.toggle("no-neb",!layerOn("neb"));
 }
@@ -2514,6 +2603,50 @@ body.bye #bc{display:none}
 .prm input::placeholder{letter-spacing:0;text-transform:none;font-weight:600;color:var(--sub)}
 .prm button{height:32px;padding:0 14px;border-radius:999px;font-size:12.5px;font-weight:800;color:#2a1500;background:linear-gradient(180deg,#ffd76a,#e9a23a)}
 .prm.shake{animation:shake .4s}
+/* ---------- ДИЗАЙН «ПОЛЯРНОЕ СИЯНИЕ» ---------- */
+html[data-design=polar]{--g:#1fcf9f!important;--g0:#0f9f7a!important;--g2:#3ff0c0!important;--g3:#7af5d5!important;--g4:#c8fff0!important;--ar:63,240,192!important;--tn:165!important;--sub:#a4c4c4;--line:rgba(140,255,220,.14)}
+html[data-design=polar] body{background:radial-gradient(70% 50% at 30% 0%,#123a4a 0%,transparent 70%),radial-gradient(60% 50% at 85% 10%,#2a1a55 0%,transparent 70%),linear-gradient(180deg,#071622 0%,#050c16 55%,#03070c 100%)}
+html[data-design=polar] #dfx{display:block}
+html[data-design=polar] .app{padding:12px;gap:12px}
+html[data-design=polar] .side{gap:12px}
+html[data-design=polar] .side .panel,html[data-design=polar] .main,html[data-design=polar] .pm{background:rgba(6,16,26,.6);border-radius:18px;box-shadow:inset 0 0 0 1px rgba(140,255,220,.13),0 24px 60px -30px rgba(0,0,0,.95)}
+html[data-design=polar] .hero-bg,html[data-design=polar] .pm-bg{background:linear-gradient(180deg,rgba(63,240,192,.2) 0%,rgba(155,107,255,.14) 50%,transparent 100%)}
+html[data-design=polar] .brand span{background:linear-gradient(100deg,#3ff0c0 0%,#c8fff0 22%,#ffffff 34%,#b9a4ff 52%,#ff9bd8 70%,#3ff0c0 100%);background-size:400px 100%;-webkit-background-clip:text;background-clip:text}
+html[data-design=polar] .wl-brand{background:linear-gradient(100deg,#3ff0c0 0%,#ffffff 35%,#b9a4ff 60%,#ff9bd8 80%);background-size:600px 100%;-webkit-background-clip:text;background-clip:text}
+html[data-design=polar] .navbtn:hover,html[data-design=polar] .navbtn.on{color:#c8fff0}
+html[data-design=polar] .item.on{background:rgba(63,240,192,.1)}
+html[data-design=polar] .cover{border-radius:16px;box-shadow:0 0 0 1px rgba(140,255,220,.22),0 24px 60px -15px rgba(0,10,20,.95),0 0 70px -22px rgba(63,240,192,.55)}
+html[data-design=polar] .big{text-shadow:0 6px 34px rgba(63,240,192,.3)}
+html[data-design=polar] .rate{border-radius:16px;box-shadow:0 10px 30px -8px rgba(63,240,192,.55),0 0 40px -14px rgba(155,107,255,.6)}
+html[data-design=polar] .rbg{background:linear-gradient(110deg,#0f9f7a,#3ff0c0 40%,#9b6bff 75%,#3ff0c0);background-size:200% 100%}
+html[data-design=polar] .ap{border-radius:16px;background:rgba(4,12,20,.55);box-shadow:inset 0 0 0 1px rgba(140,255,220,.14)}
+html[data-design=polar] .score{border-radius:18px;background:radial-gradient(130% 90% at 50% 0%,rgba(63,240,192,.22) 0%,rgba(4,10,18,.86) 72%);box-shadow:inset 0 0 0 1px rgba(140,255,220,.14)}
+html[data-design=polar] .ringw::before{background:radial-gradient(circle,rgba(63,240,192,.3) 0%,transparent 66%)}
+html[data-design=polar] .pcrd,html[data-design=polar] .rkr,html[data-design=polar] .ctcard,html[data-design=polar] .ctr{box-shadow:inset 0 0 0 1px rgba(140,255,220,.12)}
+html[data-design=polar] #mp{border-radius:18px;background:rgba(6,16,26,.93);box-shadow:inset 0 0 0 1px rgba(140,255,220,.22),0 18px 50px -12px rgba(0,0,0,.9),0 0 46px -18px rgba(63,240,192,.55)}
+html[data-design=polar] .stp{background:linear-gradient(180deg,rgba(14,40,52,.98),rgba(4,10,16,.98))}
+.pv-polar{background:radial-gradient(60% 50% at 30% 30%,rgba(63,240,192,.6),transparent 70%),radial-gradient(50% 40% at 75% 25%,rgba(155,107,255,.55),transparent 70%),linear-gradient(180deg,#0a2030,#03070c)}
+.pv-polar::before{content:"";position:absolute;left:0;right:0;bottom:0;height:22px;background:linear-gradient(160deg,transparent 48%,#06101a 50%) 0 100%/50% 100% no-repeat,linear-gradient(200deg,transparent 48%,#06101a 50%) 100% 100%/50% 100% no-repeat}
+.pv-polar s:nth-child(1){left:12px;top:12px;width:28%;height:36px;border-radius:9px;background:rgba(6,16,26,.7);box-shadow:inset 0 0 0 1px rgba(140,255,220,.3)}
+.pv-polar s:nth-child(2){left:calc(28% + 20px);width:38%;top:12px;height:36px;border-radius:9px;background:rgba(6,16,26,.6);box-shadow:inset 0 0 0 1px rgba(140,255,220,.25)}
+.pv-polar s:nth-child(3){left:30%;top:4px;width:40%;height:6px;border-radius:50%;background:linear-gradient(90deg,transparent,#3ff0c0,#9b6bff,transparent);filter:blur(1px)}
+/* коллекция «Полярное сияние» */
+.mav[data-fr=fx_pol] .mav-r{--rw:16%;background:conic-gradient(from 0deg,#3ff0c0,#c8fff0,#9b6bff,#ff6ec8,#3ff0c0,#0f9f7a,#9b6bff,#3ff0c0);animation:frSpin 6s linear infinite}
+.mav[data-fr=fx_pol]{--fgc:rgba(63,240,192,.8)}
+.mav[data-fr=fx_pol] .mav-g{box-shadow:0 0 calc(var(--s) * .16) calc(var(--s) * .02) rgba(63,240,192,.7),0 0 calc(var(--s) * .3) calc(var(--s) * .02) rgba(155,107,255,.45);animation:frBreath 3s ease-in-out infinite}
+.bnr[data-bn=bx_pol]{background:radial-gradient(1.2px 1.2px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 34% 10%,#fff,transparent),radial-gradient(1.3px 1.3px at 58% 22%,#fff,transparent),radial-gradient(1px 1px at 82% 14%,#fff,transparent),
+  linear-gradient(160deg,transparent 60%,#06101a 61%) 0 100%/55% 45% no-repeat,linear-gradient(200deg,transparent 60%,#06101a 61%) 100% 100%/55% 45% no-repeat,linear-gradient(180deg,#071a26,#040a12)}
+.bnr[data-bn=bx_pol] .bnr-a{inset:-20% -10%;background:radial-gradient(40% 30% at 30% 40%,rgba(63,240,192,.65),transparent 70%),radial-gradient(35% 25% at 65% 32%,rgba(155,107,255,.55),transparent 70%),radial-gradient(25% 18% at 50% 50%,rgba(255,110,200,.35),transparent 70%);filter:blur(10px);animation:bnDrift 9s ease-in-out infinite alternate}
+.bnr[data-bn=bx_pol] .bnr-b{background:repeating-linear-gradient(90deg,rgba(200,255,240,0) 0 14px,rgba(200,255,240,.18) 14px 16px,rgba(200,255,240,0) 16px 30px);-webkit-mask:linear-gradient(180deg,transparent 5%,#000 30%,#000 50%,transparent 70%);mask:linear-gradient(180deg,transparent 5%,#000 30%,#000 50%,transparent 70%);filter:blur(2px);animation:bxCurt 7s ease-in-out infinite alternate}
+.mnm[data-nm=nx_pol]{background:linear-gradient(90deg,#3ff0c0,#c8fff0,#9b6bff,#ff9bd8,#3ff0c0);background-size:240% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:nmSheen 5s linear infinite;filter:drop-shadow(0 0 10px rgba(63,240,192,.6))}
+
+/* стрелка «назад»: у уходящей страницы прячем, внутри разделов — своя */
+.pm.out .gback{visibility:hidden}
+.ptop:has(#pBack:not([hidden])) .gback,.ptop:has(#lbBack:not([hidden])) .gback,.ptop:has(#rmBack:not([hidden])) .gback,#ct:has(.ctback) .gback{display:none}
+.edret{display:inline-flex;align-self:flex-start;width:max-content;align-items:center;gap:8px;margin:0 0 12px;height:34px;padding:0 14px 0 10px;border-radius:999px;font-size:13px;font-weight:800;color:#fff;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);transition:background .2s,transform .2s var(--ease);animation:gpop .3s var(--ease)}
+.edret:hover{background:rgba(var(--ar),.3);transform:translateX(-2px)}
+.edret svg{width:16px;height:16px}
+.edret[hidden]{display:none}
 /* ---------- плавность: тяжёлое рисуем только когда оно на экране ---------- */
 .itm{content-visibility:auto;contain-intrinsic-width:auto 190px;contain-intrinsic-height:auto 290px}
 .kit2{content-visibility:auto;contain-intrinsic-width:auto 340px;contain-intrinsic-height:auto 480px}
@@ -3572,7 +3705,7 @@ const FX={warp:1,bo:stShift(),th:stShift()};
   const ctx=cv.getContext("2d"),reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   const rnd=(a,b)=>a+Math.random()*(b-a);
   let W=0,H=0,kind="",A=[],B=[],t=0,last=performance.now(),idle=true;
-  const live=()=>(ST.design==="ocean"||ST.design==="sakura"||ST.design==="fireflies"||ST.design==="lux"||ST.design==="nebula")&&!ST.eco&&!reduce&&!window.LOWFX2;
+  const live=()=>(ST.design==="ocean"||ST.design==="sakura"||ST.design==="fireflies"||ST.design==="lux"||ST.design==="nebula"||ST.design==="polar")&&!ST.eco&&!reduce&&!window.LOWFX2;
   function init(){
     kind=ST.design;A=[];B=[];
     if(kind==="ocean"){
@@ -3582,6 +3715,9 @@ const FX={warp:1,bo:stShift(),th:stShift()};
       for(let i=0;i<64;i++) A.push({x:Math.random()*W,y:rnd(H*.15,H),ang:rnd(0,6.28),v:rnd(8,26),ph:rnd(0,6.28),s:rnd(.6,1.4),r:rnd(.7,1.5),turn:rnd(.4,1.2)});
       for(let i=0;i<5;i++) B.push({x:Math.random()*W,y:rnd(H*.55,H*.95),rx:rnd(W*.25,W*.5),ry:rnd(40,90),vx:rnd(-10,10),a:rnd(.05,.1)});
       forest();
+    }else if(kind==="polar"){
+      polarMake();
+      for(let i=0;i<70;i++) A.push({x:Math.random()*W,y:Math.random()*H*.6,r:rnd(.6,1.6),ph:rnd(0,6.28),s:rnd(.6,2)});
     }else if(kind==="lux"){
       for(let i=0;i<110;i++) A.push({x:Math.random()*W,y:Math.random()*H,r:rnd(.5,1.9),vy:rnd(3,12),vx:rnd(-4,4),ph:rnd(0,6.28),s:rnd(.5,1.6),gl:Math.random()<.09});
       B.push({x:-1,cd:rnd(1.5,3)});
@@ -3688,6 +3824,39 @@ const FX={warp:1,bo:stShift(),th:stShift()};
     ctx.globalAlpha=1;ctx.globalCompositeOperation="source-over";
   }
 
+  /* «Полярное сияние»: ленты сияния рисуются в маленький холст и мягко растягиваются на весь экран */
+  let pol=null,polBg=null;
+  function polarMake(){
+    pol=document.createElement("canvas");pol.width=Math.max(80,Math.ceil(W/4));pol.height=Math.max(60,Math.ceil(H/4));
+    polBg=document.createElement("canvas");polBg.width=W;polBg.height=H;const q=polBg.getContext("2d");
+    for(let i=0;i<Math.round(W*H/2600);i++){const y=Math.pow(Math.random(),1.4)*H*.75;q.globalAlpha=.25+Math.random()*.6;q.fillStyle=Math.random()<.15?"#c8fff0":"#fff";q.fillRect(Math.random()*W,y,Math.random()<.1?1.6:1,Math.random()<.1?1.6:1)}
+    q.globalAlpha=1;
+    const mount=(base,amp,col,seed)=>{let s=seed;const r=()=>{s=(s*9301+49297)%233280;return s/233280};
+      q.fillStyle=col;q.beginPath();q.moveTo(0,H);let x=0,y=base;q.lineTo(0,y);
+      while(x<W){const nx=x+W*(.04+r()*.08),ny=base-r()*amp;q.lineTo(nx,ny);x=nx}
+      q.lineTo(W,H);q.closePath();q.fill();
+      const g=q.createLinearGradient(0,base-amp,0,base);g.addColorStop(0,"rgba(200,255,240,.18)");g.addColorStop(1,"rgba(200,255,240,0)");q.fillStyle=g;q.fill()};
+    mount(H*.86,H*.2,"#0a1a26",11);mount(H*.93,H*.14,"#050d14",37);
+  }
+  function polar(dt){
+    const w=pol.width,h=pol.height,q=pol.getContext("2d");
+    q.clearRect(0,0,w,h);q.globalCompositeOperation="lighter";
+    const R=[[.34,.16,"63,240,192",.9,1],[.28,.12,"155,107,255",.7,-1.3],[.42,.1,"255,110,200",.45,.8]];
+    for(const [by,amp,col,al,sp] of R){
+      for(let x=0;x<=w;x+=2){
+        const k=x/w,y=h*(by+Math.sin(k*5.5+t*.18*sp)*amp*.6+Math.sin(k*13-t*.27*sp)*amp*.25);
+        const a=al*(.35+.65*Math.pow(Math.max(0,Math.sin(k*9+t*.5*sp+Math.sin(k*3+t*.2))),2));
+        const hh=h*(.22+.12*Math.sin(k*7+t*.3));
+        const g=q.createLinearGradient(0,y-hh,0,y+h*.03);g.addColorStop(0,`rgba(${col},0)`);g.addColorStop(.75,`rgba(${col},${(a*.5).toFixed(3)})`);g.addColorStop(1,`rgba(${col},${(a*.9).toFixed(3)})`);
+        q.fillStyle=g;q.fillRect(x,y-hh,2.2,hh+h*.03);
+      }
+    }
+    q.globalCompositeOperation="source-over";
+    ctx.drawImage(polBg,0,0);
+    ctx.globalAlpha=.95;ctx.imageSmoothingEnabled=true;ctx.globalCompositeOperation="lighter";ctx.drawImage(pol,0,0,W,H);ctx.globalCompositeOperation="source-over";
+    for(const p of A){ctx.globalAlpha=Math.max(0,Math.sin(t*p.s+p.ph))*.9;ctx.fillStyle="#e6fff8";ctx.fillRect(p.x,p.y,p.r,p.r)}
+    ctx.globalAlpha=1;
+  }
   /* «Люкс»: золотая пыль и широкие блики света */
   function lux(dt){
     const S=B[0];
@@ -3767,7 +3936,7 @@ const FX={warp:1,bo:stShift(),th:stShift()};
     if(!live()){if(!idle){ctx.clearRect(0,0,W,H);idle=true}return}
     if(idle||kind!==ST.design){idle=false;size()}
     t+=dt;ctx.clearRect(0,0,W,H);
-    if(kind==="ocean") ocean(dt);else if(kind==="fireflies") fireflies(dt);else if(kind==="lux") lux(dt);else if(kind==="nebula") nebula(dt);else sakura(dt);
+    if(kind==="ocean") ocean(dt);else if(kind==="fireflies") fireflies(dt);else if(kind==="lux") lux(dt);else if(kind==="polar") polar(dt);else if(kind==="nebula") nebula(dt);else sakura(dt);
   }
   addEventListener("resize",()=>{if(!idle) size()});
   requestAnimationFrame(frame);
@@ -7229,7 +7398,7 @@ const LB=(()=>{
     if(view==="album"||view==="artist") goBack();else close();
   });
   plates();
-  return{open,close,isOpen,plates};
+  return{open,close,isOpen,plates,showAlbum,state:()=>({view,alb:curAlb})};
 })();
 
 /* ---------- настройки ---------- */
@@ -7791,7 +7960,7 @@ const ADMIN_ROLES={                                    // отпечатки к�
   "a2db1503aa58bcbe333cce4b12775d49867802c61e7ef497656732fe6d900851":{items:["n_stars"],nick:"7jade"}
 };
 const ADMIN_ITEMS={n_blood:"#d0001a",n_stars:"var(--g2)"};
-const PROMO={"c061948ed6b16e9ad7f511039edb40b9347f8fb6a943d778af5f2dc895f2f9a2": 10000, "049369fa3e7694651942a37ccc4c92c13894ebd3aff1757831bdae420f9610cf": 10000, "2784596a3c5e96e09143fad5e06612a6ca55eb239d1da9365e25eed0c8ce169e": 10000, "9864e2c8390b98edb1e412a706eb1ccb698cdfe13a3bdacf7b1c8687554c8a7c": 10000, "c54c47f2a779a1e2ba57075c4050980246fa75ace4979fa946e7d7fafa7e79bb": 10000, "c2da0fe926bad819d5efc1bc2c927d7087a8622f968e446a661d2536ed4b26cd": 10000, "9fb68678a13a5f3a04dd67860868d4ef987cac2a200877094f3a2a68c63962b5": 10000, "53fa1a1f4f4a69d204ce4f2005c43350f9b2e7f92d94254adaa75a3024455394": 10000, "c957a991d23bd79ce1bc1ba4c7f6ff4f363160224e466cab77137eb60bebe417": 10000, "432ae59fdde455187cd840e134117b602865a9d17f122b630547e9da54ee0ccd": 10000};   // отпечатки промокодов → сколько пульсов дают (сами коды в программе не хранятся)
+const PROMO={"c061948ed6b16e9ad7f511039edb40b9347f8fb6a943d778af5f2dc895f2f9a2": 10000, "049369fa3e7694651942a37ccc4c92c13894ebd3aff1757831bdae420f9610cf": 10000, "2784596a3c5e96e09143fad5e06612a6ca55eb239d1da9365e25eed0c8ce169e": 10000, "9864e2c8390b98edb1e412a706eb1ccb698cdfe13a3bdacf7b1c8687554c8a7c": 10000, "c54c47f2a779a1e2ba57075c4050980246fa75ace4979fa946e7d7fafa7e79bb": 10000, "c2da0fe926bad819d5efc1bc2c927d7087a8622f968e446a661d2536ed4b26cd": 10000, "9fb68678a13a5f3a04dd67860868d4ef987cac2a200877094f3a2a68c63962b5": 10000, "53fa1a1f4f4a69d204ce4f2005c43350f9b2e7f92d94254adaa75a3024455394": 10000, "c957a991d23bd79ce1bc1ba4c7f6ff4f363160224e466cab77137eb60bebe417": 10000, "432ae59fdde455187cd840e134117b602865a9d17f122b630547e9da54ee0ccd": 10000, "74e69b433b431f04aeb099705fa6fc29d1b4b85e0a8e9922204940fa1d4219fd": 100000, "897b4beffde9caaa9c4b87c1083c18dab2e1f3d10b9ad868eb3e1ff01620e3d4": 100000, "feac0f99eb945d3a1f9ff87599d53a7c47b8b1acf51ef9d0dc796aa3e5b2640c": 100000, "28d4a3d0ebbfd2a25c85eb3f26dad7bcc0958dab75b7b206dd9acaf62d116556": 100000, "147848a4b32aa834a3d51d140446683b8918ada6a1bbf6df6f3b6becd3032fa3": 100000, "ac9de396413f309a98d39bdc579f5f5eb86bd586670fca1fb556bc7c4b070f9b": 100000, "76926804ccd3fe04cf4f0cde99ac0188d523689565e68f5ceece639a70250886": 100000, "909344e9971ceb1603bed87e3f9c962570e4e7f7672e7d22e9b196775422b1bf": 100000, "b87808622e8d6b779d48e1183bffd37bfcf79b4a9cf4ae688ef7c74a657dde87": 100000, "626d2d9bad70ec699c16ae344e2112572c4bd573bbaed17046037a9b7eb58e06": 100000};   // отпечатки промокодов → сколько пульсов дают (сами коды в программе не хранятся)
 
 /* ---------- игровые коллекции и коллекции новых дизайнов ---------- */
 const KOUT="#111";
@@ -7862,6 +8031,32 @@ KITS.push(
   {id:"k_brawl",n:"Бравл-арена",style:"Brawl Stars",d:"Мультяшная корона, комиксовый ник и звёзды арены",p:14000,c1:"#ffce1f",c2:"#a855f7",items:["hk_brawl","fk_brawl","bk_brawl","nk_brawl","gk_brawl","xk_brawl"]});
 KITS.forEach(k=>k.items.forEach(id=>KIT_OF[id]=k));
 Object.assign(DESIGN_NAME,{lux:"Люкс",nebula:"Туманность"});
+/* ---------- коллекция «Полярное сияние» ---------- */
+Object.assign(HATS,{
+  hx_pol:`<g class="hsp"><g filter="url(#hf-glow)" opacity=".8">${crystal(50,10,9,46,"#3ff0c0")}${crystal(31,13,7,32,"#9b6bff")}${crystal(69,13,7,32,"#ff6ec8")}</g>
+    ${crystal(18,16,5,22,"url(#hg-cyan)")}${crystal(82,16,5,22,"url(#hg-cyan)")}${crystal(31,13,7,32,"url(#hg-cyan)")}${crystal(69,13,7,32,"url(#hg-cyan)")}${crystal(50,10,9,46,"url(#hg-cyan)")}
+    <path d="M12 22 C30 13 70 13 88 22 L88 14 C70 5 30 5 12 14 Z" fill="url(#hg-silver)" stroke="#5a7a8a" stroke-width="1.4"/>
+    <path d="M14 18 C30 10 70 10 86 18" stroke="#3ff0c0" stroke-width="1.6" fill="none" opacity=".9"/>${star4(60,-34,3.6,"#fff")}${star4(38,-20,2.6,"#c8fff0")}</g>`
+});
+Object.assign(BADGES,{gx_pol:["#3ff0c0","#5b2bd6",'<path d="M3 15c3-6 6-2 9-6s6 0 9-5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M3 19c3-4 6-1 9-4s6 0 9-3" stroke="#c8fff0" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".8"/>']});
+FXX.xx_pol={n:3,
+  s(p,W,H){p.y=H*(.25+Math.random()*.35);p.col=["63,240,192","155,107,255","255,110,200"][(Math.random()*3)|0];p.sp=.6+Math.random()*.8},
+  d(ctx,p,dt,t,W,H){ctx.globalCompositeOperation="lighter";
+    for(let x=0;x<=W;x+=3){const k=x/W,y=p.y+Math.sin(k*6+t*p.sp+p.ph)*H*.08,a=.25*(.4+.6*Math.max(0,Math.sin(k*9+t*.7*p.sp+p.ph))),hh=H*.35;
+      const g=ctx.createLinearGradient(0,y-hh,0,y);g.addColorStop(0,`rgba(${p.col},0)`);g.addColorStop(1,`rgba(${p.col},${a.toFixed(3)})`);ctx.fillStyle=g;ctx.fillRect(x,y-hh,3,hh)}
+    ctx.globalCompositeOperation="source-over"},
+  after(ctx,c,dt,t,W,H){if(!c.st) c.st=Array.from({length:30},()=>({x:Math.random(),y:Math.random()*.7,p:Math.random()*6}));ctx.fillStyle="#fff";for(const s of c.st){ctx.globalAlpha=.3+.5*Math.abs(Math.sin(t+s.p));ctx.fillRect(s.x*W,s.y*H,1.2,1.2)}ctx.globalAlpha=1}
+};
+{const XP=[["hx_pol","hat","Корона сияния"],["fx_pol","frame","Сияние"],["bx_pol","bg","Полярная ночь"],["nx_pol","name","Аврора"],["gx_pol","badge","Северный свет"],["xx_pol","fx","Ленты сияния"]]
+  .map(([id,s,n])=>({id,s,n,r:"x",p:0,kit:"k_polar",ex:true}));
+ XP.forEach(i=>{ITEMS.push(i);ITEM[i.id]=i});
+ KITS.unshift({id:"k_polar",n:"Полярное сияние",d:"Корона из ледяных кристаллов, живое сияние и звёздная полярная ночь",design:"polar",p:25000,c1:"#3ff0c0",c2:"#9b6bff",items:XP.map(i=>i.id)});
+ KITS.forEach(k=>k.items.forEach(id=>KIT_OF[id]=k));
+ DESIGN_NAME.polar="Полярное сияние";
+ /* эти наборы убраны из магазина (у кого куплены — предметы остаются) */
+ for(const id of ["k_lux","k_glass","k_amb","k_cs","k_pubg","k_brawl"]){const i=KITS.findIndex(k=>k.id===id);if(i>=0) KITS.splice(i,1)}
+}
+
 
 /* ---------- частицы коллекций ---------- */
 (()=>{
@@ -8090,8 +8285,8 @@ const ME=(()=>{
     clearTimeout(saveT);
     saveT=setTimeout(()=>{
       D.got=[...got];
-      fetch("/api/profile",{method:"POST",body:JSON.stringify(D),headers:{"Content-Type":"application/json"}}).catch(()=>{});
-      try{localStorage.setItem("meBackup",JSON.stringify(D))}catch(e){}
+      fetch("/api/profile",{method:"POST",body:JSON.stringify(D),headers:{"Content-Type":"application/json"}})
+        .then(r=>r.json()).then(j=>{if(j&&j.seal) try{localStorage.setItem("meSeal",JSON.stringify(j.seal));localStorage.removeItem("meBackup")}catch(e){}}).catch(()=>{});
     },250);
   }
   async function checkAdmin(){
@@ -8100,9 +8295,15 @@ const ME=(()=>{
     if(role){let ch=false;role.items.forEach(id=>{if(!owns(id)){D.inv.push(id);ch=true}});if(ch||D.roleSeen!==role.items[0]){D.eq.name=role.items[0];D.roleSeen=role.items[0];save()}}
   }
   async function load(){
-    let j=null;
+    let j=null,tamper=false;
     try{const r=await fetch("/api/profile",{cache:"no-store"});if(r.ok) j=await r.json()}catch(e){}
-    if(!j||!Object.keys(j).length){try{j=JSON.parse(localStorage.getItem("meBackup")||"null")}catch(e){}}
+    if(j&&j._tamper){tamper=true;delete j._tamper}
+    if(!j||!Object.keys(j).length){                     // файла нет — берём запечатанную копию из окна (её тоже нельзя подделать)
+      let seal=null;try{seal=JSON.parse(localStorage.getItem("meSeal")||"null")}catch(e){}
+      if(seal){try{const r=await fetch("/api/profile/unseal",{method:"POST",body:JSON.stringify(seal),headers:{"Content-Type":"application/json"}});if(r.ok) j=await r.json()}catch(e){}}
+      else{try{j=JSON.parse(localStorage.getItem("meBackup")||"null")}catch(e){}}
+    }
+    if(tamper) setTimeout(()=>toast("Файл профиля был изменён вручную — восстановлена последняя честная копия",true),3500);
     if(j&&typeof j==="object") Object.assign(D,j);
     let refund=0;
     if(Array.isArray(D.inv)&&D.inv.includes("f_rainbow")){refund=750;D.bal=(+D.bal||0)+refund;D.spent=Math.max(0,(+D.spent||0)-refund);D.inv=D.inv.filter(x=>x!=="f_rainbow")}
@@ -9210,9 +9411,16 @@ const UPD=(()=>{
 })();
 
 
+/* ---------- без инструментов разработчика: F12, Ctrl+Shift+I/J/C, Ctrl+U и меню «Проверить» ---------- */
+document.addEventListener("keydown",e=>{
+  const k=(e.key||"").toLowerCase();
+  if(e.key==="F12"||(e.ctrlKey&&e.shiftKey&&["i","j","c","ш","о","с"].includes(k))||(e.ctrlKey&&!e.shiftKey&&(k==="u"||k==="г"))){e.preventDefault();e.stopImmediatePropagation()}
+},true);
+document.addEventListener("contextmenu",e=>{if(!e.target.closest("input,textarea,[contenteditable]")) e.preventDefault()},true);
+
 /* ---------- стрелка «назад»: возвращает на предыдущую страницу, с первой — на главный экран ---------- */
 const NAV=(()=>{
-  let lbMode="singles",stack=[],clr=0;
+  let lbMode="singles",stack=[],clr=0,ret=null,backing=false;
   const _lb=LB.open;LB.open=m=>{lbMode=m||"singles";_lb(m)};
   const P={pf:()=>PF.open(),shop:()=>SHOP.open(),pm:()=>AP.open(),lb:()=>LB.open(lbMode),tp:()=>TOP.open(),rk:()=>RK.open(),ct:()=>CT.open(),rmp:()=>RM.open()};
   const NM={pf:"Мой профиль",shop:"Магазин",pm:"Профили артистов",lb:"Медиатека",tp:"Топ-3",rk:"Общий рейтинг",ct:"Каталог релизов",rmp:"Онлайн"};
@@ -9235,10 +9443,11 @@ const NAV=(()=>{
     const c=cur();if(!c) return;
     const b=document.querySelector(`#${c} .gback`);if(!b) return;
     const prev=stack[stack.length-2];
-    b.hidden=inner(c);b.title=prev?`Назад: ${NM[prev]}`:"Назад на главный экран";
+    b.title=prev?`Назад: ${NM[prev]}`:"Назад на главный экран";
   }
   function track(){
     const c=cur();clearTimeout(clr);
+    if(c&&!backing){ret=null;paintRet()}
     if(c){
       const i=stack.indexOf(c);
       if(i>=0) stack=stack.slice(0,i+1);else stack.push(c);
@@ -9252,7 +9461,33 @@ const NAV=(()=>{
     stack.pop();const prev=stack[stack.length-1];
     if(prev) P[prev]();else{try{if(PAGE_CLOSE) PAGE_CLOSE()}catch(x){}stack=[]}
   },true);
-  setInterval(()=>{if(cur()) paint()},300);                 // внутренняя «назад» могла появиться/исчезнуть
+  /* из альбома / артиста / списка открыли трек — в редакторе появляется «← назад к …» */
+  const rb=document.createElement("button");rb.className="edret";rb.type="button";rb.hidden=true;
+  const eb=$("#eyebrow"),ebw=eb&&eb.closest(".eyebrow");if(ebw) ebw.parentNode.insertBefore(rb,ebw);
+  function paintRet(){
+    if(!ret){rb.hidden=true;return}
+    const nm=ret.page==="lb"&&ret.lb&&ret.lb.view==="album"?`К ${ret.lb.ep?"EP":"альбому"} «${ret.lb.name}»`:ret.page==="pm"&&ret.art?"К артисту":"Назад: "+NM[ret.page];
+    rb.innerHTML=ARR+esc(nm);rb.hidden=false;
+  }
+  const _lt=loadTrack;
+  loadTrack=function(id){
+    const c=cur();
+    if(c){
+      let lb=null;
+      if(c==="lb"){try{const st=LB.state();if(st.view==="album"){const a=albumInfo(st.alb);lb={view:"album",alb:st.alb,name:a?a.name:"",ep:a&&a.n>=2&&a.n<=6}}else lb={view:st.view}}catch(e){}}
+      ret={page:c,lb,mode:lbMode,art:c==="pm"?AP.artistKey():null};
+    }
+    const r=_lt.apply(this,arguments);
+    if(c) setTimeout(paintRet,50);
+    return r;
+  };
+  rb.addEventListener("click",()=>{
+    const r=ret;if(!r) return;ret=null;paintRet();backing=true;setTimeout(()=>{backing=false},600);
+    if(r.page==="lb"){LB.open(r.mode);if(r.lb&&r.lb.view==="album"&&r.lb.alb!=null) try{LB.showAlbum(r.lb.alb)}catch(e){}}
+    else if(r.page==="pm"){AP.open();if(r.art) try{AP.showArtist(r.art)}catch(e){}}
+    else P[r.page]();
+  });
+  setInterval(()=>{if(cur()) paint()},300);
   return{get stack(){return stack.slice()}};
 })();
 
@@ -10176,7 +10411,14 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path.startswith("/api/game"):
             self._send(200, GAME_FILE.read_bytes() if GAME_FILE.exists() else b'{"best": 0, "snake": 0}')
         elif self.path.startswith("/api/profile"):
-            self._send(200, PROFILE_FILE.read_bytes() if PROFILE_FILE.exists() else b"{}")
+            d, bad = load_profile()
+            if bad:
+                d = dict(d, _tamper=True)
+                try:
+                    save_profile({k: v for k, v in d.items() if k != "_tamper"})
+                except Exception:
+                    pass
+            self._send(200, json.dumps(d, ensure_ascii=False).encode("utf-8"))
         elif self.path.startswith("/api/ping"):
             self._send(200, b"{}")
         elif self.path.startswith("/api/update/check"):
@@ -10271,11 +10513,12 @@ class Handler(BaseHTTPRequestHandler):
                 data = json.loads(self.rfile.read(n).decode("utf-8"))
                 if not isinstance(data, dict):
                     return self._send(400)
-                DATA_DIR.mkdir(parents=True, exist_ok=True)
-                tmp = PROFILE_FILE.with_suffix(".tmp")
-                tmp.write_bytes(json.dumps(data, ensure_ascii=False).encode("utf-8"))
-                tmp.replace(PROFILE_FILE)
-                return self._send(200, b"{}")
+                if self.path.startswith("/api/profile/unseal"):    # восстановление из запечатанной копии в браузере
+                    d = unseal_profile(data)
+                    return self._send(200 if d is not None else 400, json.dumps(d or {}, ensure_ascii=False).encode("utf-8"))
+                data.pop("_tamper", None)
+                sealed = save_profile(data)
+                return self._send(200, json.dumps({"seal": sealed}).encode("utf-8"))
             except Exception:
                 return self._send(400)
         if self.path.startswith("/api/game"):
