@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "4.4"
-APP_NOTES = "Окно «Что нового», прогресс загрузки треков, исправлен бонус дня"
+APP_VERSION = "4.5"
+APP_NOTES = "Чат можно свернуть под итоговую оценку"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -412,9 +412,10 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="4.4";
+var APPV="4.5";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"4.5",add:["Чат с другом можно свернуть: он встаёт под «Итоговую оценку», а ты продолжаешь оценивать треки и переписываться","Кнопки «Развернуть» и «Закрыть» у свёрнутого чата"]},
  {v:"4.4",add:["Окно «Что нового» после каждого обновления — перед экраном «Начать»","Прогресс скачивания треков, присланных другом: в медиатеке и в треклисте альбома видно, сколько уже загрузилось","«Загрузка N%» и полоска под названием трека в плеере, пока трек скачивается (SoundCloud, присланные файлы)"],
   chg:["Альбом от друга открывается сразу, а треки докачиваются в фоне","Поле ввода в чате поднимается, когда внизу открыт мини-плеер"],
   fix:["«Бонус дня» больше не пишет «Сначала забери награды за все три задания», если задания уже забраны"]},
@@ -2605,6 +2606,36 @@ body.bye #bc{display:none}
 .qmed svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .qmed.off{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);color:rgba(255,255,255,.28)}
 .arow.on{background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.03))}
+/* свёрнутый чат под итоговой оценкой */
+.scw{position:sticky;top:16px;align-self:start;min-width:0}
+.scw .score{position:static}
+.scw.dk{position:static}
+#chDock{margin-top:14px;padding:10px;border-radius:14px;background:rgba(24,12,15,.86);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 18px 40px -18px rgba(0,0,0,.8);animation:gpop .3s var(--ease)}
+#chDock .chw{margin:0;gap:8px}
+#chDock .chhd{gap:10px;padding:6px 8px;border-radius:12px}
+#chDock .chhd .frn b{font-size:14px}
+#chDock .chlog{flex:none;height:320px;padding:8px 2px;border-radius:12px}
+#chDock .chm{padding:0 4px}
+#chDock .chb{max-width:90%}
+#chDock .chtx{font-size:13.5px}
+#chDock .chr{width:100%;padding:8px}
+#chDock .chrc{width:46px;height:46px}
+#chDock .chrs{font-size:22px}
+#chDock .chrb div{grid-template-columns:88px 1fr 28px;font-size:11px}
+#chDock .chimg{max-height:180px}
+#chDock .chin{gap:2px;padding:5px;border-radius:14px}
+#chDock .chi{width:32px;height:32px}
+#chDock .chi .ico{width:18px;height:18px}
+#chDock .chsend{width:36px;height:36px}
+#chDock #chTx{font-size:14px;padding:7px 4px}
+#chDock .emop{width:100%}
+#chDock .emog{grid-template-columns:repeat(6,1fr)}
+#chDock .chempty{transform:scale(.85)}
+.chdb{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--sub);background:rgba(255,255,255,.06);transition:background .15s,color .15s}
+.chdb:hover{color:#fff;background:rgba(var(--ar),.35)}
+.chdb .ico{width:16px;height:16px}
+.chhd .frb .ico{width:15px;height:15px}
+@media (max-width:1100px){.scw{position:static}}
 /* загрузка: плеер, медиатека; окно «Что нового» */
 .apld,.mpld{flex:none;font-style:normal;font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--g3);animation:ldPulse 1.2s ease-in-out infinite}
 .mpld{display:block;margin-top:1px}
@@ -3559,7 +3590,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
           <div id="rows"></div>
           <div class="notew" id="notew"><div class="noteh"><svg class="ico" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Заметка</span><div class="nseg"><button type="button" data-nk="r" class="on">Рецензия</button><button type="button" data-nk="q">Любимая строчка</button></div><em id="noteCnt">0/280</em></div><textarea id="noteIn" maxlength="280" rows="2" spellcheck="true"></textarea></div>
         </div>
-        <aside class="score" id="scoreCard">
+        <div class="scw" id="scw"><aside class="score" id="scoreCard">
           <div class="cap">Итоговая оценка</div>
           <div class="ringw">
             <svg viewBox="0 0 200 200">
@@ -3584,7 +3615,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
             <div class="st"><b id="stA">—</b><span>Средний</span></div>
             <div class="st"><b id="stB">—</b><span>Лучший</span></div>
           </div>
-        </aside>
+        </aside><div id="chDock" hidden></div></div>
       </div>
     </section>
   </main>
@@ -10738,7 +10769,9 @@ function rateCardH(x,mine,mid){
 const FR=(()=>{
   const el=$("#frp"),body=$("#frBody"),navBtn=$("#navFr"),dot=$("#frDot"),backB=$("#frBack");
   let closeT=0,tab="fr",by="lvl",scope="all",data=null,topD=null,heads=null,tk=0,view="list",prevView="list",cur=null,frIn=0,msgUn=0,lastUn=-1,headT=0;
-  let chat=null,pollT=0,pendN=0;
+  let chat=null,pollT=0,pendN=0,docked=false;
+  const dock=$("#chDock"),root=()=>docked?dock:body;
+  const on=(t,f,c)=>{body.addEventListener(t,f,c);dock.addEventListener(t,f,c)};
   const CHATI='<svg class="ico" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
   const isOpen=()=>!el.hidden&&!el.classList.contains("out");
   const me=()=>NET.st.uid;
@@ -10754,7 +10787,7 @@ const FR=(()=>{
   function badge(n){frIn=n||0;paintDot()}
   function unread(n){
     n=n||0;
-    if(lastUn>=0&&n>lastUn&&!(view==="chat"&&isOpen())){try{SND.play("msg")}catch(e){}toast(n-lastUn>1?`Новые сообщения: ${n-lastUn}`:"Новое сообщение в «Друзьях»")}
+    if(lastUn>=0&&n>lastUn&&!(view==="chat"&&(isOpen()||docked))){try{SND.play("msg")}catch(e){}toast(n-lastUn>1?`Новые сообщения: ${n-lastUn}`:"Новое сообщение в «Друзьях»")}
     lastUn=n;msgUn=n;paintDot();
   }
   function frRow(p,acts,i){
@@ -10839,6 +10872,7 @@ const FR=(()=>{
   }
   /* ===== профиль игрока — отдельная страница ===== */
   async function openUser(uid){
+    if(docked) undock(false);
     if(!isOpen()) open(true);
     setView("user");cur=null;body.innerHTML=`<div class="frld" style="margin-top:80px"></div>`;body.scrollTop=0;
     try{cur=await NET.call("user",{uid})}catch(e){toast(e.msg,true);back();return}
@@ -10871,6 +10905,7 @@ const FR=(()=>{
   }
   /* ===== чат ===== */
   async function openChat(uid){
+    if(docked) undock(false);
     if(!isOpen()) open(true);
     let p=(data&&data.friends.find(x=>x.uid===uid))||(cur&&cur.uid===uid?cur:null);
     if(!p){try{p=await NET.call("user",{uid})}catch(e){toast(e.msg,true);return}}
@@ -10880,8 +10915,10 @@ const FR=(()=>{
   }
   function chatShell(){
     const p=chat.p;
-    body.innerHTML=`<div class="chw">
-      <div class="chhd">${avOf(p,46)}<div class="frn"><b>${nm(p)}</b><em class="${online(p.seen)?"on":""}">${ago(p.seen)}</em></div><button class="frb" data-ca="prof" type="button">Профиль</button></div>
+    root().innerHTML=`<div class="chw">
+      <div class="chhd">${avOf(p,docked?34:46)}<div class="frn"><b>${nm(p)}</b><em class="${online(p.seen)?"on":""}">${ago(p.seen)}</em></div>
+        ${docked?`<button class="chdb" data-ca="max" type="button" title="Развернуть чат"><svg class="ico" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button><button class="chdb" data-ca="dx" type="button" title="Закрыть чат"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`
+          :`<button class="frb" data-ca="min" type="button" title="Свернуть чат под итоговую оценку"><svg class="ico" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>Свернуть</button><button class="frb" data-ca="prof" type="button">Профиль</button>`}</div>
       <div class="chlog" id="chLog"><div class="frld"></div></div>
       <div class="chin" id="chIn"><div class="emop" id="emoP" hidden></div>
         <button class="chi" data-ca="img" type="button" title="Отправить фото (или вставь Ctrl+V)"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg></button>
@@ -10927,7 +10964,7 @@ const FR=(()=>{
     c.loading=false;
   }
   async function pollChat(){
-    if(!chat||view!=="chat"||!isOpen()||document.hidden) return;
+    if(!chat||view!=="chat"||!(isOpen()||docked)||document.hidden) return;
     const c=chat;
     try{
       const j=await NET.call("chat/list",{with:c.uid,after:c.last});if(chat!==c) return;
@@ -11068,7 +11105,7 @@ const FR=(()=>{
   }
   /* прослушивание присланного трека прямо в чате */
   const plAu=new Audio();let plMid=null;
-  function plPaint(){body.querySelectorAll("[data-pl]").forEach(b=>{const on=b.dataset.pl===String(plMid),p=on&&!plAu.paused;b.classList.toggle("on",p);const i=b.querySelector("i");if(i) i.textContent=p?"❚❚":"▶";else b.textContent=p?"❚❚":"▶"})}
+  function plPaint(){root().querySelectorAll("[data-pl]").forEach(b=>{const on=b.dataset.pl===String(plMid),p=on&&!plAu.paused;b.classList.toggle("on",p);const i=b.querySelector("i");if(i) i.textContent=p?"❚❚":"▶";else b.textContent=p?"❚❚":"▶"})}
   function stopPl(){plAu.pause();plMid=null;plPaint()}
   plAu.addEventListener("play",plPaint);plAu.addEventListener("pause",plPaint);plAu.addEventListener("ended",()=>{plMid=null;plPaint()});
   plAu.addEventListener("error",async()=>{if(!plMid) return;const s=plAu.getAttribute("src")||"";plMid=null;plPaint();toast(s.includes("pulse-stream")?await scErrText(s):"Не удалось включить трек",true)});
@@ -11088,8 +11125,26 @@ const FR=(()=>{
     if(view==="chat"&&prevView==="user"&&cur&&cur.uid===(chat&&chat.uid)){setView("user");chat=null;renderUser();return}
     stopPl();chat=null;cur=null;setView("list");prevView="list";shell();load();body.scrollTop=0;
   }
+  /* свернуть чат под «Итоговую оценку» и обратно */
+  function minimize(){
+    if(!chat) return;
+    docked=true;close();
+    dock.hidden=false;$("#scw").classList.add("dk");chatShell();renderLog({bottom:true});
+    if(!pollT) pollT=setInterval(pollChat,2500);
+    setTimeout(()=>dock.scrollIntoView({block:"nearest",behavior:"smooth"}),120);
+  }
+  function undock(kill){
+    docked=false;dock.hidden=true;dock.innerHTML="";$("#scw").classList.remove("dk");
+    if(kill){clearInterval(pollT);pollT=0;stopPl();chat=null;view="list";backB.hidden=true}
+  }
+  function maximize(){
+    if(!chat) return;const c=chat;
+    undock(false);open(true);chat=c;setView("chat");chatShell();renderLog({bottom:true});
+    if(!pollT) pollT=setInterval(pollChat,2500);
+  }
   function open(silent){
     clearTimeout(closeT);if(isOpen()) return;
+    if(docked&&silent!==true) undock(true);
     try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true);RM.close(true);PF.close(true);SHOP.close(true)}catch(x){}
     el.classList.remove("out");el.hidden=false;document.body.classList.add("pg");navBtn.classList.add("on");
     if(silent===true) return;
@@ -11098,7 +11153,7 @@ const FR=(()=>{
   function close(keep){
     if(el.hidden||el.classList.contains("out")) return;
     if(keep!==true) document.body.classList.remove("pg");
-    navBtn.classList.remove("on");el.classList.add("out");clearInterval(pollT);pollT=0;stopPl();
+    navBtn.classList.remove("on");el.classList.add("out");if(!docked){clearInterval(pollT);pollT=0;stopPl()}
     closeT=setTimeout(()=>{el.hidden=true;el.classList.remove("out")},280);
   }
   async function add(){
@@ -11106,7 +11161,7 @@ const FR=(()=>{
     try{const j=await NET.call("fr/add",{uid:v});i.value="";toast(j.friend?`Вы с ${j.nick} теперь друзья`:`Заявка отправлена игроку ${j.nick}`);tab="fr";load()}
     catch(e){toast(e.msg,true);i.classList.remove("shake");void i.offsetWidth;i.classList.add("shake")}
   }
-  body.addEventListener("click",async e=>{
+  on("click",async e=>{
     const lnk=e.target.closest("a[data-ext]");if(lnk){e.preventDefault();fetch("/api/open",{method:"POST",body:lnk.href}).catch(()=>{});return}
     const a=e.target.closest("[data-a]");
     if(a){const k=a.dataset.a;
@@ -11146,6 +11201,9 @@ const FR=(()=>{
       else if(k==="emo"){const p=$("#emoP");p.hidden=!p.hidden;if(!p.hidden) paintEmo()}
       else if(k==="rate") ratePicker(ext=>send("rate",{ext}));
       else if(k==="prof"){cur=null;const u=chat.uid;prevView="list";openUser(u)}
+      else if(k==="min") minimize();
+      else if(k==="max") maximize();
+      else if(k==="dx") undock(true);
       return}
     const et=e.target.closest("[data-et]");if(et){emoTab=et.dataset.et;paintEmo();return}
     const em=e.target.closest("[data-em]");if(em){addEmo(em.dataset.em);return}
@@ -11156,19 +11214,19 @@ const FR=(()=>{
     if(!e.target.closest("#emoP,[data-ca=emo]")){const p=$("#emoP");if(p&&!p.hidden) p.hidden=true}
     const r=e.target.closest("[data-u]");if(r){openUser(r.dataset.u)}
   });
-  body.addEventListener("keydown",e=>{
+  on("keydown",e=>{
     if(e.target.id==="chTx"&&e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendText();return}
     if(e.key==="Enter"&&e.target.id==="frId"){e.preventDefault();add()}
     else if(e.key==="Enter"&&(e.target.classList.contains("frr"))) e.target.click();
   });
-  body.addEventListener("input",e=>{if(e.target.id==="chTx") fitTx()});
-  body.addEventListener("paste",e=>{
+  on("input",e=>{if(e.target.id==="chTx") fitTx()});
+  on("paste",e=>{
     if(view!=="chat") return;const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(i=>i.kind==="file"&&i.type.startsWith("image/"));
     if(it){e.preventDefault();sendImg(it.getAsFile())}
   });
-  body.addEventListener("dragover",e=>{if(view==="chat"){e.preventDefault();e.stopPropagation()}},true);
-  body.addEventListener("drop",e=>{if(view!=="chat") return;e.preventDefault();e.stopPropagation();const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(isImageFile);if(f) sendImg(f)},true);
-  body.addEventListener("scroll",e=>{if(e.target.id==="chLog"&&e.target.scrollTop<60) loadOlder()},true);
+  on("dragover",e=>{if(view==="chat"){e.preventDefault();e.stopPropagation()}},true);
+  on("drop",e=>{if(view!=="chat") return;e.preventDefault();e.stopPropagation();const f=[...(e.dataTransfer&&e.dataTransfer.files||[])].find(isImageFile);if(f) sendImg(f)},true);
+  on("scroll",e=>{if(e.target.id==="chLog"&&e.target.scrollTop<60) loadOlder()},true);
   backB.addEventListener("click",back);
   $("#frClose").addEventListener("click",()=>close());
   el.addEventListener("pointerdown",e=>{if(e.target===el) close()});
@@ -11180,7 +11238,7 @@ const FR=(()=>{
   navBtn.addEventListener("click",()=>isOpen()?close():open());
   setInterval(()=>{if(isOpen()&&view==="list"&&tab==="msg"&&!document.hidden) load()},8000);
   function refresh(){data=null;topD=null;heads=null;if(isOpen()&&view==="list"){shell();load()}}
-  return{open,close,isOpen,badge,unread,refresh,load,openUser,openChat,shareTo};
+  return{open,close,isOpen,badge,unread,refresh,load,openUser,openChat,shareTo,minimize,maximize,get docked(){return docked}};
 })();
 
 /* ---------- автообновление: программа сама проверяет новую версию ---------- */
