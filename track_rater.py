@@ -35,11 +35,11 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "4.1"
-APP_NOTES = "Чат с друзьями: эмодзи, фото и оценки. Профиль друга — отдельной страницей"
+APP_VERSION = "4.2"
+APP_NOTES = "Любимые альбомы, места в профиле, аудио в чате, отметки ♥ и ★ в альбомах"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
-NET_DEFAULT = ""         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
+NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
 NET_FILE = DATA_DIR / "net.json"
 APP_FILE = Path(__file__).resolve()          # запоминаем при запуске — дальше рабочая папка может смениться
 FROZEN = bool(getattr(sys, "frozen", False))  # программа собрана в .exe (PyInstaller)
@@ -173,6 +173,89 @@ def net_req(path, body=None, key=None, timeout=25, url=None):
     except Exception as e:
         launch_log("сервер: %s %s" % (path, e))
         return 502, json.dumps({"error": "Нет связи с сервером — проверь интернет"}, ensure_ascii=False).encode("utf-8"), "application/json"
+
+
+SC_FAIL = {}
+AUD_CHUNK = 1200000
+AUD_LOCK = threading.Lock()
+
+
+def net_audio_upload(tid):
+    """Загружает аудиофайл оценки на общий сервер кусками. Один и тот же файл повторно не отправляется."""
+    f = None
+    for ext in AUDIO_TYPES:
+        c = AUDIO_DIR / f"{tid}.{ext}"
+        if c.exists():
+            f = c
+            break
+    if not f:
+        raise ValueError("Аудиофайл этой оценки не найден")
+    st = f.stat()
+    if st.st_size > 30 * 1024 * 1024:
+        raise ValueError("Файл больше 30 МБ — оценка уйдёт без аудио")
+    ext = f.suffix[1:].lower()
+    memo_f = DATA_DIR / "net_sent_audio.json"
+    try:
+        memo = json.loads(memo_f.read_text("utf-8"))
+    except Exception:
+        memo = {}
+    key = f"{tid}:{int(st.st_mtime)}:{st.st_size}:{net_cfg().get('uid', '')}"
+    if memo.get(key):
+        return memo[key]
+    data = f.read_bytes()
+    n = (len(data) + AUD_CHUNK - 1) // AUD_CHUNK
+    code, body, _ = net_req("/aud/new", {"size": len(data), "n": n, "ext": ext}, timeout=30)
+    j = json.loads(body or b"{}")
+    if code != 200:
+        raise ValueError(j.get("error") or "Сервер не принял аудио")
+    aid = j["id"]
+
+    def put(i):
+        part = _b64.b64encode(data[i * AUD_CHUNK:(i + 1) * AUD_CHUNK]).decode("ascii")
+        for _ in range(3):
+            c2, b2, _ = net_req("/aud/put", {"id": aid, "i": i, "d": part}, timeout=120)
+            if c2 == 200:
+                return
+        raise ValueError("Не получилось загрузить аудио — проверь интернет")
+    with ThreadPoolExecutor(3) as ex:
+        list(ex.map(put, range(n)))
+    res = {"id": aid, "ext": ext, "size": len(data)}
+    memo[key] = res
+    try:
+        memo_f.write_text(json.dumps(memo), "utf-8")
+    except Exception:
+        pass
+    return res
+
+
+def net_audio_file(aid):
+    """Скачивает присланный аудиофайл в кэш (один раз) и возвращает путь."""
+    aid = re.sub(r"[^A-Z0-9]", "", aid)[:20]
+    d = DATA_DIR / "net_audio"
+    for p in d.glob(aid + ".*") if d.exists() else []:
+        return p
+    with AUD_LOCK:
+        for p in d.glob(aid + ".*") if d.exists() else []:
+            return p
+        code, body, _ = net_req("/aud/meta", {"id": aid}, timeout=30)
+        if code != 200:
+            raise ValueError("Аудио не найдено")
+        m = json.loads(body)
+
+        def get(i):
+            for _ in range(3):
+                c2, b2, _ = net_req("/aud/get", {"id": aid, "i": i}, timeout=120)
+                if c2 == 200:
+                    return _b64.b64decode(json.loads(b2)["d"])
+            raise ValueError("Не получилось скачать аудио")
+        with ThreadPoolExecutor(4) as ex:
+            parts = list(ex.map(get, range(int(m["n"]))))
+        d.mkdir(parents=True, exist_ok=True)
+        out = d / f"{aid}.{re.sub(r'[^a-z0-9]', '', m.get('ext') or 'mp3')}"
+        tmp = out.with_suffix(".part")
+        tmp.write_bytes(b"".join(parts))
+        tmp.replace(out)
+        return out
 
 
 def _read_json(path):
@@ -324,7 +407,7 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="4.1";
+var APPV="4.2";
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -2507,6 +2590,19 @@ body.bye #bc{display:none}
 .qmed svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .qmed.off{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);color:rgba(255,255,255,.28)}
 .arow.on{background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.03))}
+/* ♥ и ★ в треклисте, замок у защищённых треков, места для любимых, плеер в чате */
+.tmk{font-style:normal;margin-left:8px;font-size:15px;vertical-align:-1px}
+.tmk.fav{color:#ff4d8d;text-shadow:0 0 10px rgba(255,77,141,.7)}
+.tmk.best{color:#ffd45a;text-shadow:0 0 10px rgba(255,200,60,.75)}
+.ctdrm{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;color:rgba(255,255,255,.65);background:rgba(255,255,255,.07)}
+#pBack.txt{width:auto;padding:0 16px 0 12px;gap:8px;display:inline-flex;align-items:center;border-radius:999px}
+#pBack.txt span{font-size:13.5px;font-weight:800;white-space:nowrap}
+.fpslot{display:inline-flex;align-items:center;gap:5px;margin-left:10px;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:800;color:#2a1500;background:linear-gradient(180deg,#ffd76a,#e9a23a);vertical-align:middle}
+.fpslot .coin{width:14px;height:14px}
+.fpslot[disabled]{opacity:.5}
+.chrpl{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:8px;border-radius:10px;font-weight:800;font-size:13px;color:#fff;background:rgba(var(--ar),.35);box-shadow:inset 0 0 0 1px rgba(var(--ar),.6)}
+.chrpl i{font-style:normal;font-size:12px}
+.chrpl.on{background:rgba(var(--ar),.6)}
 /* профиль друга и чат */
 .frp.upv .ptop{position:absolute;left:0;right:0;top:0;z-index:6}
 .frp.upv .pbody{padding-top:0}
@@ -2581,7 +2677,7 @@ body.bye #bc{display:none}
 .chrl div{display:grid;grid-template-columns:20px 1fr auto;gap:8px;font-size:12.5px;padding:3px 4px;border-radius:6px}
 .chrl div:nth-child(odd){background:rgba(255,255,255,.04)}
 .chrl i{font-style:normal;color:var(--sub)}.chrl span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chrl b{font-weight:900}
-.chf{text-decoration:none;color:#ff6b9d;margin-right:4px}
+.chf{text-decoration:none;color:#ff6b9d;margin-right:4px}.chf.st{color:#ffd45a}
 .chrgo{width:100%;margin-top:10px;padding:8px;border-radius:10px;font-weight:800;font-size:13px;color:#fff;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
 .chrgo:hover{background:rgba(var(--ar),.35)}
 .frr.chl.un{box-shadow:inset 0 0 0 1.5px rgba(var(--ar),.7)}
@@ -5370,6 +5466,11 @@ async function addAlbum(files){
   toast(fail?`Альбом добавлен, но ${fail} файл(ов) не загрузились`:`${isEp?"EP":"Альбом"} «${albName}» загружен. Оцени каждый трек — общая оценка появится в конце`,!!fail);
 }
 
+/* почему SoundCloud не отдал трек: защищённые (DRM) треки играют только на сайте SoundCloud */
+async function scErrText(src){
+  let m="";try{const u=decodeURIComponent((String(src).split("u=")[1]||"").split("&")[0]);m=(await (await fetch("/api/cat/streamerr?u="+encodeURIComponent(u))).json()).error||""}catch(e){}
+  return m==="drm"?"Этот трек SoundCloud защищён (DRM) и играет только на их сайте. Нажми «Слушать целиком» — там Яндекс Музыка, VK, YouTube":"SoundCloud не отдал этот трек — попробуй ещё раз через минуту";
+}
 const AU=(()=>{
   const au=new Audio();au.preload="metadata";
   const drop=$("#drop"),ap=$("#ap"),btn=$("#apPlay"),nm=$("#apName"),meta=$("#apMeta"),seek=$("#apSeek"),tcur=$("#apCur"),tdur=$("#apDur"),vol=$("#apVol");
@@ -5503,7 +5604,9 @@ const AU=(()=>{
   au.addEventListener("ended",()=>{btn.innerHTML=PLAY;mpPaintPlay();ap.classList.remove("live");au.currentTime=0;paint();zkick();if(det) setTimeout(()=>{if(det&&au.paused) sync()},0)});
   au.addEventListener("timeupdate",()=>{paint();mpPaintTime()});
   au.addEventListener("loadedmetadata",()=>{tdur.textContent=mmss(au.duration);paint();mpPaintTime()});
-  au.addEventListener("error",()=>{const s=au.getAttribute("src")||"";if(s) toast(s.includes("pulse-stream")?"SoundCloud не отдал этот трек — попробуй ещё раз через минуту":"Не удалось воспроизвести этот файл",true)});
+  au.addEventListener("error",async()=>{const s=au.getAttribute("src")||"";if(!s) return;
+    if(s.includes("pulse-stream")){toast(await scErrText(s),true);return}
+    toast("Не удалось воспроизвести этот файл",true)});
   au.addEventListener("loadstart",()=>{if((au.getAttribute("src")||"").includes("pulse-stream")) toast("Загружаю трек с SoundCloud…")});
   seek.addEventListener("input",()=>{
     if(au.duration){au.currentTime=seek.value/1000*au.duration}
@@ -5673,7 +5776,7 @@ const AU=(()=>{
     e.preventDefault();dragN=0;document.body.classList.remove("dragging");
     setFiles(e.dataTransfer.files);
   });
-  return{sync,play:force=>{if(force&&det) sync(true);play()},pause:()=>au.pause(),
+  return{sync,setFile,play:force=>{if(force&&det) sync(true);play()},pause:()=>au.pause(),
     key:()=>edKey(),adopt:k0=>{if(loadedKey&&loadedKey===k0){loadedKey=edKey();if(playInfo){playMeta=metaFromEditor(playInfo);mpPaintMeta()}}setDet(det,edKey())},
     refresh:()=>{if(!mp.hidden) mpPaintMeta()}};
 })();
@@ -5782,8 +5885,11 @@ const AP=(()=>{
       grid.innerHTML=arr.map(card).join("");body.scrollTop=0;grid.classList.remove("out");
     },180);
   }
+  let retRk=false;const BACKI=back.innerHTML;
+  function paintBack(){back.classList.toggle("txt",retRk);back.innerHTML=retRk?BACKI+"<span>Назад: рейтинг</span>":BACKI;back.title=retRk?"Назад к «Общему рейтингу» (Esc)":"Назад (Esc)"}
+  function goBackA(){if(retRk&&view==="artist"){retRk=false;paintBack();close(true);RK.open();return}showList("back")}
   function showList(kind="back"){
-    view="list";curKey=null;
+    view="list";curKey=null;retRk=false;paintBack();
     go(anim=>{
       back.hidden=true;pqw.hidden=false;
       pm.style.setProperty("--ph",352);
@@ -5801,7 +5907,8 @@ const AP=(()=>{
       if(anim) body.scrollTop=0;
     },kind);
   }
-  function showArtist(key,kind="fwd"){
+  function showArtist(key,kind="fwd",o){
+    retRk=!!(o&&o.from==="rk");paintBack();
     const g=groups().find(x=>x.key===key);
     if(!g){showList();return}
     view="artist";curKey=key;
@@ -5860,7 +5967,7 @@ const AP=(()=>{
     close();loadTrack(id);
     if(t&&t.audio) AU.play(true);
   });
-  back.addEventListener("click",()=>showList("back"));
+  back.addEventListener("click",goBackA);
   body.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("pcrd")) e.target.click()});
   $("#pClose").addEventListener("click",close);
   pm.addEventListener("pointerdown",e=>{if(e.target===pm) close()});
@@ -5868,7 +5975,7 @@ const AP=(()=>{
   document.addEventListener("keydown",e=>{
     if(pm.hidden||e.key!=="Escape") return;
     e.preventDefault();
-    if(view==="artist") showList("back");else close();
+    if(view==="artist") goBackA();else close();
   });
   PAGE_CLOSE=close;
   return{open,close,artistKey:()=>view==="artist"&&curKey?curKey:null,setImage,groups,avatar,cnt,showArtist};
@@ -6046,7 +6153,7 @@ const RK=(()=>{
       return;
     }
     const r=e.target.closest(".rkr");
-    if(r){const k=r.dataset.k;close(true);AP.open();AP.showArtist(k,"open")}
+    if(r){const k=r.dataset.k;close(true);AP.open();AP.showArtist(k,"open",{from:"rk"})}
   });
   body.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("rkr")) e.target.click()});
   $("#rkClose").addEventListener("click",close);
@@ -7445,7 +7552,7 @@ const CT=(()=>{
       <div class="im" style="${bg(t.cover)}"></div>
       <div class="ctn"><b>${esc(t.title)}</b><span>${esc(t.artist)}${t.album?" · "+esc(t.album):""}</span></div>
       <div class="cta">
-        ${t.preview?`<button class="ctp${pvKey===t.k&&!pv.paused?" on":""}" data-a="pv" type="button" title="Послушать фрагмент">${pvKey===t.k&&!pv.paused?PAUSEI:PLAYI}</button>`:""}
+        ${t.drm?`<span class="ctdrm" title="SoundCloud отдаёт этот трек только с защитой (DRM) — в приложении он не играет. Оценить можно, а послушать — через «Слушать целиком»">🔒 только на сайте</span>`:t.preview?`<button class="ctp${pvKey===t.k&&!pv.paused?" on":""}" data-a="pv" type="button" title="Послушать фрагмент">${pvKey===t.k&&!pv.paused?PAUSEI:PLAYI}</button>`:""}
         <button class="ctadd" data-a="add" type="button" title="Добавить в медиатеку без оценки"${ex?" disabled":""}>${ADDI}</button>
         <button class="ctrate${ex&&!ex.unrated?" done":""}" data-a="rate" type="button">${ex&&!ex.unrated?"Открыть":"Оценить"}</button>
       </div></div>`;
@@ -7570,7 +7677,7 @@ const CT=(()=>{
     }
   }
   const mkRec=(t,id,extra)=>({id,artist:t.artist||"—",title:t.title,genre:t.genre||"",scores:[5,5,5,5,5],total:5,unrated:true,cat:t.k,catAlb:t.albumId||null,
-    ...(t.preview?{stream:{url:t.preview,src:t.src,link:t.link||"",name:`${t.artist} — ${t.title}`}}:{}),...extra});
+    ...(t.preview&&!t.drm?{stream:{url:t.preview,src:t.src,link:t.link||"",name:`${t.artist} — ${t.title}`}}:{}),...extra});
   async function saveCovers(list){          // обложки скачивает сам сервер — по две за раз, с повтором при сбое
     let i=0;
     const worker=async()=>{while(i<list.length){const [rec,url]=list[i++];await saveCatCover(rec.id,rec.cat,url)}};
@@ -7719,7 +7826,7 @@ const LB=(()=>{
     const sub=o.sub!==undefined?o.sub:`${esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}`;
     return `<div class="item" style="--i:${i+2}" data-id="${t.id}" tabindex="0"${o.mv?' draggable="true"':""}>
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
-      <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
+      <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}${o.num&&t.fav?'<i class="tmk fav" title="Любимый трек">♥</i>':""}${o.best?'<i class="tmk best" title="Лучшая оценка в альбоме">★</i>':""}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
       ${t.unrated?'<div class="sc un" title="Ещё не оценён">—</div>':`<div class="sc" style="color:${rgCol(t.total)}">${fmt(t.total)}</div>`}
       ${o.mv?`<div class="mv"><button type="button" data-mv="-1" title="Выше">${UP}</button><button type="button" data-mv="1" title="Ниже">${DOWN}</button></div>`:'<div class="lk"></div>'}</div>`;
   }
@@ -7744,13 +7851,13 @@ const LB=(()=>{
     const a=albOf(k);
     if(!a){showAlbums();return}
     view="album";curAlb=a.id;
-    const items=a.items.slice().sort(byOrd);
+    const items=a.items.slice().sort(byOrd),rt=items.filter(isRated),bestT=rt.length>1?rt.reduce((x,y)=>y.total>x.total?y:x):null;
     paint(`<div class="ahead" style="--i:0"><div class="lbcv big acv" data-acv="1" style="${albCover(a)}" title="Нажми, чтобы сменить обложку альбома">${albHas(a)?"":NOTE}<div class="covh"><svg class="ico" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>${isEP(a)?"Обложка EP":"Обложка альбома"}</span></div>${albCov(a.id)?'<button class="covx" data-acx="1" type="button" title="Убрать обложку"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>':""}</div>
       <div><div class="eyebrow">${isEP(a)?"EP":"Альбом"}<button class="ren" type="button" title="Изменить название">${PEN}</button></div><h3 id="lbTitle">${esc(a.name)}</h3>
       <p>${esc(artLine(a))} · ${cnt(a.n)} · ${a.complete?`общая <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:a.done?`оценено ${a.done} из ${a.n}, пока <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:`оценено 0 из ${a.n}`}</p>
       ${a.done?`<button class="ashb" data-ash="${a.id}" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>Поделиться ${isEP(a)?"EP":"альбомом"}</button>`:""}</div></div>
       <div class="alh" style="--i:1">Треки <span class="hint">— нажми, чтобы изменить оценку; перетаскивай или двигай стрелками, чтобы поменять порядок</span></div>`
-      +items.map((t,i)=>trackRow(t,i,{num:1,mv:items.length>1})).join(""),keep);
+      +items.map((t,i)=>trackRow(t,i,{num:1,mv:items.length>1,best:t===bestT})).join(""),keep);
     setNav();
   }
   let sSort="score";
@@ -8835,7 +8942,7 @@ const NET=(()=>{
 })();
 
 const ME=(()=>{
-  const D={nick:"",bio:"",av:0,bal:0,earned:0,spent:0,got:[],inv:[],eq:{},init:false,favTracks:[],favArtists:[],adminKey:"",xp:0,xpInit:false};
+  const D={nick:"",bio:"",av:0,bal:0,earned:0,spent:0,got:[],inv:[],eq:{},init:false,favTracks:[],favArtists:[],favAlbums:[],slots:{t:0,a:0,l:0},adminKey:"",xp:0,xpInit:false};
   let ready=false,saveT=0,lastRate=0,admin=false,role=null;
   const got=new Set();
   const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
@@ -8857,6 +8964,7 @@ const ME=(()=>{
     if(!j) return;o=o||{};const old=D.bal;
     if(j.bal!=null) D.bal=j.bal;
     ["earned","spent","won","bet","xp"].forEach(k=>{if(j[k]!=null) D[k]=j[k]});
+    if(j.slots&&typeof j.slots==="object") D.slots=Object.assign({t:0,a:0,l:0},j.slots);
     if(Array.isArray(j.inv)){
       const extra=role?role.items:[];
       D.inv=[...new Set(j.inv.concat(extra).filter(id=>ITEM[id]))];
@@ -8896,20 +9004,24 @@ const ME=(()=>{
     const ga=new Map();r.forEach(t=>{const g=(t.genre||"").trim();if(g) ga.set(g.toLowerCase(),{n:(ga.get(g.toLowerCase())||{n:0}).n+1,g})});
     const g=[...ga.values()].sort((a,b)=>b.n-a.n)[0];
     const fav=(D.favTracks||[]).map(id=>r.find(t=>t.id===id)).filter(Boolean);
-    const top=(fav.length?fav:r.slice().sort((a,b)=>b.total-a.total)).slice(0,3).map(t=>({t:t.title,a:t.artist,s:t.total}));
+    const topT=(fav.length?fav.slice(0,10):r.slice().sort((a,b)=>b.total-a.total).slice(0,3));
+    const top=topT.map(t=>({t:t.title,a:t.artist,s:t.total,_u:covUrlOf(t)}));
     const arts=new Set(r.map(t=>lo(t.artist)).filter(a=>a&&a!=="—")).size;
-    let fa=[];try{const gs=AP.groups();fa=(D.favArtists||[]).map(k=>gs.find(x=>x.key===k)).filter(Boolean).slice(0,3).map(x=>({n:x.name,k:x.items.filter(isRated).length,_u:(/url\(([^)]+)\)/.exec(AP.avatar(x.name))||[])[1]||""}))}catch(e){}
-    top.forEach((x,i)=>{x._u=covUrlOf((fav.length?fav:r.slice().sort((a,b)=>b.total-a.total))[i])});
-    return{n:r.length,avg:Math.round(avg*100)/100,g:g?g.g:"",arts,top,fa,ach:Object.keys(D.ach||{}).length,avc:D.avGif?D.avCrop||null:null,adm:!!admin,earned:D.earned||0};
+    let fa=[];try{const gs=AP.groups();fa=(D.favArtists||[]).map(k=>gs.find(x=>x.key===k)).filter(Boolean).slice(0,10).map(x=>({n:x.name,k:x.items.filter(isRated).length,_u:(/url\(([^)]+)\)/.exec(AP.avatar(x.name))||[])[1]||""}))}catch(e){}
+    const fl=favAlbs().slice(0,10).map(a=>({n:a.name,a:albArt(a),s:Math.round(a.avg*100)/100,k:a.n,ep:a.n<=6,_u:albCovUrl(a.id)||covUrlOf(a.items.find(x=>x.cover))}));
+    return{n:r.length,avg:Math.round(avg*100)/100,g:g?g.g:"",arts,top,fa,fl,ach:Object.keys(D.ach||{}).length,avc:D.avGif?D.avCrop||null:null,adm:!!admin,earned:D.earned||0};
   }
-  async function pubThumbs(st){                         // маленькие обложки любимых треков и фото артистов — для профиля у друзей
-    for(const x of st.top.concat(st.fa)){x.c=await thumbData(x._u,72);delete x._u}
-    return st;
+  async function pubThumbs(st){                         // маленькие обложки любимых треков, альбомов и фото артистов — для профиля у друзей
+    const stx={top:[],fa:[],fl:[]};
+    for(const k of ["top","fa","fl"]) for(const x of st[k]){stx[k].push(await thumbData(x._u,72));delete x._u}
+    return stx;
   }
+  const favAlbs=()=>(D.favAlbums||[]).map(id=>albumInfo(id)).filter(Boolean);
+  const albArt=a=>{const ns=[...new Set(a.items.flatMap(artistNames))];return ns.length>2?ns.slice(0,2).join(", ")+" и др.":ns.join(", ")||"без исполнителя"};
   function netPush(){
     if(!NET.on) return;clearTimeout(pushT);
     pushT=setTimeout(async()=>{
-      const pay={nick:D.nick,bio:D.bio||"",eq:D.eq,st:await pubThumbs(pubStats())},sig=JSON.stringify(pay);
+      const st=pubStats(),stx=await pubThumbs(st),pay={nick:D.nick,bio:D.bio||"",eq:D.eq,st,stx},sig=JSON.stringify(pay);
       if(sig!==lastPush){try{await NET.call("profile",pay);lastPush=sig}catch(e){}}
       if((D.av||0)!==(D.avSent||0)) pushAv();
     },2500);
@@ -8986,6 +9098,20 @@ const ME=(()=>{
     paintLvl();try{PF.refresh()}catch(e){}
     if(j.up&&j.up.after>j.up.before){const b=j.up.bonus;whenFree(()=>card({n:b,quiet:true,title:`Новый уровень ${j.up.after}!`,sub:`Награда — ${b} ${plural(b,"пульс","пульса","пульсов")}.`,lvl:j.up.after}))}
   }
+  /* места для любимых: 3 бесплатно, каждое следующее — 5000 пульсов (до 10) */
+  const SLOT_P=5000,SLOT_MAX=7;
+  const favMax=k=>3+Math.min(SLOT_MAX,(D.slots&&+D.slots[k])||0);
+  async function buySlot(k){
+    const have=(D.slots&&+D.slots[k])||0;
+    if(have>=SLOT_MAX) return{ok:false,msg:"Больше мест купить нельзя — максимум 10"};
+    if(D.bal<SLOT_P) return{ok:false,msg:`Не хватает ${fmtN(SLOT_P-D.bal)} пульсов`};
+    if(NET.on){
+      try{const j=await NET.call("buy",{slot:k});const old=D.bal;applyMe(j,{paint:false});paintBal(old)}
+      catch(e){return{ok:false,msg:e.msg}}
+    }else{const old=D.bal;D.bal-=SLOT_P;D.spent=(D.spent||0)+SLOT_P;D.slots=Object.assign({t:0,a:0,l:0},D.slots);D.slots[k]=have+1;save();paintBal(old)}
+    try{SND.play("buy")}catch(e){}
+    return{ok:true,max:favMax(k)};
+  }
   /* после раунда игры баланс сверяется с сервером */
   function netSettle(){if(!NET.on||NET.bal==null) return;const old=D.bal;D.bal=NET.bal;save();if(old!==D.bal) paintBal(old)}
   function netRefund(v){const old=D.bal;D.bal+=v;D.bet=Math.max(0,(D.bet||0)-v);save();paintBal(old)}
@@ -9025,7 +9151,8 @@ const ME=(()=>{
     D.eq=D.eq&&typeof D.eq==="object"?D.eq:{};
     for(const k in D.eq) if(!D.eq[k]||!ITEM[D.eq[k]]) delete D.eq[k];
     D.bal=Math.max(0,Math.floor(+D.bal||0));
-    if(!Array.isArray(D.favTracks)) D.favTracks=[];if(!Array.isArray(D.favArtists)) D.favArtists=[];
+    if(!Array.isArray(D.favTracks)) D.favTracks=[];if(!Array.isArray(D.favArtists)) D.favArtists=[];if(!Array.isArray(D.favAlbums)) D.favAlbums=[];
+    if(!D.slots||typeof D.slots!=="object") D.slots={t:0,a:0,l:0};
     if(D.favTrack!=null&&!D.favTracks.length) D.favTracks=[D.favTrack];if(D.favArtist&&!D.favArtists.length) D.favArtists=[D.favArtist];
     delete D.favTrack;delete D.favArtist;
     if(!D.nick){let n="";try{n=localStorage.getItem("roomName")||""}catch(e){}D.nick=n||"Меломан"}
@@ -9352,7 +9479,7 @@ const ME=(()=>{
     try{PF.refresh()}catch(e){}
     try{SHOP.refresh()}catch(e){}
   }
-  return{load,scan,buy,reward,spend,payout,save,redeem,giftMake,giftOpen,giftWhat,uidFmt,applyMe,netReward,netSettle,netRefund,netImport,netStart,netPush,equip,equipSet,setInfo,owns,eq,avatar,badge,nameH,avUrl,tryAdmin,fmtN,get role(){return role},lvl:()=>lvl(D.xp),
+  return{load,scan,buy,reward,spend,payout,save,redeem,giftMake,giftOpen,giftWhat,uidFmt,applyMe,netReward,netSettle,netRefund,favMax,buySlot,SLOT_P,netImport,netStart,netPush,equip,equipSet,setInfo,owns,eq,avatar,badge,nameH,avUrl,tryAdmin,fmtN,get role(){return role},lvl:()=>lvl(D.xp),
     cdLeft,cdStart,CD,
     get data(){return D},get admin(){return admin},noteRate(){lastRate=performance.now()},paintBal,card,toastCoin};
 })();
@@ -9380,7 +9507,8 @@ const plural=(n,a,b,c)=>{const m=n%100,d=n%10;return m>10&&m<20?c:d===1?a:d>1&&d
 
 /* ---------- выбор любимых треков / артистов (до 3) ---------- */
 const PICK=(()=>{
-  const el=$("#fpk"),MAX=3;let mode="",cb=null,sel=[];
+  const el=$("#fpk");let mode="",cb=null,sel=[],MAX=3;
+  const KEY={track:"t",artist:"a",album:"l"},TTL={track:"Любимые треки",artist:"Любимые артисты",album:"Любимые альбомы"};
   const has=v=>sel.some(x=>String(x)===String(v));
   function rows(q){
     q=(q||"").trim().toLowerCase();
@@ -9389,15 +9517,22 @@ const PICK=(()=>{
       return list.length?list.map(t=>`<button class="fpr${has(t.id)?" on":""}" data-v="${t.id}" type="button"><span class="fpn">${has(t.id)?sel.findIndex(x=>x===t.id)+1:""}</span><div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
         <div class="tx"><b>${esc(t.title)}</b><span>${esc(t.artist)}</span></div><i style="color:${rgCol(t.total)}">${fmt(t.total)}</i></button>`).join(""):`<div class="fpe">Ничего не найдено</div>`;
     }
+    if(mode==="album"){
+      const ids=[...new Set(state.tracks.filter(t=>t.albumId).map(t=>t.albumId))];
+      const al=ids.map(albumInfo).filter(a=>a&&a.done&&a.n>1).filter(a=>!q||(a.name+" "+a.items.map(t=>t.artist).join(" ")).toLowerCase().includes(q)).sort((a,b)=>b.avg-a.avg);
+      return al.length?al.map(a=>{const u=albCovUrl(a.id)||covUrlOf(a.items.find(x=>x.cover)),ns=[...new Set(a.items.flatMap(artistNames))];
+        return `<button class="fpr${has(a.id)?" on":""}" data-v="${a.id}" type="button"><span class="fpn">${has(a.id)?sel.findIndex(x=>String(x)===String(a.id))+1:""}</span><div class="cv" style="${u?`background:url(${u}) center/cover`:`background:${coverBg(a.name,"")}`}">${u?"":NOTE}</div>
+        <div class="tx"><b>${esc(a.name)}</b><span>${esc(ns.slice(0,2).join(", ")||"без исполнителя")} · ${a.n<=6?"EP":"альбом"}, ${a.done}/${a.n}</span></div><i style="color:${rgCol(a.avg)}">${fmt(a.avg)}</i></button>`}).join(""):`<div class="fpe">${q?"Ничего не найдено":"Оцени хотя бы один трек альбома или EP — он появится здесь"}</div>`;
+    }
     const gs=AP.groups().filter(g=>g.key&&g.items.some(isRated)).filter(g=>!q||g.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"ru"));
     return gs.length?gs.map(g=>{const n=g.items.filter(isRated).length;return `<button class="fpr${has(g.key)?" on":""}" data-v="${esc(g.key)}" type="button"><span class="fpn">${has(g.key)?sel.indexOf(g.key)+1:""}</span>${AP.avatar(g.name)}
       <div class="tx"><b>${esc(g.name)}</b><span>${n} ${plural(n,"оценка","оценки","оценок")}</span></div></button>`}).join(""):`<div class="fpe">Ничего не найдено</div>`;
   }
-  const cnt=()=>`Выбрано <b>${sel.length}</b> из ${MAX}`;
+  const cnt=()=>`Выбрано <b>${sel.length}</b> из ${MAX}`+(MAX<10?` <button class="fpslot" data-slot type="button" title="Каждое место сверх трёх стоит ${ME.fmtN(ME.SLOT_P)} пульсов">+ место · ${COIN}${ME.fmtN(ME.SLOT_P)}</button>`:"");
   function open(m,cur,done){
-    mode=m;cb=done;sel=(cur||[]).slice(0,MAX);
-    el.innerHTML=`<div class="fpc"><div class="fph"><div><b>${m==="track"?"Любимые треки":"Любимые артисты"}</b><span>Выбери от 1 до 3 — порядок сохранится</span></div><button class="pround" data-x type="button" title="Закрыть"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
-      <div class="fps"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input id="fpQ" placeholder="${m==="track"?"Поиск по оценённым трекам":"Поиск артиста"}" autocomplete="off"></div>
+    mode=m;cb=done;MAX=ME.favMax(KEY[m]);sel=(cur||[]).slice(0,MAX);
+    el.innerHTML=`<div class="fpc"><div class="fph"><div><b>${TTL[m]}</b><span>Выбери до ${MAX} — порядок сохранится. Больше мест — по ${ME.fmtN(ME.SLOT_P)} пульсов</span></div><button class="pround" data-x type="button" title="Закрыть"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="fps"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input id="fpQ" placeholder="${m==="track"?"Поиск по оценённым трекам":m==="album"?"Поиск альбома или EP":"Поиск артиста"}" autocomplete="off"></div>
       <div class="fpl" id="fpL">${rows("")}</div>
       <div class="fpf"><span id="fpC">${cnt()}</span><button class="gbtn ghost" data-clr type="button">Очистить</button><button class="gbtn" data-ok type="button">Готово</button></div></div>`;
     el.classList.remove("out");el.hidden=false;setTimeout(()=>{const q=$("#fpQ");if(q) q.focus()},50);
@@ -9409,10 +9544,12 @@ const PICK=(()=>{
     if(e.target===el||e.target.closest("[data-x]")){close();return}
     if(e.target.closest("[data-clr]")){sel=[];cb&&cb([]);paint();return}
     if(e.target.closest("[data-ok]")){close();return}
+    const sb=e.target.closest("[data-slot]");
+    if(sb){sb.disabled=true;ME.buySlot(KEY[mode]).then(r=>{if(!r.ok){sb.disabled=false;toast(r.msg,true);return}MAX=r.max;paint();toast(`Открыто новое место — теперь можно выбрать ${MAX}`)});return}
     const r=e.target.closest(".fpr");if(!r) return;
-    const v=mode==="track"?+r.dataset.v:r.dataset.v;
+    const v=mode==="artist"?r.dataset.v:+r.dataset.v;
     if(has(v)) sel=sel.filter(x=>String(x)!==String(v));
-    else{if(sel.length>=MAX){r.classList.remove("shake");void r.offsetWidth;r.classList.add("shake");toast("Можно выбрать до 3 — сначала убери одного",true);return}sel.push(v)}
+    else{if(sel.length>=MAX){r.classList.remove("shake");void r.offsetWidth;r.classList.add("shake");toast(MAX<10?`Мест: ${MAX}. Убери один или купи ещё место за ${ME.fmtN(ME.SLOT_P)} пульсов — кнопка внизу`:"Больше 10 выбрать нельзя",true);return}sel.push(v)}
     cb&&cb(sel.slice());paint();
   });
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!el.hidden){e.preventDefault();e.stopImmediatePropagation();close()}},true);
@@ -9433,7 +9570,8 @@ const PF=(()=>{
     const ga=new Map();r.forEach(t=>{const g=(t.genre||"").trim();if(g) ga.set(g.toLowerCase(),{n:(ga.get(g.toLowerCase())||{n:0}).n+1,g})});
     const genre=[...ga.values()].sort((a,b)=>b.n-a.n)[0];
     let arts=[];try{const gs=AP.groups();arts=(D.favArtists||[]).map(k=>gs.find(g=>g.key===k)).filter(Boolean)}catch(e){}
-    return{n:r.length,avg,favs,genre,arts};
+    const albs=(D.favAlbums||[]).map(id=>albumInfo(id)).filter(Boolean);
+    return{n:r.length,avg,favs,genre,arts,albs};
   }
   function render(keep){
     const D=ME.data,e=D.eq,s=stats(),sc=body.scrollTop,LV=ME.lvl();
@@ -9445,9 +9583,12 @@ const PF=(()=>{
     const card=(lab,val,sub)=>`<div class="pfs"><em>${lab}</em><b>${val}</b>${sub?`<span>${sub}</span>`:""}</div>`;
     const addRow=(t1,t2)=>`<div class="pffr emp"><div class="pfplus">+</div><div><b>${t1}</b><span>${t2}</span></div></div>`;
     const favT=s.favs.map((t,i)=>`<div class="pffr"><span class="pfno">${i+1}</span><div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div><div><b>${esc(t.title)}</b><span>${esc(t.artist)}</span></div><i style="color:${rgCol(t.total)}">${fmt(t.total)}</i></div>`).join("")
-      +(s.favs.length<3?addRow(s.favs.length?"Добавить ещё":"Выбрать треки",s.favs.length?`можно ещё ${3-s.favs.length}`:"от 1 до 3 из твоих оценок"):"");
+      +(s.favs.length<ME.favMax("t")?addRow(s.favs.length?"Добавить ещё":"Выбрать треки",s.favs.length?`можно ещё ${ME.favMax("t")-s.favs.length}`:`до ${ME.favMax("t")} из твоих оценок`):"");
     const favA=s.arts.map((g,i)=>{const n=g.items.filter(isRated).length;return `<div class="pffr"><span class="pfno">${i+1}</span>${AP.avatar(g.name)}<div><b>${esc(g.name)}</b><span>${n} ${plural(n,"оценка","оценки","оценок")}</span></div></div>`}).join("")
-      +(s.arts.length<3?addRow(s.arts.length?"Добавить ещё":"Выбрать артистов",s.arts.length?`можно ещё ${3-s.arts.length}`:"от 1 до 3 из медиатеки"):"");
+      +(s.arts.length<ME.favMax("a")?addRow(s.arts.length?"Добавить ещё":"Выбрать артистов",s.arts.length?`можно ещё ${ME.favMax("a")-s.arts.length}`:`до ${ME.favMax("a")} из медиатеки`):"");
+    const favL=s.albs.map((a,i)=>{const u=albCovUrl(a.id)||covUrlOf(a.items.find(x=>x.cover)),ns=[...new Set(a.items.flatMap(artistNames))];
+        return `<div class="pffr"><span class="pfno">${i+1}</span><div class="cv" style="${u?`background:url(${u}) center/cover`:`background:${coverBg(a.name,"")}`}">${u?"":NOTE}</div><div><b>${esc(a.name)}</b><span>${esc(ns.slice(0,2).join(", ")||"без исполнителя")}</span></div><i style="color:${rgCol(a.avg)}">${a.done?fmt(a.avg):"—"}</i></div>`}).join("")
+      +(s.albs.length<ME.favMax("l")?addRow(s.albs.length?"Добавить ещё":"Выбрать альбомы",s.albs.length?`можно ещё ${ME.favMax("l")-s.albs.length}`:`до ${ME.favMax("l")} альбомов и EP`):"");
     const genH=s.genre?`<div class="pffr"><div class="pfg">${esc(s.genre.g.charAt(0).toUpperCase())}</div><div><b>${esc(s.genre.g)}</b><span>${s.genre.n} ${plural(s.genre.n,"трек","трека","треков")}</span></div></div>`:`<span class="pfn">Пока нет жанров</span>`;
     const idBlock=edit?`<div class="pfed">
         <label>Никнейм${ME.admin?' <span class="admpf sm">[ADMIN]</span>':""}<input id="pfNick" maxlength="40" value="${esc(D.nick)}" autocomplete="off" spellcheck="false"></label>
@@ -9467,7 +9608,7 @@ const PF=(()=>{
       <div class="pffv">
         <div class="pff pick" data-pick="track" title="Выбрать любимые треки"><em>Любимые треки ${PEN}</em>${favT}</div>
         <div class="pff pick" data-pick="artist" title="Выбрать любимых артистов"><em>Любимые артисты ${PEN}</em>${favA}</div>
-        <div class="pff"><em>Любимый жанр</em>${genH}</div></div>
+        <div class="pff pick" data-pick="album" title="Выбрать любимые альбомы"><em>Любимые альбомы ${PEN}</em>${favL}</div></div>
       <div class="alh">Гардероб <span class="hint">— надевай купленные предметы</span></div>
       <div class="psort pftab">${tabs}</div>
       <div class="igrid inv">${inv}</div>`;
@@ -9510,7 +9651,7 @@ const PF=(()=>{
       return;
     }
     const p=e.target.closest("[data-pick]");
-    if(p){const m=p.dataset.pick,D=ME.data;PICK.open(m,m==="track"?D.favTracks:D.favArtists,v=>{ME.setInfo(m==="track"?{favTracks:v}:{favArtists:v});try{QA.ev("fav")}catch(e){}});return}
+    if(p){const m=p.dataset.pick,D=ME.data,F={track:"favTracks",artist:"favArtists",album:"favAlbums"}[m];PICK.open(m,D[F],v=>{ME.setInfo({[F]:v});try{QA.ev("fav")}catch(e){}});return}
     const t=e.target.closest("[data-tab]");if(t){tab=t.dataset.tab;render(true);return}
     const q=e.target.closest("[data-eq]");if(q){ME.equip(q.dataset.eq);return}
   });
@@ -10150,10 +10291,11 @@ const SH=(()=>{
       c.textAlign="left";c.fillStyle="rgba(255,255,255,.45)";c.font=`800 ${fs*.85}px ${F}`;c.fillText(String(i+1).padStart(2,"0"),x,yy);
       const nx=x+fs*1.7,sTx=t.unrated?"—":fmt(t.total);
       c.font=`900 ${fs}px ${F}`;const sw2=c.measureText(sTx).width;
-      const hw=t.fav?fs*1.25:0;
+      const isB=t===best&&n>1,hw=(t.fav?fs*1.25:0)+(isB?fs*1.25:0);
       if(t.fav){c.save();c.fillStyle="#ff4d8d";c.shadowColor="rgba(255,77,141,.8)";c.shadowBlur=12;const hx=nx+fs*.5,hy=yy-fs*.38,hr=fs*.42;
         c.beginPath();c.moveTo(hx,hy+hr*.9);c.bezierCurveTo(hx-hr*1.4,hy,hx-hr*.7,hy-hr*1.1,hx,hy-hr*.35);c.bezierCurveTo(hx+hr*.7,hy-hr*1.1,hx+hr*1.4,hy,hx,hy+hr*.9);c.fill();c.restore()}
-      c.fillStyle=t.fav?"#ffd6e6":t===best?"#fff":"rgba(255,255,255,.88)";c.font=`${t===best||t.fav?800:600} ${fs}px ${F}`;c.fillText(fit(c,t.title+(t===best&&n>1?"  ★":""),cwid-fs*1.7-sw2-18-hw),nx+hw,yy);
+      if(isB){c.save();c.fillStyle="#ffd45a";c.shadowColor="rgba(255,200,60,.85)";c.shadowBlur=12;c.font=`900 ${fs*.95}px ${F}`;c.textAlign="center";c.fillText("★",nx+(t.fav?fs*1.25:0)+fs*.5,yy);c.restore();c.textAlign="left"}
+      c.fillStyle=t.fav?"#ffd6e6":t===best?"#fff":"rgba(255,255,255,.88)";c.font=`${t===best||t.fav?800:600} ${fs}px ${F}`;c.fillText(fit(c,t.title,cwid-fs*1.7-sw2-18-hw),nx+hw,yy);
       c.textAlign="right";c.fillStyle=t.unrated?"rgba(255,255,255,.35)":rgCol(t.total);c.font=`900 ${fs}px ${F}`;c.fillText(sTx,x+cwid,yy);
       const by=yy+Math.max(6,rh*.16),bh=Math.max(3,rh*.07);c.fillStyle="rgba(255,255,255,.09)";rr(c,nx,by,cwid-fs*1.7,bh,bh/2);c.fill();
       if(!t.unrated){c.fillStyle=rgCol(t.total);rr(c,nx,by,Math.max(bh,(cwid-fs*1.7)*t.total/10),bh,bh/2);c.fill()}
@@ -10438,12 +10580,23 @@ async function thumbData(url,size){
   }catch(e){}
   THUMBS.set(key,d);return d;
 }
-async function rateExt(t){return{t:"t",ti:t.title,ar:t.artist,be:t.beat||"",ge:t.genre||"",al:t.album||"",to:t.total,sc:t.scores,nt:t.note||"",nk:t.noteK||"",c:await thumbData(covUrlOf(t),160)}}
+async function rateExt(t){
+  const x={t:"t",ti:t.title,ar:t.artist,be:t.beat||"",ge:t.genre||"",al:t.album||"",to:t.total,sc:t.scores,nt:t.note||"",nk:t.noteK||"",c:await thumbData(covUrlOf(t),160)};
+  if(t.stream&&t.stream.url&&t.stream.src==="sc") x.st={url:t.stream.url,src:"sc",link:t.stream.link||"",name:t.stream.name||""};
+  if(t.cat) x.cat=t.cat;if(t.embed) x.em=t.embed;
+  if(t.audio&&NET.on){                                   // свой загруженный файл уходит вместе с оценкой
+    toast("Загружаю аудиофайл для друга…");
+    try{const r=await NET.local("audup",{tid:t.id});x.au={id:r.id,ext:r.ext,size:r.size,name:t.audio.name||""}}
+    catch(e){toast((e.msg||"Аудио не загрузилось")+" — оценка уйдёт без аудио",true)}
+  }
+  return x;
+}
+const bestOf=items=>{const r=items.filter(isRated);return r.length>1?r.reduce((a,b)=>b.total>a.total?b:a):null};
 async function albExt(id){
   const a=albumInfo(id);if(!a) return null;
   const items=a.items.slice().sort(byOrd),names=[...new Set(items.flatMap(artistNames))],ct=items.find(x=>x.cover);
   return{t:"a",na:a.name,ar:names.slice(0,3).join(", ")||"без исполнителя",avg:a.avg,n:a.n,done:a.done,ep:a.n<=6,
-    items:items.slice(0,40).map(x=>({ti:x.title,to:x.unrated?null:x.total,f:!!x.fav})),c:await thumbData(albCovUrl(id)||covUrlOf(ct),160)};
+    items:items.slice(0,40).map(x=>({ti:x.title,to:x.unrated?null:x.total,f:!!x.fav,b:x===bestOf(items)})),c:await thumbData(albCovUrl(id)||covUrlOf(ct),160)};
 }
 function rateCardH(x,mine,mid){
   if(!x||typeof x!=="object") return "";
@@ -10453,7 +10606,7 @@ function rateCardH(x,mine,mid){
     return `<div class="chr"><div class="chrh"><div class="chrc" style="${cov}">${x.c?"":NOTE}</div>
       <div class="chrt"><em>${x.ep?"EP":"Альбом"} · ${x.n} ${plural(x.n,"трек","трека","треков")}</em><b>${esc(x.na)}</b><span>${esc(x.ar)}</span></div>
       <div class="chrs" style="color:${col}">${x.done?fmt(x.avg):"—"}</div></div>
-      <div class="chrl">${(x.items||[]).map((it,i)=>`<div><i>${i+1}</i><span>${it.f?'<s class="chf">♥</s>':""}${esc(it.ti)}</span><b style="color:${it.to==null?"var(--sub)":rgCol(it.to)}">${it.to==null?"—":fmt(it.to)}</b></div>`).join("")}</div></div>`;
+      <div class="chrl">${(x.items||[]).map((it,i)=>`<div><i>${i+1}</i><span>${it.f?'<s class="chf">♥</s>':""}${it.b?'<s class="chf st">★</s>':""}${esc(it.ti)}</span><b style="color:${it.to==null?"var(--sub)":rgCol(it.to)}">${it.to==null?"—":fmt(it.to)}</b></div>`).join("")}</div></div>`;
   }
   const sc=Array.isArray(x.sc)?x.sc:[];
   return `<div class="chr"><div class="chrh"><div class="chrc" style="${cov}">${x.c?"":NOTE}</div>
@@ -10461,7 +10614,8 @@ function rateCardH(x,mine,mid){
     <div class="chrs" style="color:${rgCol(x.to)}">${fmt(+x.to||0)}</div></div>
     <div class="chrb">${sc.map((v,i)=>`<div><span>${CRIT[i]?CRIT[i][0]:""}</span><i><s style="width:${Math.max(3,v*10)}%;background:${rgCol(v)}"></s></i><b style="color:${rgCol(v)}">${fmt(v)}</b></div>`).join("")}</div>
     ${x.nt?`<div class="chrn${x.nk==="q"?" q":""}"><em>${x.nk==="q"?"Любимая строчка":"Рецензия"}</em>${esc(x.nt)}</div>`:""}
-    ${mine?"":`<button class="chrgo" data-try="${mid}" type="button">Оценить самому</button>`}</div>`;
+    ${x.au||x.st?`<button class="chrpl" data-pl="${mid}" type="button"><i>▶</i><span>${x.au?"Слушать файл":"Слушать с SoundCloud"}</span></button>`:""}
+    ${mine?"":`<button class="chrgo" data-try="${mid}" type="button">Оценить самому${x.au?" · с аудиофайлом":x.st?" · с SoundCloud":""}</button>`}</div>`;
 }
 
 /* ---------- друзья, профили игроков, чат и рейтинг ---------- */
@@ -10578,6 +10732,9 @@ const FR=(()=>{
   function renderUser(){
     const p=cur,st=p.st||{},e=p.eq||{},L=lvlOf(p.xp),mine=p.uid===me();
     const card=(lab,val,s2)=>`<div class="pfs"><em>${lab}</em><b>${val}</b>${s2?`<span>${s2}</span>`:""}</div>`;
+    const X=p.stx||{},cOf=(k,i,x)=>(X[k]&&X[k][i])||x.c||"";
+    (st.top||[]).forEach((t,i)=>{t.c=cOf("top",i,t)});(st.fa||[]).forEach((t,i)=>{t.c=cOf("fa",i,t)});(st.fl||[]).forEach((t,i)=>{t.c=cOf("fl",i,t)});
+    const fl=(st.fl||[]).map((a,i)=>`<div class="pffr"><span class="pfno">${i+1}</span><div class="cv" style="${a.c?`background:url(${a.c}) center/cover`:`background:${coverBg(a.n,"")}`}">${a.c?"":NOTE}</div><div><b>${esc(a.n)}</b><span>${esc(a.a)}${a.k?` · ${a.ep?"EP":"альбом"}`:""}</span></div><i style="color:${rgCol(a.s)}">${fmt(a.s)}</i></div>`).join("")||`<span class="pfn">Пока не выбраны</span>`;
     const tops=(st.top||[]).map((t,i)=>`<div class="pffr"><span class="pfno">${i+1}</span><div class="cv" style="${t.c?`background:url(${t.c}) center/cover`:`background:${coverBg(t.a,t.t)}`}">${t.c?"":NOTE}</div><div><b>${esc(t.t)}</b><span>${esc(t.a)}</span></div><i style="color:${rgCol(t.s)}">${fmt(t.s)}</i></div>`).join("")||`<span class="pfn">Пока не выбраны</span>`;
     const fa=(st.fa||[]).map((a,i)=>`<div class="pffr"><span class="pfno">${i+1}</span>${a.c?`<div class="av img" style="background:url(${a.c}) center/cover"></div>`:`<div class="av" style="background:${coverBg(a.n,"")}">${esc((a.n||"?").charAt(0).toUpperCase())}</div>`}<div><b>${esc(a.n)}</b><span>${a.k} ${plural(a.k,"оценка","оценки","оценок")}</span></div></div>`).join("")||`<span class="pfn">Пока не выбраны</span>`;
     const gen=st.g?`<div class="pffr"><div class="pfg">${esc(st.g.charAt(0).toUpperCase())}</div><div><b>${esc(st.g)}</b></div></div>`:`<span class="pfn">Пока нет жанров</span>`;
@@ -10593,7 +10750,7 @@ const FR=(()=>{
         <div class="frst"><em>ID игрока</em><b>${ME.uidFmt(p.uid)}</b><span class="${online(p.seen)?"on":""}">${ago(p.seen)}</span></div>
       </div>
       <div class="pfst">${card("Оценено",st.n||0,plural(st.n||0,"трек","трека","треков"))}${card("Средняя",st.n?fmt(st.avg||0):"—","по всем оценкам")}${card("Уровень",p.lvl,ME.fmtN(p.xp||0)+" опыта всего")}${st.earned?card("Заработано",ME.fmtN(st.earned),"пульсов всего"):card("Достижения",st.ach||0,"открыто")}</div>
-      <div class="pffv"><div class="pff"><em>Любимые треки</em>${tops}</div><div class="pff"><em>Любимые артисты</em>${fa}</div><div class="pff"><em>Любимый жанр</em>${gen}</div></div>`;
+      <div class="pffv"><div class="pff"><em>Любимые треки</em>${tops}</div><div class="pff"><em>Любимые артисты</em>${fa}</div><div class="pff"><em>Любимые альбомы</em>${fl}</div></div>`;
     FXP.scan(body);
   }
   /* ===== чат ===== */
@@ -10753,16 +10910,37 @@ const FR=(()=>{
       catch(er){b.disabled=false;toast(er.msg,true)}
     });
   }
-  function tryRate(x){
-    if(!x) return;close();
-    newTrack();fillEditor({title:x.ti||"",artist:x.ar||"—",beat:x.be||"",genre:x.ge||"",unrated:true});state.editing=null;paintMode();
+  async function tryRate(x){
+    if(!x) return;close();stopPl();
+    newTrack();fillEditor({title:x.ti||"",artist:x.ar||"—",beat:x.be||"",genre:x.ge||"",unrated:true,...(x.st?{stream:x.st}:{}),...(x.cat?{cat:x.cat}:{}),...(x.em?{embed:x.em}:{})});state.editing=null;paintMode();
     try{titleEl.dispatchEvent(new Event("input",{bubbles:true}))}catch(e){}
-    toast("Название и артист уже вписаны — оцени трек сам");
+    if(x.au){
+      toast("Скачиваю аудиофайл…");
+      try{const r=await fetch(`/api/net/aud/${x.au.id}`);if(!r.ok) throw 0;const b=await r.blob();
+        AU.setFile(new File([b],x.au.name||`${x.ar} - ${x.ti}.${x.au.ext}`,{type:b.type||"audio/mpeg"}))}
+      catch(e){toast("Не удалось скачать аудиофайл",true)}
+    }else toast(x.st?"Трек с SoundCloud уже в плеере — оцени его сам":"Название и артист уже вписаны — оцени трек сам");
+  }
+  /* прослушивание присланного трека прямо в чате */
+  const plAu=new Audio();let plMid=null;
+  function plPaint(){body.querySelectorAll("[data-pl]").forEach(b=>{const on=b.dataset.pl===String(plMid);b.classList.toggle("on",on&&!plAu.paused);b.querySelector("i").textContent=on&&!plAu.paused?"❚❚":"▶"})}
+  function stopPl(){plAu.pause();plMid=null;plPaint()}
+  plAu.addEventListener("play",plPaint);plAu.addEventListener("pause",plPaint);plAu.addEventListener("ended",()=>{plMid=null;plPaint()});
+  plAu.addEventListener("error",async()=>{if(!plMid) return;const s=plAu.getAttribute("src")||"";plMid=null;plPaint();toast(s.includes("pulse-stream")?await scErrText(s):"Не удалось включить трек",true)});
+  function togglePl(mid){
+    const m=chat&&chat.rows.find(r=>String(r.id)===String(mid));if(!m||!m.ext) return;
+    if(plMid===String(mid)){plAu.paused?plAu.play().catch(()=>{}):plAu.pause();return}
+    try{AU.pause()}catch(e){}
+    const x=m.ext;plMid=String(mid);
+    plAu.src=x.au?`/api/net/aud/${x.au.id}`:"/api/cat/stream?u="+encodeURIComponent(x.st.url);
+    plAu.volume=Math.max(0,Math.min(1,(+ST.vol||100)/100));
+    toast(x.au?"Загружаю аудиофайл…":"Загружаю трек с SoundCloud…");
+    plAu.play().catch(()=>{});plPaint();
   }
   /* ===== навигация ===== */
   function back(){
     if(view==="chat"&&prevView==="user"&&cur&&cur.uid===(chat&&chat.uid)){setView("user");chat=null;renderUser();return}
-    chat=null;cur=null;setView("list");prevView="list";shell();load();body.scrollTop=0;
+    stopPl();chat=null;cur=null;setView("list");prevView="list";shell();load();body.scrollTop=0;
   }
   function open(silent){
     clearTimeout(closeT);if(isOpen()) return;
@@ -10774,7 +10952,7 @@ const FR=(()=>{
   function close(keep){
     if(el.hidden||el.classList.contains("out")) return;
     if(keep!==true) document.body.classList.remove("pg");
-    navBtn.classList.remove("on");el.classList.add("out");clearInterval(pollT);pollT=0;
+    navBtn.classList.remove("on");el.classList.add("out");clearInterval(pollT);pollT=0;stopPl();
     closeT=setTimeout(()=>{el.hidden=true;el.classList.remove("out")},280);
   }
   async function add(){
@@ -10826,6 +11004,7 @@ const FR=(()=>{
     const et=e.target.closest("[data-et]");if(et){emoTab=et.dataset.et;paintEmo();return}
     const em=e.target.closest("[data-em]");if(em){addEmo(em.dataset.em);return}
     const im=e.target.closest("img.chimg");if(im){OV.open(`<img src="${im.src}" alt=""><button class="pround" data-ovx type="button" title="Закрыть"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`,"ovimg");return}
+    const pl=e.target.closest("[data-pl]");if(pl){togglePl(pl.dataset.pl);return}
     const tr=e.target.closest("[data-try]");if(tr){const m=chat&&chat.rows.find(r=>String(r.id)===tr.dataset.try);if(m) tryRate(m.ext);return}
     if(!e.target.closest("#emoP,[data-ca=emo]")){const p=$("#emoP");if(p&&!p.hidden) p.hidden=true}
     const r=e.target.closest("[data-u]");if(r){openUser(r.dataset.u)}
@@ -11470,7 +11649,13 @@ def sc_track(x):
             "cover": sc_art(cv, "t300x300"), "coverBig": sc_art(cv, "t500x500"),
             "preview": f"{SC_API}/tracks/{tid}/pulse-stream" if tid else "", "link": x.get("permalink_url") or "",
             "dur": int((x.get("full_duration") or x.get("duration") or 0) / 1000), "genre": genre_ru(x.get("genre") or ""),
-            "plays": x.get("playback_count") or 0, "snip": x.get("policy") == "SNIP"}
+            "plays": x.get("playback_count") or 0, "snip": x.get("policy") == "SNIP", "drm": sc_drm(x)}
+
+
+def sc_drm(x):
+    """Трек отдаётся только с защитой (DRM) — такие играют лишь на сайте SoundCloud."""
+    tcs = (x.get("media") or {}).get("transcodings", []) or []
+    return bool(tcs) and all("encrypted" in ((t.get("format") or {}).get("protocol") or "") for t in tcs)
 
 
 def sc_artist(u):
@@ -11631,6 +11816,8 @@ def sc_fetch_audio(tid):
 
     order = sorted([t for t in tcs if kind(t) < 99], key=kind)
     if not order:
+        if tcs and all("encrypted" in ((t.get("format") or {}).get("protocol") or "") for t in tcs):
+            raise RuntimeError("drm")
         raise RuntimeError("SoundCloud не даёт слушать этот трек")
     last = None
     for t in order:
@@ -11817,7 +12004,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _net_post(self):
         try:
-            n = min(int(self.headers.get("Content-Length", 0) or 0), 600000)
+            n = min(int(self.headers.get("Content-Length", 0) or 0), 3000000)
             raw = self.rfile.read(n) if n else b"{}"
             d = json.loads(raw.decode("utf-8") or "{}")
             if not isinstance(d, dict):
@@ -11874,6 +12061,11 @@ class Handler(BaseHTTPRequestHandler):
             c.update({"url": net_url(c), "uid": m.group(1), "tok": m.group(2), "on": True})
             net_store(c)
             return self._send(200, json.dumps({"me": json.loads(body), "state": net_state()}, ensure_ascii=False).encode("utf-8"))
+        if p == "audup":
+            try:
+                return self._send(200, json.dumps(net_audio_upload(int(d.get("tid") or 0))).encode("utf-8"))
+            except Exception as e:
+                return jerr(str(e) or "Не получилось загрузить аудио")
         if p == "key":
             if not c.get("uid"):
                 return jerr("Аккаунта нет")
@@ -11965,6 +12157,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(400)
                 body, ct = fetch_cover(url)
                 return self._send(200, body, ct)
+            if u.path == "/api/cat/streamerr":
+                return self._send(200, json.dumps({"error": SC_FAIL.get(q.get("u", ""), "")}, ensure_ascii=False).encode("utf-8"))
             if u.path == "/api/cat/stream":
                 url = q.get("u", "")
                 if not host_ok(url):
@@ -11976,7 +12170,11 @@ class Handler(BaseHTTPRequestHandler):
                         with SC_LOCK:                         # браузер шлёт несколько запросов сразу — качаем один раз
                             c = STREAM_CACHE.get(url)
                             if not c:
-                                body, ct = sc_fetch_audio(m.group(1))
+                                try:
+                                    body, ct = sc_fetch_audio(m.group(1))
+                                except Exception as e:
+                                    SC_FAIL[url] = str(e)
+                                    raise
                                 if len(STREAM_CACHE) > 6:
                                     STREAM_CACHE.pop(next(iter(STREAM_CACHE)))
                                 STREAM_CACHE[url] = c = (body, ct)
@@ -12060,6 +12258,13 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, page_html().encode("utf-8"), "text/html; charset=utf-8")
         elif self.path.startswith("/api/net/state"):
             self._send(200, json.dumps(net_state()).encode("utf-8"))
+        elif self.path.startswith("/api/net/aud/"):
+            try:
+                p = net_audio_file(self.path[13:].split("?")[0])
+                ct = AUDIO_TYPES.get(p.suffix[1:].lower(), "audio/mpeg")
+                return self._send_bytes(p.read_bytes(), ct)
+            except Exception as e:
+                return self._send(404, json.dumps({"error": str(e)}, ensure_ascii=False).encode("utf-8"))
         elif self.path.startswith("/api/net/img/"):
             mid = re.sub(r"[^0-9]", "", self.path[13:].split("?")[0])
             code, body, ct = net_req("/img/" + mid, timeout=30)
