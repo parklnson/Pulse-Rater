@@ -9,6 +9,7 @@ PULSE RATER — оценка треков.
 """
 import json
 import sys
+import runpy
 import math
 import os
 import re
@@ -34,11 +35,13 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "2.5"
-APP_NOTES = "HiLo: туз — старшая карта, множитель только растёт; значок плеера исчезает после закрытия"
+APP_VERSION = "2.7"
+APP_NOTES = "Новая игра на пульсы — Слоты"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 APP_FILE = Path(__file__).resolve()          # запоминаем при запуске — дальше рабочая папка может смениться
+FROZEN = bool(getattr(sys, "frozen", False))  # программа собрана в .exe (PyInstaller)
+OVERLAY = DATA_DIR / "app_update.py"          # для .exe: свежая версия кладётся сюда и запускается вместо встроенной
 
 
 def ver_tuple(v):
@@ -107,6 +110,8 @@ def upd_apply():
 def upd_target():
     """Файл программы, который нужно заменить. Если его уже нет на месте (запускали из временной
     папки, переместили или удалили), новая версия ставится в папку данных программы."""
+    if FROZEN:                     # в .exe исходник не заменить — новая версия живёт рядом с данными
+        return OVERLAY
     cands = [APP_FILE]
     try:
         cands.append(Path(sys.argv[0]).resolve())
@@ -145,7 +150,7 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="2.5";
+var APPV="2.7";
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -2500,6 +2505,22 @@ body.bye #bc{display:none}
 .hlb:not([disabled]):hover{transform:translateY(-2px);filter:brightness(1.1)}
 .hlb[disabled]{opacity:.4;cursor:default}
 
+/* слоты */
+.slw{padding:14px;border-radius:18px;background:linear-gradient(180deg,#2a0f1a,#12060b);box-shadow:inset 0 0 0 2px rgba(255,210,110,.35),0 0 40px -14px rgba(255,190,60,.6)}
+.slm{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;height:288px;overflow:hidden;border-radius:12px}
+.slr{position:relative;overflow:hidden;border-radius:12px;background:linear-gradient(180deg,#0b0709,#1d1218 30%,#1d1218 70%,#0b0709);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),inset 0 14px 20px -8px rgba(0,0,0,.8),inset 0 -14px 20px -8px rgba(0,0,0,.8)}
+.sls{will-change:transform}
+.slc{height:96px;display:grid;place-items:center;font-size:54px;line-height:1;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
+.slc .coin{width:60px;height:60px}
+.slline{position:absolute;left:0;right:0;top:96px;height:96px;border-top:2px solid rgba(255,212,90,.55);border-bottom:2px solid rgba(255,212,90,.55);pointer-events:none;box-shadow:0 0 22px -6px rgba(255,190,60,.8)}
+.slr.win{box-shadow:inset 0 0 0 3px #ffd45a,0 0 30px -4px rgba(255,200,60,.9);animation:slWin .5s ease-in-out 3}
+@keyframes slWin{50%{filter:brightness(1.35)}}
+.slpay{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;margin:2px 0 12px;font-size:12px;font-weight:800;color:var(--sub)}
+.slpay span{display:inline-flex;align-items:center;gap:4px}
+.slpay b{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;font-size:13px;display:inline-flex;align-items:center}
+.slpay .coin{width:13px;height:13px}
+.cres .coin{width:18px;height:18px;vertical-align:-3px}
+
 /* ---------- плавность: тяжёлое рисуем только когда оно на экране ---------- */
 .itm{content-visibility:auto;contain-intrinsic-width:auto 190px;contain-intrinsic-height:auto 290px}
 .kit2{content-visibility:auto;contain-intrinsic-width:auto 340px;contain-intrinsic-height:auto 480px}
@@ -3051,10 +3072,10 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
 <div class="gm" id="gm" hidden>
   <div class="gcard wide" role="dialog" aria-label="Игры на пульсы">
     <div class="ghead">
-      <div><b>Игры на пульсы</b><span>Рулетка, Пульс, Минки, Plinko и HiLo · пульсы — игровая валюта приложения</span></div>
+      <div><b>Игры на пульсы</b><span>Рулетка, Пульс, Минки, Plinko, HiLo и Слоты · пульсы — игровая валюта приложения</span></div>
       <button class="gx" id="gClose" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
-    <div class="gtabs" id="gtabs"><button class="gtab on" data-g="roul">Рулетка</button><button class="gtab" data-g="pulse">Пульс</button><button class="gtab" data-g="mines">Минки</button><button class="gtab" data-g="plinko">Plinko</button><button class="gtab" data-g="hilo">HiLo</button></div>
+    <div class="gtabs" id="gtabs"><button class="gtab on" data-g="roul">Рулетка</button><button class="gtab" data-g="pulse">Пульс</button><button class="gtab" data-g="mines">Минки</button><button class="gtab" data-g="plinko">Plinko</button><button class="gtab" data-g="hilo">HiLo</button><button class="gtab" data-g="slots">Слоты</button></div>
     <div class="gpane" id="pane-stars" hidden>
       <div class="gstats"><div>Счёт<b id="gScore">0</b></div><div>Рекорд<b id="gBest">0</b></div><div class="lives" id="gLives"></div></div>
       <div class="gwrap" id="gwrap">
@@ -3084,6 +3105,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
     <div class="gpane" id="pane-mines" hidden></div>
     <div class="gpane" id="pane-plinko" hidden></div>
     <div class="gpane" id="pane-hilo" hidden></div>
+    <div class="gpane" id="pane-slots" hidden></div>
   </div>
 </div>
 <input type="file" id="imgFile" accept="image/*" hidden>
@@ -6429,8 +6451,77 @@ const HL=(()=>{
   return{enter,pause,_t:{bets,mOf}};
 })();
 
+/* ---------- «Слоты»: три барабана с музыкальными символами ---------- */
+const SL=(()=>{
+  const pane=$("#pane-slots");
+  const S=[["n","🎵",30,5,1.4],["h","🎧",22,10,1.7],["m","🎤",16,20,2],["d","💿",12,40,3],["f","🔥",8,80,4],["c","👑",5,200,6],["p","",3,777,10]];
+  const TOT=S.reduce((a,x)=>a+x[2],0),SYM=Object.fromEntries(S.map(x=>[x[0],x]));
+  const glyph=k=>k==="p"?`<svg class="coin" viewBox="0 0 64 64"><use href="#pcoin"/></svg>`:SYM[k][1];
+  const pick=()=>{let r=CAS.rndU()*TOT;for(const x of S){if((r-=x[2])<0) return x[0]}return "n"};
+  const H=96;                                   // высота клетки барабана
+  pane.innerHTML=`<div class="gstats"><div>Баланс<b data-bal>0</b></div><div class="chist" id="slHist" title="Последние выигрыши"></div></div>
+    <div class="slw"><div class="slm"><div class="slr" data-r="0"><div class="sls"></div></div><div class="slr" data-r="1"><div class="sls"></div></div><div class="slr" data-r="2"><div class="sls"></div></div><i class="slline"></i></div></div>
+    <div class="cres" id="slRes">Три одинаковых в линию — до ×777. Два первых одинаковых или 🪙 в линии — тоже выигрыш</div>
+    <div class="slpay">${S.map(x=>`<span><b>${glyph(x[0])}${glyph(x[0])}${glyph(x[0])}</b>×${x[3]}</span>`).join("")}<span><b>${glyph("n")}${glyph("n")}·</b>×${S[0][4]}</span><span><b>${glyph("c")}${glyph("c")}·</b>×${S[5][4]}</span><span><b>${glyph("p")}</b>×1.2</span></div>
+    ${CAS.betRow("slBet")}
+    <button class="pubtn" id="slGo" type="button">Крутить</button>
+    <div class="ghint">Пробел — крутить. Пара засчитывается на первых двух барабанах, монета 🪙 — в любом месте линии</div>`;
+  const reels=[...pane.querySelectorAll(".slr")],res=$("#slRes"),go=$("#slGo"),inp=$("#slBet"),hist=$("#slHist");
+  let busy=false,cur=["n","h","m"],Hh=[];
+  function strip(r,fin,len){
+    const arr=[];for(let i=0;i<len;i++) arr.push(pick());
+    arr.push(fin);arr.push(pick());arr.unshift(cur[r]===undefined?pick():pick());
+    return arr;
+  }
+  function set(r,arr,y,anim,dur){
+    const el=reels[r].firstElementChild;
+    if(arr) el.innerHTML=arr.map(k=>`<div class="slc">${glyph(k)}</div>`).join("");
+    el.style.transition=anim?`transform ${dur}ms cubic-bezier(.15,.75,.25,1.04)`:"none";
+    el.style.transform=`translateY(${-y}px)`;
+  }
+  function idle(){for(let r=0;r<3;r++){const a=[pick(),cur[r],pick()];set(r,a,0,false)}}
+  function pay(a){
+    if(a[0]===a[1]&&a[1]===a[2]) return{m:SYM[a[0]][3],why:"три в линию"};
+    if(a[0]===a[1]) return{m:SYM[a[0]][4],why:"пара"};
+    if(a.includes("p")) return{m:1.2,why:"монета"};
+    return{m:0};
+  }
+  function spin(){
+    if(busy) return;
+    const v=CAS.takeBet(inp,go);if(!v) return;
+    busy=true;pane.classList.add("busy");go.disabled=true;go.textContent="Крутится…";
+    const fin=[pick(),pick(),pick()];
+    reels.forEach(r=>r.classList.remove("win"));res.className="cres";res.textContent="Крутим…";
+    fin.forEach((k,r)=>{
+      const len=18+r*7,arr=[pick(),...Array.from({length:len},pick),k,pick()];   // нужный символ встаёт на линию (2-я строка окна)
+      set(r,arr,0,false);void reels[r].offsetWidth;
+      set(r,null,(arr.length-3)*H,true,1100+r*450);
+    });
+    setTimeout(()=>{
+      cur=fin;const P=pay(fin),win=Math.floor(v*P.m);
+      if(win){
+        ME.payout(win);res.className="cres win";res.innerHTML=`${fin.map(glyph).join(" ")} — ${P.why}, выигрыш <b>+${ME.fmtN(win)}</b> (×${P.m})`;
+        reels.forEach((r,i)=>{if(P.why==="три в линию"||(P.why==="пара"&&i<2)||(P.why==="монета"&&fin[i]==="p")) r.classList.add("win")});
+        try{QA.ev("win",{game:"slots",m:P.m,v,win})}catch(e){}
+      }else{res.className="cres lose";res.textContent=`Мимо — ставка ${ME.fmtN(v)} сгорела`}
+      Hh.push(P.m);if(Hh.length>12) Hh.shift();
+      hist.innerHTML=Hh.slice(-8).map(m=>`<em class="${m>=1?"g":"r"}">${m?"×"+m:"—"}</em>`).join("");
+      busy=false;pane.classList.remove("busy");go.disabled=false;go.textContent="Крутить ещё";
+    },1100+2*450+120);
+  }
+  go.addEventListener("click",spin);
+  CAS.betUI(pane,inp);
+  document.addEventListener("keydown",e=>{
+    if($("#gm").hidden||GM.cur!=="slots"||e.ctrlKey||e.metaKey||e.altKey||e.target.tagName==="INPUT") return;
+    if(e.code==="Space"){e.preventDefault();e.stopPropagation();if(!e.repeat) spin()}
+  },true);
+  function enter(){if(!busy) idle()}
+  function pause(){}                                 // результат уже решён при старте — выплата придёт по таймеру
+  return{enter,pause};
+})();
+
 const M=(()=>{
-  const gm=$("#gm"),panes={roul:$("#pane-roul"),pulse:$("#pane-pulse"),mines:$("#pane-mines"),plinko:$("#pane-plinko"),hilo:$("#pane-hilo")},games={roul:RU,pulse:PU,mines:MI,plinko:PL,hilo:HL};
+  const gm=$("#gm"),panes={roul:$("#pane-roul"),pulse:$("#pane-pulse"),mines:$("#pane-mines"),plinko:$("#pane-plinko"),hilo:$("#pane-hilo"),slots:$("#pane-slots")},games={roul:RU,pulse:PU,mines:MI,plinko:PL,hilo:HL,slots:SL};
   function show(name){
     games[GM.cur].pause();
     GM.cur=name;
@@ -11161,12 +11252,22 @@ def main():
                 pass
         me = Path(STATE.get("restart_file") or APP_FILE)
         exe = sys.executable or "python"
-        if os.name == "nt" and exe.lower().endswith("python.exe"):          # без чёрного окна консоли
-            w = Path(exe).with_name("pythonw.exe")
-            if w.exists():
-                exe = str(w)
+        env = dict(os.environ)
+        if FROZEN:                                 # .exe перезапускает сам себя, а он уже возьмёт новую версию
+            for k in list(env):
+                if k.startswith("_MEI") or k.startswith("_PYI") or k in ("PYTHONHOME", "PYTHONPATH", "TCL_LIBRARY", "TK_LIBRARY"):
+                    env.pop(k, None)
+            env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+            env.pop("PR_IN_OVERLAY", None)
+            cmd, cwd = [exe], str(Path(exe).parent)
+        else:
+            if os.name == "nt" and exe.lower().endswith("python.exe"):      # без чёрного окна консоли
+                w = Path(exe).with_name("pythonw.exe")
+                if w.exists():
+                    exe = str(w)
+            cmd, cwd = [exe, str(me)], str(me.parent)
         try:
-            subprocess.Popen([exe, str(me)], cwd=str(me.parent))
+            subprocess.Popen(cmd, cwd=cwd, env=env, close_fds=True)
         except Exception as e:
             launch_log(f"не удалось перезапустить после обновления: {e}")
         return
@@ -11177,5 +11278,25 @@ def main():
             pass
 
 
+def run_overlay():
+    """.exe: если рядом с данными лежит более новая версия (скачанная автообновлением) — запускаем её."""
+    if not FROZEN or os.environ.get("PR_IN_OVERLAY") or not OVERLAY.is_file():
+        return False
+    try:
+        src = OVERLAY.read_text("utf-8")
+        m = re.search(r'^APP_VERSION\s*=\s*"([^"]+)"', src, re.M)
+        if not m or ver_tuple(m.group(1)) <= ver_tuple(APP_VERSION):
+            return False
+        compile(src, str(OVERLAY), "exec")
+    except Exception as e:
+        launch_log(f"новая версия не запустилась: {e}")
+        return False
+    os.environ["PR_IN_OVERLAY"] = "1"
+    runpy.run_path(str(OVERLAY), run_name="__main__")
+    return True
+
+
 if __name__ == "__main__":
-    main()
+    if not run_overlay():
+        os.environ.pop("PR_IN_OVERLAY", None)
+        main()
