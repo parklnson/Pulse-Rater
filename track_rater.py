@@ -34,10 +34,11 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "2.3"
-APP_NOTES = "Треки SoundCloud снова играют целиком"
+APP_VERSION = "2.5"
+APP_NOTES = "HiLo: туз — старшая карта, множитель только растёт; значок плеера исчезает после закрытия"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
+APP_FILE = Path(__file__).resolve()          # запоминаем при запуске — дальше рабочая папка может смениться
 
 
 def ver_tuple(v):
@@ -87,12 +88,34 @@ def upd_apply():
     if not src:
         raise ValueError("обновлений нет")
     compile(src, "track_rater.py", "exec")            # битый файл не ставим
-    me = Path(__file__).resolve()
-    shutil.copy2(me, me.with_name(me.stem + ".backup.py"))   # прошлая версия остаётся рядом
-    tmp = me.with_suffix(".new")
+    me = upd_target()
+    me.parent.mkdir(parents=True, exist_ok=True)
+    if me.exists():
+        try:
+            shutil.copy2(me, me.with_name(me.stem + ".backup.py"))   # прошлая версия остаётся рядом
+        except Exception as e:
+            launch_log(f"обновление: копия прошлой версии не сохранена: {e}")
+    tmp = me.with_name(me.name + ".new")
     tmp.write_bytes(src.encode("utf-8"))
     os.replace(tmp, me)
+    launch_log(f"обновлено до {UPD.get('ver')}: {me}")
+    STATE["restart_file"] = str(me)
     STATE["restart"] = time.time() + 1.2
+    return str(me)
+
+
+def upd_target():
+    """Файл программы, который нужно заменить. Если его уже нет на месте (запускали из временной
+    папки, переместили или удалили), новая версия ставится в папку данных программы."""
+    cands = [APP_FILE]
+    try:
+        cands.append(Path(sys.argv[0]).resolve())
+    except Exception:
+        pass
+    for c in cands:
+        if c.suffix.lower() in (".py", ".pyw") and c.is_file():
+            return c
+    return DATA_DIR / "PULSE RATER.py"
 AUDIO_DIR = DATA_DIR / "audio"
 AUDIO_TYPES = {"mp3": "audio/mpeg", "wav": "audio/wav", "flac": "audio/flac"}
 MAX_AUDIO = 500 * 1024 * 1024
@@ -122,7 +145,7 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="2.3";
+var APPV="2.5";
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -4882,7 +4905,7 @@ const AU=(()=>{
     au.play().catch(()=>{});
   };
   btn.addEventListener("click",()=>{if(det&&edKey()){sync(true);play();return}au.paused?play():au.pause()});
-  au.addEventListener("play",()=>{if(mpClosed){mpClosed=false;mpVis()}paintBtn();mpPaintPlay();ap.classList.add("live");zkick()});
+  au.addEventListener("play",()=>{if(mpClosed){mpClosed=false;mpVis();try{markPlaying()}catch(e){}}paintBtn();mpPaintPlay();ap.classList.add("live");zkick()});
   au.addEventListener("pause",()=>{btn.innerHTML=PLAY;mpPaintPlay();ap.classList.remove("live");zkick();if(det) setTimeout(()=>{if(det&&au.paused) sync()},0)});
   au.addEventListener("ended",()=>{btn.innerHTML=PLAY;mpPaintPlay();ap.classList.remove("live");au.currentTime=0;paint();zkick();if(det) setTimeout(()=>{if(det&&au.paused) sync()},0)});
   au.addEventListener("timeupdate",()=>{paint();mpPaintTime()});
@@ -4962,7 +4985,7 @@ const AU=(()=>{
     mpClosed=true;au.pause();
     if(det) sync(true);                                 // в фоне играл другой трек — в плеер возвращается открытый
     else{try{au.currentTime=0}catch(e){}paint();mpPaintTime()}
-    mpVis();
+    mpVis();markPlaying();
   });
   mpPlay.addEventListener("click",()=>{au.paused?play():au.pause()});
   $("#mpPrev").addEventListener("click",()=>{const l=mpList(),i=l.findIndex(x=>x.id===playMeta.id);if(i>0) playTrack(l[i-1])});
@@ -4983,7 +5006,7 @@ const AU=(()=>{
   /* значок «играет» — у того трека, который звучит сейчас, на всех страницах (а не у открытого в редакторе) */
   let markObs=null;
   function markPlaying(){                     // ничего не пересоздаёт без нужды — значок не перезапускается и не мигает
-    const id=au.getAttribute("src")&&playMeta&&playMeta.id!=null?String(playMeta.id):null,on=!au.paused&&!au.ended;
+    const id=!mpClosed&&au.getAttribute("src")&&playMeta&&playMeta.id!=null?String(playMeta.id):null,on=!au.paused&&!au.ended;   // плеер закрыт — значка нет
     document.querySelectorAll(".cv>.eqw.pl,.lbcv>.eqw.pl").forEach(w=>{
       const it=w.closest(".item,.trk");
       if(!it||it.dataset.id!==id) w.remove();else w.classList.toggle("ps",!on);
@@ -6328,29 +6351,37 @@ const PL=(()=>{
   return{enter,pause};
 })();
 
-/* ---------- HiLo: следующая карта выше или ниже ---------- */
+/* ---------- HiLo: следующая карта выше или ниже. Двойка — младшая, туз — старший ---------- */
 const HL=(()=>{
   const pane=$("#pane-hilo");
-  const RK=["A","2","3","4","5","6","7","8","9","10","J","Q","K"],SU=[["♠","k"],["♥","r"],["♦","r"],["♣","k"]];
+  const RK=["2","3","4","5","6","7","8","9","10","J","Q","K","A"],SU=[["♠","k"],["♥","r"],["♦","r"],["♣","k"]];
   pane.innerHTML=`<div class="gstats"><div>Баланс<b data-bal>0</b></div><div class="mist"><span>Множитель</span><b id="hlX">×1.00</b></div></div>
-    <div class="hlw"><div class="hlrow" id="hlRow"></div><div class="hlcard" id="hlCard"></div><div class="hls" id="hlS">Туз — самая младшая карта, король — самая старшая</div></div>
-    <div class="hlbtns"><button class="hlb hi" data-h="hi" type="button" disabled><b>Выше или равно</b><em id="hlHi">—</em></button>
+    <div class="hlw"><div class="hlrow" id="hlRow"></div><div class="hlcard" id="hlCard"></div><div class="hls" id="hlS">Двойка — самая младшая карта, туз — самый старший</div></div>
+    <div class="hlbtns"><button class="hlb hi" data-h="hi" type="button" disabled><b id="hlHiN">Выше или равно</b><em id="hlHi">—</em></button>
       <button class="hlb skip" data-h="skip" type="button" disabled title="Сменить карту бесплатно">Пропустить</button>
-      <button class="hlb lo" data-h="lo" type="button" disabled><b>Ниже или равно</b><em id="hlLo">—</em></button></div>
+      <button class="hlb lo" data-h="lo" type="button" disabled><b id="hlLoN">Ниже или равно</b><em id="hlLo">—</em></button></div>
     ${CAS.betRow("hlBet")}
     <button class="pubtn" id="hlGo" type="button">Начать</button>
-    <div class="ghint">Каждая угаданная карта умножает выигрыш. Ошибся — ставка сгорела. Забрать можно после первой угаданной карты</div>`;
-  const cardEl=$("#hlCard"),rowEl=$("#hlRow"),sEl=$("#hlS"),xEl=$("#hlX"),go=$("#hlGo"),inp=$("#hlBet"),hiE=$("#hlHi"),loE=$("#hlLo");
+    <div class="ghint">Каждая угаданная карта увеличивает множитель. Ошибся — ставка сгорела. Забрать можно после первой угаданной карты · ↑ ↓ — выбор, пробел — старт / забрать</div>`;
+  const cardEl=$("#hlCard"),rowEl=$("#hlRow"),sEl=$("#hlS"),xEl=$("#hlX"),go=$("#hlGo"),inp=$("#hlBet"),hiE=$("#hlHi"),loE=$("#hlLo"),hiN=$("#hlHiN"),loN=$("#hlLoN");
   let st="idle",card=null,mult=1,bet=0,steps=0,trail=[];
   const draw=()=>({r:Math.floor(CAS.rndU()*13),s:Math.floor(CAS.rndU()*4)});
-  const pHi=r=>(13-r)/13,pLo=r=>(r+1)/13;                   // r: 0 — туз … 12 — король
-  const mOf=p=>Math.floor(.97/p*100)/100;
+  /* ставки для карты r (0 — двойка … 12 — туз). На двойке «выше или равно» выигрывало бы всегда,
+     на тузе — «ниже или равно», поэтому там ставка «выше» / «ниже» строгая, а вторая кнопка — «такая же» */
+  function bets(r){
+    if(r===0) return{hi:{n:"Выше",win:x=>x>0,p:12/13},lo:{n:"Такая же",win:x=>x===0,p:1/13}};
+    if(r===12) return{hi:{n:"Такая же",win:x=>x===12,p:1/13},lo:{n:"Ниже",win:x=>x<12,p:12/13}};
+    return{hi:{n:"Выше или равно",win:x=>x>=r,p:(13-r)/13},lo:{n:"Ниже или равно",win:x=>x<=r,p:(r+1)/13}};
+  }
+  const mOf=p=>Math.max(1.01,Math.floor(.97/p*100)/100);       // множитель всегда больше 1 — выигрыш только растёт
   const cardH=(c,cls)=>`<div class="hc ${SU[c.s][1]} ${cls||""}"><i>${RK[c.r]}</i><b>${SU[c.s][0]}</b><i class="bt">${RK[c.r]}</i></div>`;
   function paint(flip){
     cardEl.innerHTML=cardH(card,flip?"flip":"");
     rowEl.innerHTML=trail.slice(-7).map(t=>`<div class="hmini ${SU[t.c.s][1]} ${t.ok?"ok":"bad"}">${RK[t.c.r]}${SU[t.c.s][0]}<em>${t.dir==="hi"?"▲":t.dir==="lo"?"▼":"↻"}</em></div>`).join("");
-    hiE.textContent="×"+mOf(pHi(card.r)).toFixed(2)+" · "+Math.round(pHi(card.r)*100)+"%";
-    loE.textContent="×"+mOf(pLo(card.r)).toFixed(2)+" · "+Math.round(pLo(card.r)*100)+"%";
+    const B=bets(card.r);
+    hiN.textContent=B.hi.n;loN.textContent=B.lo.n;
+    hiE.textContent="×"+mOf(B.hi.p).toFixed(2)+" · "+Math.round(B.hi.p*100)+"%";
+    loE.textContent="×"+mOf(B.lo.p).toFixed(2)+" · "+Math.round(B.lo.p*100)+"%";
     xEl.textContent="×"+mult.toFixed(2);
   }
   function btns(on){pane.querySelectorAll(".hlb").forEach(b=>b.disabled=!on)}
@@ -6365,13 +6396,13 @@ const HL=(()=>{
     if(st!=="run") return;
     const prev=card,nx=draw();
     if(dir==="skip"){trail.push({c:prev,dir,ok:true});card=nx;paint(true);return}
-    const ok=dir==="hi"?nx.r>=prev.r:nx.r<=prev.r,p=dir==="hi"?pHi(prev.r):pLo(prev.r);
+    const b=bets(prev.r)[dir],ok=b.win(nx.r);
     trail.push({c:prev,dir,ok});card=nx;
     if(!ok){
-      st="dead";paint(true);cardEl.classList.remove("lose");void cardEl.offsetWidth;cardEl.classList.add("lose");
-      sEl.textContent=`Не угадал — ставка ${ME.fmtN(bet)} сгорела`;xEl.textContent="×0";end();return;
+      st="dead";paint(true);xEl.textContent="×0";cardEl.classList.remove("lose");void cardEl.offsetWidth;cardEl.classList.add("lose");
+      sEl.textContent=`Не угадал: ${RK[prev.r]} → ${RK[nx.r]} — ставка ${ME.fmtN(bet)} сгорела`;end();return;
     }
-    mult=Math.floor(mult*mOf(p)*100)/100;steps++;paint(true);
+    mult=Math.round(mult*mOf(b.p)*100)/100;steps++;paint(true);
     const win=Math.floor(bet*mult);sEl.innerHTML=`Угадано ${steps} подряд · забрать сейчас: <b>${ME.fmtN(win)}</b>`;
     go.disabled=false;go.innerHTML=`Забрать <b>${ME.fmtN(win)}</b>`;
   }
@@ -6395,7 +6426,7 @@ const HL=(()=>{
   },true);
   function enter(){if(!card){card=draw();paint()}}
   function pause(){if(st==="run") cash()}
-  return{enter,pause};
+  return{enter,pause,_t:{bets,mOf}};
 })();
 
 const M=(()=>{
@@ -9113,7 +9144,7 @@ const UPD=(()=>{
     try{
       const r=await fetch("/api/update/apply",{method:"POST"});const j=await r.json().catch(()=>({}));
       if(!r.ok) throw new Error(j.error||"err");
-      bar.innerHTML=`<div class="updi"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="updt"><b>Готово — перезапуск</b><span>Новое окно откроется через пару секунд</span></div>`;
+      bar.innerHTML=`<div class="updi"><svg class="ico" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="updt"><b>Готово — перезапуск</b><span>Новое окно откроется через пару секунд</span>${j.path?`<em>Файл программы: ${esc(j.path)}</em>`:""}</div>`;
       setTimeout(()=>{try{window.close()}catch(e){}},1500);
     }catch(e){busy=false;toast("Обновление не удалось: "+(e.message==="err"?"попробуй позже":e.message),true);show()}
   }
@@ -10131,9 +10162,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400)
         if self.path.startswith("/api/update/apply"):
             try:
-                upd_apply()
-                return self._send(200, b"{}")
+                path = upd_apply()
+                return self._send(200, json.dumps({"path": path}, ensure_ascii=False).encode("utf-8"))
             except Exception as e:
+                launch_log(f"обновление не удалось: {type(e).__name__}: {e}")
                 return self._send(500, json.dumps({"error": str(e)[:200]}, ensure_ascii=False).encode("utf-8"))
         if self.path.startswith("/api/update/url"):
             try:
@@ -11127,9 +11159,14 @@ def main():
                 proc.terminate()
             except Exception:
                 pass
-        me = Path(__file__).resolve()
+        me = Path(STATE.get("restart_file") or APP_FILE)
+        exe = sys.executable or "python"
+        if os.name == "nt" and exe.lower().endswith("python.exe"):          # без чёрного окна консоли
+            w = Path(exe).with_name("pythonw.exe")
+            if w.exists():
+                exe = str(w)
         try:
-            subprocess.Popen([sys.executable, str(me)], cwd=str(me.parent))
+            subprocess.Popen([exe, str(me)], cwd=str(me.parent))
         except Exception as e:
             launch_log(f"не удалось перезапустить после обновления: {e}")
         return
