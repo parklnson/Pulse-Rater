@@ -35,7 +35,7 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "4.8"
+APP_VERSION = "4.8.1"
 APP_NOTES = "Ответы в чате, новые эмодзи, чёрный и белый цвета, живая «Туманность»"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
@@ -431,9 +431,12 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="4.8";
+var APPV="4.8.1";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"4.8.1",add:["Заставка с бьющимся сердцем и пульсом: играет при запуске, пока мышка не двигается, и возвращается через минуту бездействия","В «Подарках» друга можно выбрать из списка друзей — ID искать не нужно"],
+  chg:["Чат сворачивается и разворачивается плавно — окно «перелетает» под итоговую оценку"],
+  fix:["Список друзей больше не дёргается при переключении «Друзья / Сообщения / Рейтинг игроков»","Скрытый гардероб остаётся скрытым после перезапуска","Приложение запоминает мелкие настройки (громкость, эмодзи, жанры) между запусками"],del:[]},
  {v:"4.8",add:["Ответы на сообщения в чате — кнопка ↩ у сообщения или «Ответить» в меню","Эмодзи можно вставлять в рецензию и в любимую строчку","Цвета «Чёрный» и «Белый» в настройках","Клик по исполнителю на странице альбома открывает его профиль","Новые курсоры: «Тёмный», «Контур» и «Мягкий»","Гардероб в профиле можно свернуть кнопкой «Скрыть»","В профиле друга включается его дизайн и цвет, а при выходе возвращается твой"],
   chg:["Эмодзи в чате и в заметках — в стиле Noto, ближе к смартфонным, вместо плоских виндовых","В свёрнутом чате можно отвечать, изменять сообщения и ставить реакции","Живой фон больше не замирает в профиле и магазине","«Туманность»: больше мерцающих и пролетающих звёзд, фон плавно движется"],
   fix:["Магазин и профиль больше не перерисовываются сами раз в 20 секунд — ничего не дёргается","Анимированная аватарка у друзей теперь проигрывается — GIF до 1,4 МБ уходит на сервер целиком, а не стоп-кадром"],del:["Курсоры «Нота», «Винил» и «Молния»"]},
@@ -2648,6 +2651,68 @@ body.bye #bc{display:none}
 .qmed svg{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .qmed.off{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12);color:rgba(255,255,255,.28)}
 .arow.on{background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.03))}
+/* заставка с сердцем */
+#welcome .att{position:fixed;inset:0;z-index:5;display:grid;place-items:center;overflow:hidden;opacity:0;visibility:hidden;transition:opacity .8s ease,visibility 0s linear .8s;cursor:none}
+#welcome.att .att{opacity:1;visibility:visible;transition:opacity 1.1s ease,visibility 0s}
+#welcome .wl-c{transition:opacity .55s ease,transform .7s var(--ease),filter .7s ease}
+#welcome.att .wl-c{opacity:0;transform:scale(.94);filter:blur(10px);pointer-events:none}
+.att-bg{position:absolute;inset:-10%;background:radial-gradient(42% 46% at 50% 46%,hsl(var(--tn) calc(85% * var(--ms,1)) 16%) 0%,hsl(var(--tn) calc(70% * var(--ms,1)) 7%) 46%,#030103 100%);animation:attBg 14s ease-in-out infinite alternate}
+@keyframes attBg{to{transform:scale(1.08) rotate(2deg);filter:hue-rotate(calc(18deg * var(--ms,1)))}}
+.att-st{position:absolute;inset:0}
+.att-st i{position:absolute;left:var(--x);top:var(--y);width:var(--s);height:var(--s);border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(var(--ar),.9);opacity:.2;animation:attFly var(--t) linear var(--w) infinite,attTw var(--tw) ease-in-out infinite alternate}
+@keyframes attFly{to{transform:translateY(-34vh)}}
+@keyframes attTw{to{opacity:.95}}
+.att-core{position:relative;width:min(34vmin,300px);aspect-ratio:1;display:grid;place-items:center}
+.att-ht{position:relative;width:78%;overflow:visible;filter:drop-shadow(0 0 28px rgba(var(--ar),.75)) drop-shadow(0 18px 40px rgba(0,0,0,.6));animation:attBeat .9s cubic-bezier(.3,0,.3,1) infinite;transform-origin:50% 55%}
+@keyframes attBeat{0%{transform:scale(1)}12%{transform:scale(1.15)}24%{transform:scale(.97)}36%{transform:scale(1.09)}56%,100%{transform:scale(1)}}
+.att-in{stroke-dasharray:.42 .58;stroke-dashoffset:1;filter:drop-shadow(0 0 4px #fff);animation:attIn 1.8s linear infinite}
+@keyframes attIn{to{stroke-dashoffset:0}}
+.att-gl{position:absolute;inset:-35%;border-radius:50%;background:radial-gradient(circle,rgba(var(--ar),.42) 0%,rgba(var(--ar),.12) 38%,transparent 66%);animation:attGl .9s ease-out infinite}
+@keyframes attGl{0%{opacity:.55;transform:scale(.9)}14%{opacity:1;transform:scale(1.06)}60%,100%{opacity:.55;transform:scale(.92)}}
+.att-rg{position:absolute;inset:0}
+.att-rg i{position:absolute;inset:6%;border-radius:50%;border:2px solid rgba(var(--ar),.75);box-shadow:0 0 24px rgba(var(--ar),.45),inset 0 0 24px rgba(var(--ar),.25);opacity:0;animation:attRg 2.7s cubic-bezier(.2,.6,.3,1) infinite}
+.att-rg i:nth-child(2){animation-delay:.9s}.att-rg i:nth-child(3){animation-delay:1.8s}
+@keyframes attRg{0%{opacity:.85;transform:scale(.55)}100%{opacity:0;transform:scale(2.5)}}
+.att-ecg{position:absolute;left:0;right:0;top:50%;width:100%;height:min(18vh,150px);transform:translateY(-50%);pointer-events:none;mix-blend-mode:screen}
+.att-ecg path{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.att-ecg .e0{stroke:rgba(var(--ar),.16);stroke-width:1.5}
+.att-ecg .e1{stroke:var(--g3);stroke-width:2.6;stroke-dasharray:.16 .84;stroke-dashoffset:1;filter:drop-shadow(0 0 6px rgba(var(--ar),.95));animation:attEcg 2.7s linear infinite}
+@keyframes attEcg{to{stroke-dashoffset:0}}
+.att-tx{position:absolute;left:0;right:0;bottom:15vh;display:flex;flex-direction:column;align-items:center;gap:10px}
+.att-br{font-size:clamp(20px,2.6vw,34px);font-weight:900;letter-spacing:.42em;padding-left:.42em;background:linear-gradient(100deg,#8d8d97 0%,#fff 40%,#c8c8d1 60%,#8d8d97 100%);background-size:600px 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shim 5s linear infinite}
+.att-bpm{display:flex;align-items:baseline;gap:6px;color:var(--g4);font-variant-numeric:tabular-nums}
+.att-bpm b{font-size:26px;font-weight:800;text-shadow:0 0 18px rgba(var(--ar),.8);animation:attNum .9s ease-out infinite}
+.att-bpm span{font-size:11px;font-weight:700;letter-spacing:.24em;opacity:.7}
+@keyframes attNum{12%{opacity:1}50%{opacity:.7}}
+.att-hn{position:absolute;bottom:6vh;display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;letter-spacing:.06em;color:rgba(255,255,255,.62);animation:attHn 2.6s ease-in-out infinite}
+@keyframes attHn{50%{opacity:.35}}
+.att-ms{width:18px;height:28px;border-radius:10px;box-shadow:inset 0 0 0 1.6px rgba(255,255,255,.6);display:grid;justify-items:center;padding-top:5px}
+.att-ms i{width:3px;height:6px;border-radius:2px;background:#fff;animation:attMs 1.6s ease-in-out infinite}
+@keyframes attMs{50%{transform:translateY(7px);opacity:.3}}
+html.mono-w .att-ht path:first-child{fill:#f2f2f2}
+/* плавное сворачивание чата */
+.chghost{position:fixed;z-index:70;pointer-events:none;background:linear-gradient(180deg,rgba(46,20,30,.96),rgba(18,9,13,.96));box-shadow:0 30px 80px -18px rgba(0,0,0,.85),inset 0 0 0 1px rgba(var(--ar),.4),0 0 40px -10px rgba(var(--ar),.5);will-change:left,top,width,height,opacity}
+body.dkfly .main{transform:none!important;transition:opacity .45s ease!important}
+#chDock{animation:none}
+#chDock.dkin{opacity:0;transform:translateY(10px) scale(.98)}
+#chDock.dkon{transition:opacity .4s ease,transform .5s var(--ease)}
+.pm.tomin.out{animation:pmMin .26s ease both}
+@keyframes pmMin{to{opacity:0}}
+.pm.tomax:not(.out){animation:pmMax .45s ease both}
+@keyframes pmMax{from{opacity:0}}
+/* вкладки друзей */
+.frbody.still .frr,.frbody.still .alh{animation:none}
+.frbody.swap{animation:frSw .28s ease}
+@keyframes frSw{from{opacity:.35}}
+/* друзья в подарках */
+.gffr{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.gffc{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;font-size:13px;font-weight:700;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);transition:background .15s,box-shadow .15s,transform .15s}
+.gffc:hover{background:rgba(255,255,255,.11);transform:translateY(-1px)}
+.gffc.on{background:rgba(var(--ar),.22);box-shadow:inset 0 0 0 1.5px rgba(var(--ar),.9)}
+.gffc .mav{flex:none}
+.gffc span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gffr.ld i{width:96px;height:34px;border-radius:999px;background:linear-gradient(100deg,rgba(255,255,255,.04) 30%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.04) 70%);background-size:200% 100%;animation:shLd 1.1s linear infinite}
+.gffn{font-size:12.5px;color:var(--sub)}
 /* гардероб можно свернуть */
 .pfwh{display:flex;align-items:center;gap:8px}
 .pfwt{margin-left:auto;padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--sub);background:rgba(255,255,255,.06);transition:background .15s,color .15s}
@@ -3526,6 +3591,26 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
 <canvas id="stars"></canvas>
 <canvas id="dfx"></canvas>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Приветствие">
+  <div class="att" id="wlAtt" aria-hidden="true">
+    <div class="att-bg"></div><div class="att-st" id="attSt"></div>
+    <div class="att-core">
+      <div class="att-rg"><i></i><i></i><i></i></div>
+      <div class="att-gl"></div>
+      <svg class="att-ht" viewBox="0 0 120 108" aria-hidden="true">
+        <defs><linearGradient id="attG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g4)"/><stop offset=".45" style="stop-color:var(--g2)"/><stop offset="1" style="stop-color:var(--g0)"/></linearGradient>
+          <radialGradient id="attS" cx=".32" cy=".26" r=".42"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+        <path d="M60 104C22 77 3 57 3 33 3 15 16 3 32 3c12 0 22 7 28 18 6-11 16-18 28-18 16 0 29 12 29 30 0 24-19 44-57 71z" fill="url(#attG)"/>
+        <path d="M60 104C22 77 3 57 3 33 3 15 16 3 32 3c12 0 22 7 28 18 6-11 16-18 28-18 16 0 29 12 29 30 0 24-19 44-57 71z" fill="url(#attS)"/>
+        <path class="att-in" pathLength="1" d="M12 54h28l7-12 8 30 9-46 8 36 6-8h30" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <svg class="att-ecg" viewBox="0 0 1200 140" preserveAspectRatio="none" aria-hidden="true">
+      <path class="e0" d="M0 70H140l18-22 18 22h22l16-58 22 116 18-58h40l16-12 16 12H540l18-22 18 22h22l16-58 22 116 18-58h40l16-12 16 12H940l18-22 18 22h22l16-58 22 116 18-58h40l16-12 16 12H1200"/>
+      <path class="e1" pathLength="1" d="M0 70H140l18-22 18 22h22l16-58 22 116 18-58h40l16-12 16 12H540l18-22 18 22h22l16-58 22 116 18-58h40l16-12 16 12H940l18-22 18 22h22l16-58 22 116 18-58h40l16-12 16 12H1200"/>
+    </svg>
+    <div class="att-tx"><div class="att-br">PULSE RATER</div><div class="att-bpm"><b id="attBpm">72</b><span>BPM</span></div></div>
+    <div class="att-hn"><span class="att-ms"><i></i></span>Пошевели мышкой, чтобы начать</div>
+  </div>
   <div class="wl-c">
     <section class="wl-step" id="wlNew"></section>
     <section class="wl-step on" id="wlHi">
@@ -7698,9 +7783,36 @@ const RM=(()=>{
   }
   if(seen!==APPV) setST({seenVer:APPV});
   appEl.inert=true;
+  /* заставка: сердце бьётся, пока мышка стоит; движение — показываем окно, минута тишины — снова сердце */
+  const ATT_IDLE=60000;let attOn=false,idleT=0,lastMv=0,mx=null,my=null,bpmT=0;
+  (()=>{const st=$("#attSt");if(!st) return;let h="";for(let i=0;i<70;i++){const r=Math.random;
+    h+=`<i style="--x:${(r()*100).toFixed(1)}%;--y:${(r()*100).toFixed(1)}%;--s:${(1+r()*2.4).toFixed(1)}px;--t:${(6+r()*10).toFixed(1)}s;--w:${(-r()*16).toFixed(1)}s;--tw:${(1.4+r()*2.6).toFixed(1)}s"></i>`}st.innerHTML=h})();
+  function showAtt(){
+    if(gone||attOn) return;attOn=true;clearTimeout(idleT);mx=null;
+    wl.classList.add("att");try{document.activeElement&&document.activeElement.blur()}catch(e){}
+    clearInterval(bpmT);bpmT=setInterval(()=>{const b=$("#attBpm");if(b) b.textContent=66+Math.round(Math.random()*10)},2200);
+  }
+  function hideAtt(){
+    if(!attOn) return;attOn=false;clearInterval(bpmT);wl.classList.remove("att");armIdle();
+    setTimeout(()=>{const b=cur==="nw"?$("#wnGo"):$("#wlStart");if(b&&!gone) b.focus({preventScroll:true})},350);
+  }
+  function armIdle(){clearTimeout(idleT);if(!gone&&shown) idleT=setTimeout(showAtt,ATT_IDLE)}
+  function wake(e){
+    if(gone) return;
+    if(e.type==="pointermove"){
+      if(mx===null){mx=e.clientX;my=e.clientY;if(!attOn) lastMv=Date.now();return}
+      if(Math.abs(e.clientX-mx)+Math.abs(e.clientY-my)<6) return;      // дрожание и «фантомные» движения не считаем
+      mx=e.clientX;my=e.clientY;lastMv=Date.now();
+    }
+    if(attOn){if(e.type!=="pointermove"&&e.type!=="wheel"){e.preventDefault();e.stopPropagation();eatClk=Date.now()}hideAtt();return}
+    armIdle();
+  }
+  let eatClk=0;document.addEventListener("click",e=>{if(Date.now()-eatClk<700){e.preventDefault();e.stopPropagation();eatClk=0}},true);   // клик, который будит заставку, ничего не нажимает
+  ["pointermove","pointerdown","keydown","wheel"].forEach(t=>document.addEventListener(t,wake,{capture:true,passive:t==="pointermove"||t==="wheel"?true:false}));
   function reveal(){
     if(shown) return;shown=true;
     wl.classList.add("show");
+    if(Date.now()-lastMv>800) showAtt();else armIdle();
     setTimeout(()=>(cur==="nw"?$("#wnGo"):$("#wlStart")).focus({preventScroll:true}),450);
   }
   const t=setTimeout(reveal,2650);                    // интро начинает таять на ~2.55 с
@@ -7719,7 +7831,7 @@ const RM=(()=>{
     },240);
   }
   function finish(act){
-    if(gone) return;gone=true;
+    if(gone) return;gone=true;clearTimeout(idleT);clearInterval(bpmT);
     appEl.inert=false;
     appEl.classList.add("enter");
     wl.classList.add("out");
@@ -9888,7 +10000,7 @@ const PF=(()=>{
     FXP.scan(body);
     if(edit){const n=$("#pfNick");if(n&&!keep) setTimeout(()=>n.focus(),60)}
   }
-  function wardHid(){try{return localStorage.getItem("pfWard")==="1"}catch(e){return false}}
+  function wardHid(){return !!ST.pfWard}
   function refresh(){if(isOpen()&&!edit) render(true);else if(isOpen()){const b=body.querySelector(".pfav");if(b) b.innerHTML=ME.avatar(168)+b.querySelector(".pfcam").outerHTML+b.querySelector(".pflv").outerHTML}}
   async function commit(){
     const raw=($("#pfNick").value||"").trim(),b=($("#pfBio").value||"").trim().slice(0,160);
@@ -9907,7 +10019,7 @@ const PF=(()=>{
       else if(k==="cancel"){edit=false;render(true)}
       else if(k==="save") commit();
       else if(k==="shop"){close(true);SHOP.open()}
-      else if(k==="ward"){try{localStorage.setItem("pfWard",wardHid()?"":"1")}catch(x){}render(true)}
+      else if(k==="ward"){setST({pfWard:!wardHid()});render(true)}
       else if(k==="gift") GF.open();
       else if(k==="avcrop"){AVC.open(ME.avUrl(),ME.data.avCrop,c=>ME.setInfo({avCrop:c}))}
       else if(k==="noav"){delImg("me",1);ME.setInfo({av:0});edit=true;render(true)}
@@ -10702,7 +10814,20 @@ const SND=(()=>{
 /* ---------- подарки: пульсы, предмет или коллекция другу по его ID ---------- */
 const GF=(()=>{
   const el=$("#gft");
-  let tab="send",kind="p",pick=null,amt=500,slot="all",last=null,toV="",msgV="";
+  let tab="send",kind="p",pick=null,amt=500,slot="all",last=null,toV="",msgV="",frs=null;
+  const uidN=v=>String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  function frsH(){
+    if(!NET.on) return "";
+    if(!frs) return `<div class="gffr ld"><i></i><i></i><i></i></div>`;
+    if(!frs.length) return `<div class="gffr"><span class="gffn">Друзей пока нет — добавь их в разделе «Друзья», и они появятся здесь</span></div>`;
+    const sel=uidN(toV);
+    return `<div class="gffr">${frs.map(p=>`<button class="gffc${uidN(p.uid)===sel?" on":""}" data-fu="${p.uid}" type="button" title="${esc(p.nick)} · ${ME.uidFmt(p.uid)}">${ME.avatar(26,p.eq||{},{u:NET.avUrl(p.uid,p.avv),nick:p.nick,crop:p.st&&p.st.avc})}<span>${esc(p.nick)}</span></button>`).join("")}</div>`;
+  }
+  async function loadFrs(){
+    if(!NET.on) return;
+    try{const j=await NET.call("fr");frs=(j.friends||[]).slice().sort((a,b)=>(+b.seen||0)-(+a.seen||0))}catch(e){frs=frs||[]}
+    const box=el.querySelector(".gffr");if(box&&!last&&tab==="send") box.outerHTML=frsH();
+  }
   const D=()=>ME.data;
   const isOpen=()=>!el.hidden&&!el.classList.contains("out");
   const dt=d=>new Date(d).toLocaleDateString("ru-RU",{day:"numeric",month:"short"});
@@ -10718,7 +10843,7 @@ const GF=(()=>{
   function sendH(){
     const p=price();
     return `${idBox()}
-      <label class="gff"><em>ID друга</em><input id="gfTo" maxlength="12" placeholder="Например: ABCD-1234" autocomplete="off" spellcheck="false" value="${esc(toV)}"></label>
+      <div class="gff"><em>Кому${NET.on?` <i>— выбери друга или впиши его ID</i>`:""}</em>${frsH()}<input id="gfTo" maxlength="12" placeholder="ID друга, например ABCD-1234" autocomplete="off" spellcheck="false" value="${esc(toV)}"></div>
       <div class="gff"><em>Что подарить</em><div class="psort gfk">${[["p","Пульсы"],["i","Предмет"],["k","Коллекция"]].map(([k,n])=>`<button class="psb${kind===k?" on":""}" data-kd="${k}" type="button">${n}</button>`).join("")}</div></div>
       ${kind==="p"?`<div class="gfp"><input id="gfAmt" type="number" min="10" step="10" value="${amt}" aria-label="Сколько пульсов"><div class="gfch">${[100,500,1000,5000,10000].map(v=>`<button type="button" data-am="${v}">${ME.fmtN(v)}</button>`).join("")}</div></div>`:listH()}
       <label class="gff"><em>Пожелание <i>— необязательно</i></em><input id="gfMsg" maxlength="80" placeholder="Например: с днём рождения!" autocomplete="off" value="${esc(msgV)}"></label>
@@ -10759,7 +10884,7 @@ const GF=(()=>{
       <button class="pround" data-x type="button" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="psort qtabs"><button class="psb" data-gt="send" type="button">Отправить</button><button class="psb" data-gt="get" type="button">Получить</button></div>
       <div class="qbody" id="gfB"></div></div>`;
-    el.classList.remove("out");el.hidden=false;render();
+    el.classList.remove("out");el.hidden=false;render();loadFrs();
   }
   function close(){if(el.hidden) return;el.classList.add("out");setTimeout(()=>{el.hidden=true;el.classList.remove("out");el.innerHTML=""},220)}
   function shake(x){if(!x) return;x.classList.remove("shk");void x.offsetWidth;x.classList.add("shk")}
@@ -10774,6 +10899,9 @@ const GF=(()=>{
     const kd=e.target.closest("[data-kd]");if(kd){kind=kd.dataset.kd;pick=null;render();return}
     const sl=e.target.closest("[data-sl]");if(sl){slot=sl.dataset.sl;render();return}
     const pk=e.target.closest("[data-pk]");if(pk){pick=pk.dataset.pk;el.querySelectorAll("[data-pk]").forEach(x=>x.classList.toggle("on",x===pk));paintGo();return}
+    const fu=e.target.closest("[data-fu]");
+    if(fu){const same=uidN(toV)===uidN(fu.dataset.fu);toV=same?"":ME.uidFmt(fu.dataset.fu);const i=$("#gfTo");if(i) i.value=toV;
+      el.querySelectorAll("[data-fu]").forEach(x=>x.classList.toggle("on",!same&&x===fu));return}
     const am=e.target.closest("[data-am]");if(am){amt=+am.dataset.am;const i=$("#gfAmt");if(i) i.value=amt;paintGo();return}
     const cp=e.target.closest("[data-cp]");if(cp){cp.dataset.cp==="id"?copy(ME.uidFmt(D().uid),"ID"):copy(last?last.code:"","Код");return}
     const cc=e.target.closest("[data-cpc]");if(cc){const g=(D().giftOut||[])[+cc.dataset.cpc];if(g&&g.c) copy(g.c,"Код");return}
@@ -10794,7 +10922,7 @@ const GF=(()=>{
   });
   el.addEventListener("input",e=>{
     const id=e.target.id;
-    if(id==="gfTo") toV=e.target.value;
+    if(id==="gfTo"){toV=e.target.value;const n=uidN(toV);el.querySelectorAll("[data-fu]").forEach(x=>x.classList.toggle("on",uidN(x.dataset.fu)===n))}
     else if(id==="gfMsg") msgV=e.target.value;
     else if(id==="gfAmt"){amt=Math.max(0,Math.floor(+e.target.value||0));paintGo()}
   });
@@ -10971,26 +11099,42 @@ const FR=(()=>{
     body.innerHTML=`<div class="phead"><div><div class="eyebrow">Онлайн</div><h2>Друзья</h2></div>
         <div class="frme"><div><em>Мой ID</em><b>${ME.uidFmt(me())}</b></div><button class="gbtn ghost" data-a="cp" type="button">Скопировать</button></div></div>
       <div class="fradd"><input id="frId" maxlength="12" placeholder="ID друга, например ABCD-1234" autocomplete="off" spellcheck="false"><button class="gbtn" data-a="add" type="button">Добавить в друзья</button></div>
-      <div class="psort frtab"><button class="psb${tab==="fr"?" on":""}" data-t="fr" type="button">Друзья${n?` <em>${n}</em>`:""}${frIn?` <i class="nbdg">${frIn}</i>`:""}</button>
-        <button class="psb${tab==="msg"?" on":""}" data-t="msg" type="button">Сообщения${msgUn?` <i class="nbdg">${msgUn}</i>`:""}</button>
-        <button class="psb${tab==="top"?" on":""}" data-t="top" type="button">Рейтинг игроков</button></div>
+      <div class="psort frtab">${tabsIn()}</div>
       <div class="frbody" id="frList"><div class="frld"></div></div>`;
-    paintList();
+    painted="";paintList();
+  }
+  function tabsIn(){
+    const n=data?data.friends.length:0;
+    return `<button class="psb${tab==="fr"?" on":""}" data-t="fr" type="button">Друзья${n?` <em>${n}</em>`:""}${frIn?` <i class="nbdg">${frIn}</i>`:""}</button>
+        <button class="psb${tab==="msg"?" on":""}" data-t="msg" type="button">Сообщения${msgUn?` <i class="nbdg">${msgUn}</i>`:""}</button>
+        <button class="psb${tab==="top"?" on":""}" data-t="top" type="button">Рейтинг игроков</button>`;
+  }
+  function paintTabs(){const t=body.querySelector(".frtab");if(!t) return false;const h=tabsIn();if(t.__h!==h){t.innerHTML=h;t.__h=h}return true}
+  let painted="";
+  function setBox(box,h){                          // перерисовываем только то, что изменилось, и без повторной анимации
+    const same=painted===tab,ld=h.indexOf('class="frld"')>=0;
+    if(same&&box.__h===h) return false;
+    if(!same&&box.offsetHeight) box.style.minHeight=box.offsetHeight+"px";   // высота не прыгает, пока грузится вкладка
+    box.classList.toggle("still",same&&!box.__ld);
+    if(!same){box.classList.remove("swap");void box.offsetWidth;box.classList.add("swap")}
+    box.innerHTML=h;box.__h=h;box.__ld=ld;painted=tab;
+    if(!ld) requestAnimationFrame(()=>{box.style.minHeight=""});
+    return true;
   }
   function paintList(){
     const box=$("#frList");if(!box) return;
     const A=(u,t,cls,ic)=>`<button class="frb${cls?" "+cls:""}" data-act="${t}" data-uid="${u}" type="button">${ic||""}`;
     if(tab==="fr"){
-      if(!data){box.innerHTML=`<div class="frld"></div>`;return}
+      if(!data){setBox(box,`<div class="frld"></div>`);return}
       let h="";
       if(data.inc.length) h+=`<div class="alh">Заявки в друзья</div>`+data.inc.map((p,i)=>frRow(p,`${A(p.uid,"acc","ok")}Принять</button>${A(p.uid,"rm")}Отклонить</button>`,i)).join("");
       h+=`<div class="alh">Мои друзья <span class="hint">— ${data.friends.length}</span></div>`;
       h+=data.friends.length?data.friends.map((p,i)=>frRow(p,`${A(p.uid,"chat","",CHATI)}Написать</button>${A(p.uid,"gift","",GIFTI)}Подарить</button>`,i)).join("")
         :`<div class="frnone">Пока никого. Попроси друга прислать его ID — он есть у него здесь же, в «Друзьях», — и вставь в поле выше.</div>`;
       if(data.out.length) h+=`<div class="alh">Ждут ответа</div>`+data.out.map((p,i)=>frRow(p,`${A(p.uid,"rm")}Отменить</button>`,i)).join("");
-      box.innerHTML=h;
+      if(!setBox(box,h)) return;
     }else if(tab==="msg"){
-      if(!data||!heads){box.innerHTML=`<div class="frld"></div>`;return}
+      if(!data||!heads){setBox(box,`<div class="frld"></div>`);return}
       const F=new Map(data.friends.map(p=>[p.uid,p]));
       const hs=heads.filter(h=>F.has(h.with)).sort((a,b)=>b.id-a.id),seen=new Set(hs.map(h=>h.with));
       let h=hs.map((x,i)=>{const p=F.get(x.with);return `<div class="frr chl${x.un?" un":""}" data-chat="${p.uid}" style="--i:${i}" role="button" tabindex="0">${avOf(p,52)}
@@ -10998,7 +11142,7 @@ const FR=(()=>{
         <div class="chlt"><em>${new Date(x.t).toDateString()===new Date().toDateString()?hm(x.t):new Date(x.t).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</em>${x.un?`<i class="nbdg">${x.un}</i>`:""}</div></div>`}).join("");
       const rest=data.friends.filter(p=>!seen.has(p.uid));
       if(rest.length) h+=`<div class="alh">Начать переписку</div>`+rest.map((p,i)=>frRow(p,`${A(p.uid,"chat","",CHATI)}Написать</button>`,i)).join("");
-      box.innerHTML=h||`<div class="frnone">Сначала добавь друзей — писать можно только им.</div>`;
+      if(!setBox(box,h||`<div class="frnone">Сначала добавь друзей — писать можно только им.</div>`)) return;
     }else{
       const chip=(k,n)=>`<button class="rkc${by===k?" on":""}" data-by="${k}" type="button">${n}</button>`;
       const sc=(k,n)=>`<button class="rkc${scope===k?" on":""}" data-sc="${k}" type="button">${n}</button>`;
@@ -11011,7 +11155,7 @@ const FR=(()=>{
           :`<div class="frnone">${by==="avg"?"Средняя считается у тех, у кого 10+ оценок":"Пока никого"}</div>`;
         if(topD.rank&&scope==="all") h+=`<div class="frmyr">Твоё место: <b>${topD.rank}</b> из ${topD.total}</div>`;
       }
-      box.innerHTML=h;
+      if(!setBox(box,h)) return;
     }
     FXP.scan(box);
   }
@@ -11023,7 +11167,7 @@ const FR=(()=>{
         const [a,b]=await Promise.all([NET.call("fr"),tab==="msg"?NET.call("chat/heads"):Promise.resolve(null)]);if(my!==tk) return;
         data=a;badge(a.inc.length);if(b){heads=b.heads;unread(b.heads.reduce((s,h)=>s+h.un,0))}
       }
-      if(isOpen()&&view==="list") shell();
+      if(isOpen()&&view==="list"){if(paintTabs()&&$("#frList")) paintList();else shell()}
     }catch(e){if(isOpen()&&view==="list"){const b=$("#frList");if(b) b.innerHTML=`<div class="frnone">${esc(e.msg)}</div>`}}
   }
   /* ===== профиль игрока — отдельная страница ===== */
@@ -11390,20 +11534,38 @@ const FR=(()=>{
     stopPl();chat=null;cur=null;setView("list");prevView="list";shell();load();body.scrollTop=0;
   }
   /* свернуть чат под «Итоговую оценку» и обратно */
+  function fly(a,b,o){                                        // «окно» перелетает из одного прямоугольника в другой
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const g=document.createElement("div");g.className="chghost";document.body.append(g);
+    const R=r=>({left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px"});
+    const an=g.animate([Object.assign(R(a),{opacity:o.o0,borderRadius:o.r0+"px"}),Object.assign(R(b),{opacity:o.o1,borderRadius:o.r1+"px"})],
+      {duration:o.d,easing:"cubic-bezier(.32,.72,.16,1)",fill:"forwards"});
+    an.onfinish=()=>g.remove();setTimeout(()=>g.remove(),o.d+400);
+  }
   function minimize(){
     if(!chat) return;
-    docked=true;close();
+    const src=el.getBoundingClientRect();
+    docked=true;document.body.classList.add("dkfly");
+    dock.classList.remove("dkon");dock.classList.add("dkin");
     dock.hidden=false;$("#scw").classList.add("dk");chatShell();renderLog({bottom:true});
+    dock.scrollIntoView({block:"nearest"});                  // основная страница пока скрыта — прокрутка не видна
+    const dst=dock.getBoundingClientRect();
+    el.classList.add("tomin");close();
+    fly(src,dst,{d:560,o0:.96,o1:.9,r0:18,r1:14});
+    setTimeout(()=>{dock.classList.add("dkon");dock.classList.remove("dkin")},430);
+    setTimeout(()=>{el.classList.remove("tomin");document.body.classList.remove("dkfly");dock.classList.remove("dkon")},1000);
     if(!pollT) pollT=setInterval(pollChat,2500);
-    setTimeout(()=>dock.scrollIntoView({block:"nearest",behavior:"smooth"}),120);
   }
   function undock(kill){
     docked=false;dock.hidden=true;dock.innerHTML="";$("#scw").classList.remove("dk");
     if(kill){clearInterval(pollT);pollT=0;stopPl();chat=null;view="list";backB.hidden=true}
   }
   function maximize(){
-    if(!chat) return;const c=chat;
-    undock(false);open(true);chat=c;setView("chat");chatShell();renderLog({bottom:true});
+    if(!chat) return;const c=chat,src=dock.getBoundingClientRect();
+    document.body.classList.add("dkfly");
+    undock(false);el.classList.add("tomax");open(true);chat=c;setView("chat");chatShell();renderLog({bottom:true});
+    fly(src,el.getBoundingClientRect(),{d:480,o0:.95,o1:0,r0:14,r1:18});
+    setTimeout(()=>{el.classList.remove("tomax");document.body.classList.remove("dkfly")},700);
     if(!pollT) pollT=setInterval(pollChat,2500);
   }
   function open(silent){
@@ -11434,7 +11596,7 @@ const FR=(()=>{
       else if(k==="cp"){try{await navigator.clipboard.writeText(ME.uidFmt(me()))}catch(x){}toast("ID скопирован — отправь его другу")}
       else if(k==="add") add();
       return}
-    const t=e.target.closest("[data-t]");if(t){tab=t.dataset.t;shell();load();return}
+    const t=e.target.closest("[data-t]");if(t){if(tab===t.dataset.t) return;tab=t.dataset.t;if(paintTabs()&&$("#frList")) paintList();else shell();load();return}
     const b=e.target.closest("[data-by]");if(b){by=b.dataset.by;topD=null;paintList();load();return}
     const c=e.target.closest("[data-sc]");if(c){scope=c.dataset.sc;topD=null;paintList();load();return}
     const x=e.target.closest("[data-act]");
@@ -13880,8 +14042,18 @@ def open_app_window(url):
     return None
 
 
+def _bind_server():
+    """Постоянный порт: у страницы тот же адрес при каждом запуске, и браузер помнит её мелкие настройки."""
+    for p in (47321, 47322, 47323, 47324, 47325):
+        try:
+            return ThreadingHTTPServer(("127.0.0.1", p), Handler)
+        except OSError:
+            pass
+    return ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+
+
 def main():
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    server = _bind_server()
     port = server.server_address[1]
     threading.Thread(target=server.serve_forever, daemon=True).start()
     url = f"http://127.0.0.1:{port}/"
