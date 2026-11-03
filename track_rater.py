@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "2.9"
-APP_NOTES = "Дизайн «Полярное сияние», защита профиля, возврат к альбому из редактора"
+APP_VERSION = "3.0"
+APP_NOTES = "Стили курсора, размер фото профиля, любимые треки в альбомах"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 APP_FILE = Path(__file__).resolve()          # запоминаем при запуске — дальше рабочая папка может смениться
@@ -238,7 +238,7 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="2.9";
+var APPV="3.0";
 var DESIGNS=[
  {id:"classic",n:"Эйфория",t:"Как сейчас: живой космос, сияние и звёзды"},
  {id:"ocean",n:"Океан",t:"Глубина: лучи света сквозь воду, пузырьки и бирюза"},
@@ -250,7 +250,7 @@ var DESIGNS=[
  {id:"nebula",n:"Туманность",t:"Глубокий космос: живая туманность, звёзды и метеоры"}
 ];
 var ST_DEF={design:"classic",theme:"euphoria",hue:352,cycle:true,panelA:54,neb:true,aurora:true,twinkle:true,warp:true,eco:false,
- glow:true,glowSize:100,clickFx:true,trail:false,start:5,pvVol:100,catSrc:"sc",intro:true,outro:true,sounds:true,intKey:"ShiftLeft",vol:100,decimals:false};
+ glow:true,glowSize:100,clickFx:true,trail:false,start:5,pvVol:100,catSrc:"sc",intro:true,outro:true,sounds:true,intKey:"ShiftLeft",cursor:"classic",vol:100,decimals:false};
 var ST=(function(){var o={},k,u=window.__ST||{};for(k in ST_DEF)o[k]=ST_DEF[k];
  for(k in u) if(k in ST_DEF&&typeof u[k]===typeof ST_DEF[k]) o[k]=u[k];return o})();
 function stHue(){if(ST.theme==="custom") return +ST.hue||0;for(var i=0;i<THEMES.length;i++) if(THEMES[i].id===ST.theme) return THEMES[i].h;return 352}
@@ -2647,6 +2647,37 @@ html[data-design=polar] .stp{background:linear-gradient(180deg,rgba(14,40,52,.98
 .edret:hover{background:rgba(var(--ar),.3);transform:translateX(-2px)}
 .edret svg{width:16px;height:16px}
 .edret[hidden]{display:none}
+/* курсоры в настройках */
+.curg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:4px 0 12px}
+.curo{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px 10px;border-radius:12px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);transition:background .2s,box-shadow .2s}
+.curo i{display:grid;place-items:center;width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#3a3440,#16131a)}
+.curo i svg{width:28px;height:28px}
+.curo b{font-size:12px;font-weight:800}
+.curo.on{box-shadow:inset 0 0 0 2px var(--g2),0 8px 22px -10px rgba(var(--ar),.7);background:rgba(var(--ar),.1)}
+/* кадрирование аватарки */
+#avc{position:fixed;inset:0;z-index:65;display:grid;place-items:center;padding:20px;background:rgba(4,2,6,.66);backdrop-filter:blur(8px);animation:gfade .2s ease}
+#avc.out{animation:gfadeOut .2s ease forwards}
+.avcc{width:min(640px,100%);border-radius:22px;background:linear-gradient(180deg,rgba(32,16,24,.98),rgba(14,8,12,.98));box-shadow:0 40px 100px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.08);animation:gpop .3s var(--ease)}
+.avcb{display:grid;grid-template-columns:auto 1fr;gap:26px;padding:10px 24px 6px;align-items:center}
+.avcw{position:relative;width:280px;height:280px;border-radius:50%;overflow:hidden;cursor:grab;touch-action:none;box-shadow:0 0 0 4px rgba(255,255,255,.12),0 20px 50px -12px rgba(0,0,0,.8)}
+.avcw:active{cursor:grabbing}
+.avcv{position:absolute;inset:0;background-repeat:no-repeat}
+.avcr{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);pointer-events:none}
+.avcs{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.avcm{display:flex;align-items:flex-end;gap:12px}
+.avcm i{border-radius:50%;background-repeat:no-repeat;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+.avcl{display:grid;gap:6px;width:100%;font-size:12.5px;color:var(--sub)}
+.avcl input{width:100%;accent-color:var(--g2)}
+.avca{padding:14px 24px 22px}
+@media (max-width:620px){.avcb{grid-template-columns:1fr;justify-items:center}}
+/* любимые треки альбома */
+.afav{flex:none;font-style:normal;font-size:13px;line-height:1;color:rgba(255,255,255,.22);padding:0 4px;cursor:var(--cur-p);transition:color .2s,transform .2s var(--ease)}
+.afav:hover{color:#ff9cc0;transform:scale(1.25)}
+.afav.on{color:#ff4d8d;text-shadow:0 0 8px rgba(255,77,141,.8)}
+.albr span{flex:1}
+.favb.on{color:#ff4d8d}
+.favb.on svg{fill:#ff4d8d;stroke:#ff4d8d;filter:drop-shadow(0 0 6px rgba(255,77,141,.7))}
+.favb[hidden]{display:none}
 /* ---------- плавность: тяжёлое рисуем только когда оно на экране ---------- */
 .itm{content-visibility:auto;contain-intrinsic-width:auto 190px;contain-intrinsic-height:auto 290px}
 .kit2{content-visibility:auto;contain-intrinsic-width:auto 340px;contain-intrinsic-height:auto 480px}
@@ -3022,6 +3053,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
         <button class="rate" id="save" type="button" title="Добавить в медиатеку (Ctrl+Enter)"><span class="rbg"></span><span class="rl">Оценить</span></button>
         <button class="rcrit" id="resetCrit" type="button" title="Вернуть ползунки к стартовому значению — название, исполнитель и аудио останутся"><svg class="ico" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Сбросить критерии</button>
         <button class="ibtn" id="reset" title="Очистить форму (новая оценка)"><svg class="ico" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+        <button class="ibtn favb" id="favCur" type="button" hidden><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/></svg></button>
         <button class="ibtn" id="shareCur" title="Поделиться: карточка для сторис и Telegram" hidden><svg class="ico" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>
         <button class="ibtn" id="delCur" title="Удалить эту оценку" hidden><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>
@@ -4148,7 +4180,7 @@ function paintAlbum(){
   if(a.complete){sc.textContent=fmt(a.avg);sc.style.color=rgCol(a.avg)}
   else{sc.textContent="—";sc.style.color=""}
   $("#albCap").textContent=a.complete?(a.n>=2&&a.n<=6?"общая оценка EP":"общая оценка альбома"):a.done?`пока ${fmt(a.avg)} — итог появится, когда оценишь все треки`:"итог появится, когда оценишь все треки";
-  $("#albList").innerHTML=a.items.slice().sort(byOrd).map(x=>`<div class="albr${x.id===state.editing?" on":""}${x.unrated?" un":""}" data-id="${x.id}"><span>${esc(x.title)}</span><b>${x.unrated?"—":fmt(x.total)}</b></div>`).join("");
+  $("#albList").innerHTML=a.items.slice().sort(byOrd).map(x=>`<div class="albr${x.id===state.editing?" on":""}${x.unrated?" un":""}" data-id="${x.id}"><span>${esc(x.title)}</span><i class="afav${x.fav?" on":""}" data-fav="${x.id}" title="${x.fav?"Убрать из любимых":"Отметить любимым"}">♥</i><b>${x.unrated?"—":fmt(x.total)}</b></div>`).join("");
 }
 const artistNames=t=>{
   const seen=new Set(),out=[];
@@ -4259,7 +4291,22 @@ $("#list").addEventListener("click",e=>{
   if(e.target.closest(".del")){removeTrack(id);return}
   loadTrack(id);
 });
-$("#albList").addEventListener("click",e=>{const r=e.target.closest(".albr");if(r) loadTrack(+r.dataset.id)});
+function toggleFav(id){
+  const t=state.tracks.find(x=>x.id===id);if(!t) return;
+  if(t.fav) delete t.fav;else t.fav=true;
+  persist();paintAlbum();paintFav();renderLib();
+  toast(t.fav?`«${t.title}» — в любимых треках альбома ♥`:`«${t.title}» убран из любимых`);
+}
+function paintFav(){
+  const b=$("#favCur");if(!b) return;
+  const t=state.editing!=null&&state.tracks.find(x=>x.id===state.editing);
+  b.hidden=!(t&&t.albumId);b.classList.toggle("on",!!(t&&t.fav));b.title=t&&t.fav?"Убрать из любимых треков альбома":"Отметить любимым треком альбома";
+}
+$("#favCur").addEventListener("click",()=>{if(state.editing!=null) toggleFav(state.editing)});
+$("#albList").addEventListener("click",e=>{
+  const f=e.target.closest("[data-fav]");if(f){e.stopPropagation();toggleFav(+f.dataset.fav);return}
+  const r=e.target.closest(".albr");if(r) loadTrack(+r.dataset.id);
+});
 $("#chips").addEventListener("click",e=>{
   const c=e.target.closest(".chip");if(!c) return;
   state.filter=c.dataset.f;
@@ -4320,6 +4367,7 @@ function paintMode(){
   $("#eqTop").hidden=!ed;
   $("#delCur").hidden=!ed;
   try{SH.paint()}catch(e){}
+  try{paintFav()}catch(e){}
   $("#save").title=ed?"Обновить оценку (Ctrl+Enter)":"Добавить в медиатеку (Ctrl+Enter)";
   paintNav();
 }
@@ -4412,7 +4460,7 @@ function save(){
     else if(state.albumId){albumId=state.albumId;state.tracks.forEach(t=>{if(t.albumId===albumId) t.album=albName})}   // переименование всего альбома
     else albumId=Date.now();
   }
-  const rec={id,artist:state.artist.trim()||"—",...(state.beat.trim()?{beat:state.beat.trim()}:{}),title,genre:state.genre.trim(),...(prev&&prev.ord!=null?{ord:prev.ord}:{}),scores:[...state.vals],total:total(),...(albName?{album:albName,albumId}:{}),...(audio?{audio}:{}),...(cover?{cover}:{}),...(state.cat?{cat:state.cat}:{}),...(state.catAlb?{catAlb:state.catAlb}:{}),...(state.embed?{embed:state.embed}:{}),...(state.stream?{stream:state.stream}:{})};
+  const rec={id,artist:state.artist.trim()||"—",...(state.beat.trim()?{beat:state.beat.trim()}:{}),title,genre:state.genre.trim(),...(prev&&prev.ord!=null?{ord:prev.ord}:{}),...(prev&&prev.fav?{fav:true}:{}),scores:[...state.vals],total:total(),...(albName?{album:albName,albumId}:{}),...(audio?{audio}:{}),...(cover?{cover}:{}),...(state.cat?{cat:state.cat}:{}),...(state.catAlb?{catAlb:state.catAlb}:{}),...(state.embed?{embed:state.embed}:{}),...(state.stream?{stream:state.stream}:{})};
   const idx=state.tracks.findIndex(x=>x.id===rec.id);
   const upd=idx>=0;
   if(upd) state.tracks[idx]=rec;else state.tracks.push(rec);
@@ -6858,7 +6906,7 @@ const RM=(()=>{
       else setTimeout(()=>(name?titleEl:albumEl).focus(),500);
     });
   }
-  $("#wlStart").addEventListener("click",()=>go("pick"));
+  $("#wlStart").addEventListener("click",()=>finish());          // без промежуточного выбора «сингл / альбом»
   wl.addEventListener("click",e=>{
     const b=e.target.closest("[data-back]");
     if(b){go(b.dataset.back);return}
@@ -7452,6 +7500,7 @@ const SET=(()=>{
       ${tog("warp","Летящие звёзды и кометы","Звёздный полёт на заднем плане")}
       ${tog("neb","Туманность","Цветные облака, медленно плывущие по фону")}
       <div class="stsec">Курсор</div>
+      <div class="curg">${Object.keys(CURS.L).map(k=>`<button class="curo${(ST.cursor||"classic")===k?" on":""}" data-cur="${k}" type="button"><i>${CURS.prev(k)}</i><b>${CURS.L[k].n}</b></button>`).join("")}</div>
       ${tog("glow","Свечение под курсором","Мягкий свет, который идёт за указателем")}
       ${sl("glowSize","Размер свечения","",40,200,5)}
       ${tog("clickFx","Искры при клике","Короткая вспышка в месте клика")}
@@ -7488,6 +7537,8 @@ const SET=(()=>{
     if(kb){startCap(kb);return}
     if(e.target.closest(".keyx")){stopCap();setST({intKey:""});build();return}
     if(e.target.closest(".stcsv")){exportCsv();return}
+    const co=e.target.closest(".curo");
+    if(co){setST({cursor:co.dataset.cur});CURS.apply();build();toast("Курсор: "+CURS.L[co.dataset.cur].n);return}
     const dz=e.target.closest(".dsn");
     if(dz){setST({design:dz.dataset.d});later();build();toast("Дизайн: "+DESIGNS.find(x=>x.id===dz.dataset.d).n);return}
     const t=e.target.closest(".thm");
@@ -8438,7 +8489,7 @@ const ME=(()=>{
   }
   const rq=[];let rOpen=false;
   const pill=()=>$("#balPill");
-  function card(o){rq.push(o);if(!rOpen) nextCard()}
+  function card(o){rq.push(o);if(!rOpen) whenFree(()=>{if(!rOpen) nextCard()})}   // карточки ждут, пока уйдут заставка и приветствие
   function nextCard(){
     const o=rq.shift();if(!o){rOpen=false;return}
     rOpen=true;
@@ -8518,7 +8569,7 @@ const ME=(()=>{
   function avatar(size,e,o){
     e=e||D.eq;o=o||{};
     const u=avUrl(),fr=e.frame||"",hat=e.hat||"";
-    const img=u?`background-image:url('${u}')`:(o.plain?"background:linear-gradient(160deg,#3a3440,#16131a)":`background:${coverBg(D.nick,"")}`);
+    const img=u?`background-image:url('${u}');${avBgCss(D.avCrop)}`:(o.plain?"background:linear-gradient(160deg,#3a3440,#16131a)":`background:${coverBg(D.nick,"")}`);
     return `<span class="mav${fr?" fr":""}" data-fr="${fr}" style="--s:${size}px">${fr?'<span class="mav-g"></span><span class="mav-r"></span>':""}
       <span class="mav-i" style="${img}">${u?"":o.plain?SIL:esc(initial(D.nick))}</span>
       ${SPK.has(fr)?'<span class="mav-sp"><i></i><i></i><i></i></span>':""}
@@ -8654,7 +8705,7 @@ const PF=(()=>{
     const idBlock=edit?`<div class="pfed">
         <label>Никнейм${ME.admin?' <span class="admpf sm">[ADMIN]</span>':""}<input id="pfNick" maxlength="40" value="${esc(D.nick)}" autocomplete="off" spellcheck="false"></label>
         <label>О себе<textarea id="pfBio" maxlength="160" rows="3" placeholder="Пара слов о себе и своей музыке">${esc(D.bio||"")}</textarea><span class="pfc" id="pfCnt">${(D.bio||"").length}/160</span></label>
-        <div class="pfact"><button class="gbtn" data-a="save" type="button">Сохранить</button><button class="gbtn ghost" data-a="cancel" type="button">Отмена</button>${D.av?'<button class="gbtn ghost" data-a="noav" type="button">Убрать фото</button>':""}</div></div>`
+        <div class="pfact"><button class="gbtn" data-a="save" type="button">Сохранить</button><button class="gbtn ghost" data-a="cancel" type="button">Отмена</button>${D.av?'<button class="gbtn ghost" data-a="avcrop" type="button">Размер фото</button><button class="gbtn ghost" data-a="noav" type="button">Убрать фото</button>':""}</div></div>`
       :`<div class="pfid"><div class="pfnm">${ME.nameH()}${e.badge?ME.badge(e.badge):""}</div>
         <div class="xpb"><span class="xpl">Уровень ${LV.L}</span><div class="xpt"><i style="width:${(LV.cur/LV.need*100).toFixed(1)}%"></i></div><em>${LV.cur} / ${LV.need} XP</em></div>
         ${D.bio?`<p class="pfbio">${esc(D.bio)}</p>`:`<p class="pfbio emp" data-a="edit">Расскажи о себе — пара слов о твоей музыке</p>`}
@@ -8695,16 +8746,17 @@ const PF=(()=>{
       else if(k==="cancel"){edit=false;render(true)}
       else if(k==="save") commit();
       else if(k==="shop"){close(true);SHOP.open()}
+      else if(k==="avcrop"){AVC.open(ME.avUrl(),ME.data.avCrop,c=>ME.setInfo({avCrop:c}))}
       else if(k==="noav"){delImg("me",1);ME.setInfo({av:0});edit=true;render(true)}
       else if(k==="av") pickImage(async f=>{
         if(!isImageFile(f)){toast("Это не картинка",true);return}
         if(f.type==="image/gif"||/\.gif$/i.test(f.name)){                // GIF загружаем как есть — аватарка остаётся анимированной
           if(f.size>8*1024*1024){toast("GIF слишком большой — до 8 МБ",true);return}
-          try{const r=await fetch("/api/img/me/1",{method:"POST",body:f});if(!r.ok) throw 0;ME.setInfo({av:Date.now()});toast("Анимированная аватарка установлена")}
+          try{const r=await fetch("/api/img/me/1",{method:"POST",body:f});if(!r.ok) throw 0;ME.setInfo({av:Date.now(),avCrop:null});AVC.open(ME.avUrl(),null,c=>{ME.setInfo({avCrop:c});toast("Анимированная аватарка установлена")})}
           catch(x){toast("Не удалось сохранить GIF",true)}
           return;
         }
-        try{const b=await toJpeg(f,512);const r=await fetch("/api/img/me/1",{method:"POST",body:b});if(!r.ok) throw 0;ME.setInfo({av:Date.now()});toast("Фото профиля обновлено")}
+        try{const b=await toJpeg(f,1024);const r=await fetch("/api/img/me/1",{method:"POST",body:b});if(!r.ok) throw 0;ME.setInfo({av:Date.now(),avCrop:null});AVC.open(ME.avUrl(),null,c=>{ME.setInfo({avCrop:c});toast("Фото профиля обновлено")})}
         catch(x){toast("Не удалось сохранить фото",true)}
       });
       return;
@@ -9223,7 +9275,7 @@ const SH=(()=>{
     const fy=H-L.fy,ar=story?44:36,nick=ME.data.nick||"Меломан";
     c.font=`800 ${story?36:30}px ${F}`;const nw=c.measureText(nick).width,tw=ar*2+20+Math.max(nw,c.measureText("x").width);
     let ax=(W-tw)/2+ar;
-    c.save();c.beginPath();c.arc(ax,fy,ar,0,6.283);c.clip();if(av) cover(c,av,ax-ar,fy-ar,ar*2,ar*2);else{c.fillStyle=g2;c.fillRect(ax-ar,fy-ar,ar*2,ar*2);c.fillStyle="#fff";c.textAlign="center";c.textBaseline="middle";c.fillText(nick.trim().charAt(0).toUpperCase(),ax,fy+2);c.textBaseline="alphabetic"}c.restore();
+    c.save();c.beginPath();c.arc(ax,fy,ar,0,6.283);c.clip();if(av) avDraw(c,av,ax-ar,fy-ar,ar*2);else{c.fillStyle=g2;c.fillRect(ax-ar,fy-ar,ar*2,ar*2);c.fillStyle="#fff";c.textAlign="center";c.textBaseline="middle";c.fillText(nick.trim().charAt(0).toUpperCase(),ax,fy+2);c.textBaseline="alphabetic"}c.restore();
     c.strokeStyle=g2;c.lineWidth=4;c.beginPath();c.arc(ax,fy,ar+3,0,6.283);c.stroke();
     c.textAlign="left";c.fillStyle="#fff";c.fillText(nick,ax+ar+20,fy-2);
     c.fillStyle="rgba(255,255,255,.55)";c.font=`600 ${story?26:22}px ${F}`;c.fillText(`уровень ${ME.lvl().L} · ${new Date().toLocaleDateString("ru-RU")}`,ax+ar+20,fy+(story?34:28));
@@ -9286,16 +9338,21 @@ const SH=(()=>{
       c.textAlign="left";c.fillStyle="rgba(255,255,255,.45)";c.font=`800 ${fs*.85}px ${F}`;c.fillText(String(i+1).padStart(2,"0"),x,yy);
       const nx=x+fs*1.7,sTx=t.unrated?"—":fmt(t.total);
       c.font=`900 ${fs}px ${F}`;const sw2=c.measureText(sTx).width;
-      c.fillStyle=t===best?"#fff":"rgba(255,255,255,.88)";c.font=`${t===best?800:600} ${fs}px ${F}`;c.fillText(fit(c,t.title+(t===best&&n>1?"  ★":""),cwid-fs*1.7-sw2-18),nx,yy);
+      const hw=t.fav?fs*1.25:0;
+      if(t.fav){c.save();c.fillStyle="#ff4d8d";c.shadowColor="rgba(255,77,141,.8)";c.shadowBlur=12;const hx=nx+fs*.5,hy=yy-fs*.38,hr=fs*.42;
+        c.beginPath();c.moveTo(hx,hy+hr*.9);c.bezierCurveTo(hx-hr*1.4,hy,hx-hr*.7,hy-hr*1.1,hx,hy-hr*.35);c.bezierCurveTo(hx+hr*.7,hy-hr*1.1,hx+hr*1.4,hy,hx,hy+hr*.9);c.fill();c.restore()}
+      c.fillStyle=t.fav?"#ffd6e6":t===best?"#fff":"rgba(255,255,255,.88)";c.font=`${t===best||t.fav?800:600} ${fs}px ${F}`;c.fillText(fit(c,t.title+(t===best&&n>1?"  ★":""),cwid-fs*1.7-sw2-18-hw),nx+hw,yy);
       c.textAlign="right";c.fillStyle=t.unrated?"rgba(255,255,255,.35)":rgCol(t.total);c.font=`900 ${fs}px ${F}`;c.fillText(sTx,x+cwid,yy);
       const by=yy+Math.max(6,rh*.16),bh=Math.max(3,rh*.07);c.fillStyle="rgba(255,255,255,.09)";rr(c,nx,by,cwid-fs*1.7,bh,bh/2);c.fill();
       if(!t.unrated){c.fillStyle=rgCol(t.total);rr(c,nx,by,Math.max(bh,(cwid-fs*1.7)*t.total/10),bh,bh/2);c.fill()}
     });
+    const nf=r.items.filter(t=>t.fav).length;
+    if(nf){c.textAlign="center";c.font=`700 ${story?26:22}px ${F}`;c.fillStyle="#ff9cc0";c.fillText(`♥ — ${nf} ${plural(nf,"любимый трек","любимых трека","любимых треков")}  ·  ★ — лучшая оценка`,W/2,H-L.fy-(story?84:62))}
     // подпись
     const fy=H-L.fy,ar=story?44:36,nick=ME.data.nick||"Меломан";
     c.font=`800 ${story?36:30}px ${F}`;const nw=c.measureText(nick).width,tw=ar*2+20+nw;
     const ax=(W-tw)/2+ar;
-    c.save();c.beginPath();c.arc(ax,fy,ar,0,6.283);c.clip();if(av) cover(c,av,ax-ar,fy-ar,ar*2,ar*2);else{c.fillStyle=g2;c.fillRect(ax-ar,fy-ar,ar*2,ar*2);c.fillStyle="#fff";c.textAlign="center";c.textBaseline="middle";c.fillText(nick.trim().charAt(0).toUpperCase(),ax,fy+2);c.textBaseline="alphabetic"}c.restore();
+    c.save();c.beginPath();c.arc(ax,fy,ar,0,6.283);c.clip();if(av) avDraw(c,av,ax-ar,fy-ar,ar*2);else{c.fillStyle=g2;c.fillRect(ax-ar,fy-ar,ar*2,ar*2);c.fillStyle="#fff";c.textAlign="center";c.textBaseline="middle";c.fillText(nick.trim().charAt(0).toUpperCase(),ax,fy+2);c.textBaseline="alphabetic"}c.restore();
     c.strokeStyle=g2;c.lineWidth=4;c.beginPath();c.arc(ax,fy,ar+3,0,6.283);c.stroke();
     c.textAlign="left";c.fillStyle="#fff";c.fillText(nick,ax+ar+20,fy-2);
     c.fillStyle="rgba(255,255,255,.55)";c.font=`600 ${story?26:22}px ${F}`;c.fillText(`уровень ${ME.lvl().L} · ${new Date().toLocaleDateString("ru-RU")}`,ax+ar+20,fy+(story?34:28));
@@ -9417,6 +9474,89 @@ document.addEventListener("keydown",e=>{
   if(e.key==="F12"||(e.ctrlKey&&e.shiftKey&&["i","j","c","ш","о","с"].includes(k))||(e.ctrlKey&&!e.shiftKey&&(k==="u"||k==="г"))){e.preventDefault();e.stopImmediatePropagation()}
 },true);
 document.addEventListener("contextmenu",e=>{if(!e.target.closest("input,textarea,[contenteditable]")) e.preventDefault()},true);
+
+
+/* ---------- кадрирование фото профиля (и GIF): масштаб и положение без пересжатия ---------- */
+function avBgCss(c){
+  c=c||{};const z=Math.max(1,+c.z||1),x=Math.max(0,Math.min(100,c.x==null?50:+c.x)),y=Math.max(0,Math.min(100,c.y==null?50:+c.y)),ar=+c.ar||1;
+  return `background-size:${ar>=1?`auto ${(z*100).toFixed(1)}%`:`${(z*100).toFixed(1)}% auto`};background-position:${x.toFixed(1)}% ${y.toFixed(1)}%`;
+}
+function avDraw(c,im,x,y,s){                          // то же кадрирование — для картинок-карточек
+  const cr=(ME.data&&ME.data.avCrop)||{},z=Math.max(1,+cr.z||1),cx=cr.x==null?50:+cr.x,cy=cr.y==null?50:+cr.y;
+  const k=Math.max(s/im.width,s/im.height)*z,dw=im.width*k,dh=im.height*k;
+  c.drawImage(im,x+(s-dw)*cx/100,y+(s-dh)*cy/100,dw,dh);
+}
+const AVC=(()=>{
+  const el=document.createElement("div");el.id="avc";el.hidden=true;document.body.append(el);
+  let st={z:1,x:50,y:50,ar:1},url="",done=null,drag=null;
+  const S=280;
+  function geo(){const z=st.z,ar=st.ar;const dw=ar>=1?S*z*ar:S*z,dh=ar>=1?S*z:S*z/ar;return{ox:Math.max(0,dw-S),oy:Math.max(0,dh-S)}}
+  function paint(){
+    const v=el.querySelector(".avcv");if(!v) return;
+    const css=`background-image:url('${url}');`+avBgCss(st);v.style.cssText=css;
+    el.querySelectorAll(".avcm i").forEach(i=>i.style.cssText=css+`;width:${i.dataset.s}px;height:${i.dataset.s}px`);
+    const r=el.querySelector("#avcZ");if(r){r.value=st.z;r.style.setProperty("--p",((st.z-1)/3*100)+"%")}
+  }
+  function open(u,cur,cb){
+    url=u;done=cb;st=Object.assign({z:1,x:50,y:50,ar:1},cur||{});
+    el.innerHTML=`<div class="avcc" role="dialog" aria-label="Фото профиля"><div class="qhd"><div><b>Фото профиля</b><span>Перетаскивай фото, колесо мыши или ползунок — масштаб</span></div>
+      <button class="pround" data-x type="button" title="Закрыть"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="avcb"><div class="avcw"><div class="avcv"></div><i class="avcr"></i></div>
+        <div class="avcs"><div class="avcm"><i data-s="96"></i><i data-s="56"></i><i data-s="32"></i></div>
+          <label class="avcl"><span>Масштаб</span><input id="avcZ" type="range" min="1" max="4" step="0.01" value="1"></label>
+          <button class="gbtn ghost" data-a="reset" type="button">Сбросить</button></div></div>
+      <div class="pfact avca"><button class="gbtn" data-a="ok" type="button">Сохранить</button><button class="gbtn ghost" data-x type="button">Отмена</button></div></div>`;
+    el.hidden=false;el.classList.remove("out");
+    const im=new Image();im.onload=()=>{st.ar=im.naturalWidth/im.naturalHeight||1;paint()};im.src=url;paint();
+  }
+  function close(){el.classList.add("out");setTimeout(()=>{el.hidden=true;el.innerHTML=""},200)}
+  el.addEventListener("click",e=>{
+    if(e.target===el||e.target.closest("[data-x]")){close();return}
+    const a=e.target.closest("[data-a]");if(!a) return;
+    if(a.dataset.a==="reset"){st.z=1;st.x=50;st.y=50;paint()}
+    else if(a.dataset.a==="ok"){const r={z:+st.z.toFixed(3),x:+st.x.toFixed(2),y:+st.y.toFixed(2),ar:+st.ar.toFixed(4)};close();if(done) done(r)}
+  });
+  el.addEventListener("input",e=>{if(e.target.id==="avcZ"){st.z=+e.target.value;paint()}});
+  el.addEventListener("wheel",e=>{if(!e.target.closest(".avcw")) return;e.preventDefault();st.z=Math.max(1,Math.min(4,st.z*(e.deltaY<0?1.08:1/1.08)));paint()},{passive:false});
+  el.addEventListener("pointerdown",e=>{const w=e.target.closest(".avcw");if(!w) return;drag={x:e.clientX,y:e.clientY,sx:st.x,sy:st.y};w.setPointerCapture(e.pointerId)});
+  el.addEventListener("pointermove",e=>{
+    if(!drag) return;const g=geo();
+    if(g.ox) st.x=Math.max(0,Math.min(100,drag.sx-(e.clientX-drag.x)/g.ox*100));
+    if(g.oy) st.y=Math.max(0,Math.min(100,drag.sy-(e.clientY-drag.y)/g.oy*100));
+    paint();
+  });
+  el.addEventListener("pointerup",()=>{drag=null});
+  document.addEventListener("keydown",e=>{if(!el.hidden&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();close()}},true);
+  return{open};
+})();
+
+/* ---------- стили курсора мыши ---------- */
+const CURS=(()=>{
+  const enc=s=>`url("data:image/svg+xml,${encodeURIComponent(s)}")`;
+  const AR='M4 2.5v16l4.2-3.7 2.8 6.4 2.6-1.1-2.7-6.2h5.6z';
+  const HD='M9.5 2.8c-.9 0-1.6.7-1.6 1.6v9.2l-1.7-2c-.6-.7-1.7-.8-2.4-.2-.7.6-.7 1.6-.2 2.3l4.2 6c1 1.5 2.7 2.4 4.5 2.4h3.4c2.6 0 4.7-2.1 4.7-4.7v-5.2c0-.9-.7-1.6-1.6-1.6s-1.6.7-1.6 1.6v-1.1c0-.9-.7-1.6-1.6-1.6s-1.6.7-1.6 1.6v-.9c0-.9-.7-1.6-1.6-1.6-.4 0-.8.1-1.1.4V4.4c0-.9-.7-1.6-1.6-1.6z';
+  const svg=(w,body,defs)=>`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${w}" viewBox="0 0 ${w} ${w}">${defs?`<defs>${defs}</defs>`:""}${body}</svg>`;
+  function acc(){const cs=getComputedStyle(document.documentElement);return (cs.getPropertyValue("--g2")||"#ff3347").trim()||"#ff3347"}
+  const L={
+    classic:{n:"Классический",a:()=>svg(24,`<path d="${AR}" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>`),h:()=>svg(26,`<path d="${HD}" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>`),ah:"4 3",hh:"9 3"},
+    neon:{n:"Неон",a:()=>svg(28,`<path d="${AR}" transform="translate(2 1)" fill="${acc()}" opacity=".55" filter="url(#b)"/><path d="${AR}" transform="translate(2 1)" fill="${acc()}" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>`,`<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6"/></filter>`),
+      h:()=>svg(30,`<path d="${HD}" transform="translate(2 1)" fill="${acc()}" opacity=".55" filter="url(#b)"/><path d="${HD}" transform="translate(2 1)" fill="${acc()}" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>`,`<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6"/></filter>`),ah:"6 4",hh:"11 4"},
+    gold:{n:"Золото",a:()=>svg(24,`<path d="${AR}" fill="url(#g)" stroke="#5a3300" stroke-width="1.2" stroke-linejoin="round"/>`,`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffc23f"/><stop offset="1" stop-color="#b8740c"/></linearGradient>`),
+      h:()=>svg(26,`<path d="${HD}" fill="url(#g)" stroke="#5a3300" stroke-width="1.2" stroke-linejoin="round"/>`,`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffc23f"/><stop offset="1" stop-color="#b8740c"/></linearGradient>`),ah:"4 3",hh:"9 3"},
+    dot:{n:"Прицел",a:()=>svg(24,`<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.6" opacity=".9"/><circle cx="12" cy="12" r="8" fill="none" stroke="#000" stroke-width="3.4" opacity=".25"/><circle cx="12" cy="12" r="2.2" fill="${acc()}" stroke="#fff" stroke-width=".8"/>`),
+      h:()=>svg(24,`<circle cx="12" cy="12" r="9" fill="${acc()}" fill-opacity=".25" stroke="${acc()}" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#fff"/>`),ah:"12 12",hh:"12 12"},
+    system:{n:"Системный",sys:true}
+  };
+  function apply(){
+    const st=document.documentElement.style,k=L[ST.cursor]?ST.cursor:"classic",c=L[k];
+    if(c.sys){st.setProperty("--cur","default");st.setProperty("--cur-p","pointer");return}
+    st.setProperty("--cur",`${enc(c.a())} ${c.ah},default`);st.setProperty("--cur-p",`${enc(c.h())} ${c.hh},pointer`);
+  }
+  const prev=k=>{const c=L[k];return c.sys?`<svg viewBox="0 0 24 24" width="26" height="26"><path d="${AR}" fill="#fff" stroke="#333" stroke-width="1.2"/></svg>`:c.a()};
+  addEventListener("st-change",()=>setTimeout(apply,30));
+  apply();setTimeout(apply,300);
+  return{apply,L,prev};
+})();
 
 /* ---------- стрелка «назад»: возвращает на предыдущую страницу, с первой — на главный экран ---------- */
 const NAV=(()=>{
