@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "4.5"
-APP_NOTES = "Чат можно свернуть под итоговую оценку"
+APP_VERSION = "4.6"
+APP_NOTES = "Сообщения можно изменять, удалять и ставить на них реакции"
 UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -412,9 +412,10 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="4.5";
+var APPV="4.6";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"4.6",add:["Реакции на сообщения — свои и друга: наведи на сообщение и нажми ☺ или кликни правой кнопкой","Изменение своих сообщений — рядом со временем появится «изменено»","Удаление сообщений: «у меня» — пропадёт только у тебя, «у всех» — у обоих"]},
  {v:"4.5",add:["Чат с другом можно свернуть: он встаёт под «Итоговую оценку», а ты продолжаешь оценивать треки и переписываться","Кнопки «Развернуть» и «Закрыть» у свёрнутого чата"]},
  {v:"4.4",add:["Окно «Что нового» после каждого обновления — перед экраном «Начать»","Прогресс скачивания треков, присланных другом: в медиатеке и в треклисте альбома видно, сколько уже загрузилось","«Загрузка N%» и полоска под названием трека в плеере, пока трек скачивается (SoundCloud, присланные файлы)"],
   chg:["Альбом от друга открывается сразу, а треки докачиваются в фоне","Поле ввода в чате поднимается, когда внизу открыт мини-плеер"],
@@ -2616,7 +2617,7 @@ body.bye #bc{display:none}
 #chDock .chhd .frn b{font-size:14px}
 #chDock .chlog{flex:none;height:320px;padding:8px 2px;border-radius:12px}
 #chDock .chm{padding:0 4px}
-#chDock .chb{max-width:90%}
+#chDock .chbw{max-width:92%}#chDock .chtools{display:none}
 #chDock .chtx{font-size:13.5px}
 #chDock .chr{width:100%;padding:8px}
 #chDock .chrc{width:46px;height:46px}
@@ -2700,9 +2701,44 @@ body:has(#mp:not([hidden]):not(.out)) .frp.chmode .pbody{padding-bottom:104px}
 .chmore{text-align:center;font-size:12px;color:var(--sub);padding:6px}
 .chempty{margin:auto;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:var(--sub);font-size:13.5px}
 .chempty b{color:#fff;font-size:17px}
-.chm{display:flex;padding:0 8px;animation:chIn .25s var(--ease)}
+.chm{display:flex;flex-direction:column;align-items:flex-start;padding:0 8px;animation:chIn .25s var(--ease)}
 @keyframes chIn{from{opacity:0;transform:translateY(6px)}}
-.chm.me{justify-content:flex-end}
+.chm.me{align-items:flex-end}
+.chbw{position:relative;display:flex;align-items:center;gap:6px;max-width:min(600px,80%)}
+.chm.me .chbw{flex-direction:row-reverse}
+.chbw .chb{max-width:100%}
+.chtools{display:flex;gap:2px;opacity:0;transition:opacity .15s}
+.chm:hover .chtools,.chtools:focus-within{opacity:1}
+.chtools button{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;color:var(--sub);background:rgba(255,255,255,.07)}
+.chtools button:hover{color:#fff;background:rgba(var(--ar),.4)}
+.chrx{display:flex;flex-wrap:wrap;gap:4px;margin:3px 2px 2px;max-width:min(600px,80%)}
+.chrx button{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:15px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);transition:transform .12s}
+.chrx button b{font-size:11.5px;font-weight:800;color:#fff}
+.chrx button.on{background:rgba(var(--ar),.35);box-shadow:inset 0 0 0 1.5px rgba(var(--ar),.85)}
+.chrx button:hover{transform:scale(1.08)}
+.ched{font-style:italic;margin-right:4px;opacity:.8}
+.chm.gone .chb{background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.chtx.dl{font-style:italic;color:var(--sub);font-size:13.5px}
+.chm.eding .chb{box-shadow:inset 0 0 0 2px #ffd45a!important}
+.chedb{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:14px;background:rgba(255,212,90,.1);box-shadow:inset 0 0 0 1px rgba(255,212,90,.35);animation:gpop .2s var(--ease)}
+.chedb>i{font-style:normal}
+.chedb div{flex:1;min-width:0}
+.chedb b{display:block;font-size:12px;color:#ffd45a}
+.chedb span{display:block;font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chedb button{width:28px;height:28px;border-radius:8px;color:var(--sub);background:rgba(255,255,255,.07)}
+.chmenu{position:fixed;z-index:9000;min-width:240px;max-width:340px;padding:6px;border-radius:16px;background:rgba(26,15,22,.98);box-shadow:0 20px 50px rgba(0,0,0,.65),inset 0 0 0 1px rgba(255,255,255,.1);animation:gpop .18s var(--ease)}
+.chqr{display:flex;gap:2px}
+.chqr button,.chqa button{width:36px;height:36px;border-radius:10px;font-size:21px;transition:transform .12s,background .12s}
+.chqr button:hover,.chqa button:hover{background:rgba(255,255,255,.1);transform:scale(1.2)}
+.chqr button.on,.chqa button.on{background:rgba(var(--ar),.35)}
+.chqr .more{font-size:16px;color:var(--sub)}
+.chqa{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-height:200px;overflow:auto;margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.08)}
+.chml{display:grid;margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.08)}
+.chml button{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;font-size:13.5px;font-weight:700;color:#fff;text-align:left}
+.chml button i{font-style:normal;width:20px;text-align:center}
+.chml button:hover{background:rgba(255,255,255,.08)}
+.chml button.bad{color:#ff8a9a}
+.chml button.bad:hover{background:rgba(255,60,90,.15)}
 .chb{position:relative;max-width:min(560px,72%);padding:8px 12px 6px;border-radius:18px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);word-break:break-word}
 .chm.th .chb{border-bottom-left-radius:6px}
 .chm.me .chb{border-bottom-right-radius:6px;background:linear-gradient(160deg,rgba(var(--ar),.55),rgba(var(--ar),.32));box-shadow:inset 0 0 0 1px rgba(var(--ar),.5)}
@@ -10782,7 +10818,7 @@ const FR=(()=>{
   const nm=p=>`${p.st&&p.st.adm?'<span class="admpf sm">[ADMIN]</span>':""}${ME.nameH(p.eq||{},p.nick)}${p.eq&&p.eq.badge?ME.badge(p.eq.badge):""}`;
   const hm=t=>new Date(t).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
   const dayL=t=>{const d=new Date(t),n=new Date(),y=new Date(n-864e5);if(d.toDateString()===n.toDateString()) return "Сегодня";if(d.toDateString()===y.toDateString()) return "Вчера";return d.toLocaleDateString("ru-RU",{day:"numeric",month:"long"})};
-  const prev=h=>h.k==="img"?"📷 Фото"+(h.tx?" · "+h.tx:""):h.k==="rate"?"★ Оценка":h.tx;
+  const prev=h=>h.del?"🚫 Сообщение удалено":h.k==="img"?"📷 Фото"+(h.tx?" · "+h.tx:""):h.k==="rate"?"★ Оценка":h.tx;
   function paintDot(){const n=frIn+msgUn;dot.hidden=!n;dot.textContent=n>9?"9+":String(n||"")}
   function badge(n){frIn=n||0;paintDot()}
   function unread(n){
@@ -10909,7 +10945,7 @@ const FR=(()=>{
     if(!isOpen()) open(true);
     let p=(data&&data.friends.find(x=>x.uid===uid))||(cur&&cur.uid===uid?cur:null);
     if(!p){try{p=await NET.call("user",{uid})}catch(e){toast(e.msg,true);return}}
-    chat={uid,p,rows:[],last:0,seen:0,more:false,loading:false};
+    closeMenu();chat={uid,p,rows:[],last:0,seen:0,more:false,loading:false,edit:null,since:0};
     setView("chat");chatShell();loadChat();
     clearInterval(pollT);pollT=setInterval(pollChat,2500);
   }
@@ -10930,13 +10966,23 @@ const FR=(()=>{
   }
   const bigEmo=s=>{const t=s.replace(/\s/g,"");return t.length>0&&t.length<=24&&/^(\p{Extended_Pictographic}|‍|️|\p{Emoji_Modifier})+$/u.test(t)&&[...t.matchAll(/\p{Extended_Pictographic}/gu)].length<=3};
   const linkify=h=>h.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" data-ext="1">$1</a>');
+  const QR=["❤️","😂","🔥","👍","😮","😢","🤯","💯"];
+  function rxH(m){
+    const rx=m.rx||{},g={};for(const u in rx)(g[rx[u]]=g[rx[u]]||[]).push(u);
+    const ks=Object.keys(g);if(!ks.length) return "";
+    const who=u=>u===me()?"Ты":(chat&&chat.p&&chat.p.uid===u?chat.p.nick:"Друг");
+    return `<div class="chrx">${ks.map(e=>`<button class="${g[e].includes(me())?"on":""}" data-rx="${m.id}" data-e="${e}" type="button" title="${esc(g[e].map(who).join(", "))}">${e}${g[e].length>1?`<b>${g[e].length}</b>`:""}</button>`).join("")}</div>`;
+  }
   function msgH(m){
     const mine=m.a===me();let inner="";
+    if(m.del) return `<div class="chm ${mine?"me":"th"} gone" data-mid="${m.id}"><div class="chbw"><div class="chb"><div class="chtx dl">🚫 Сообщение удалено</div><span class="chtm">${hm(m.t)}</span></div></div></div>`;
     if(m.k==="img") inner=`<img class="chimg" src="${m.local||`/api/net/img/${m.id}`}" data-img="${m.local?"":m.id}" alt="Фото">`;
     else if(m.k==="rate") inner=rateCardH(m.ext,mine,m.id);
     if(m.tx) inner+=`<div class="chtx${bigEmo(m.tx)?" emo":""}">${linkify(esc(m.tx))}</div>`;
     const tick=mine?(m.fail?`<i class="chtk bad" title="Не отправлено">!</i>`:m.pend?`<i class="chtk">…</i>`:`<i class="chtk${m.id<=chat.seen?" rd":""}">${m.id<=chat.seen?"✓✓":"✓"}</i>`):"";
-    return `<div class="chm ${mine?"me":"th"}${m.k!=="t"?" rich":""}${m.pend?" pend":""}" data-mid="${m.id}"><div class="chb">${inner}<span class="chtm">${hm(m.t)}${tick}</span></div></div>`;
+    const real=typeof m.id==="number";
+    return `<div class="chm ${mine?"me":"th"}${m.k!=="t"?" rich":""}${m.pend?" pend":""}${chat.edit===m.id?" eding":""}" data-mid="${m.id}"><div class="chbw"><div class="chb"${real?` data-ctx="${m.id}"`:""}>${inner}<span class="chtm">${m.ed?'<em class="ched">изменено</em>':""}${hm(m.t)}${tick}</span></div>
+      ${real?`<div class="chtools"><button data-mr="${m.id}" type="button" title="Поставить реакцию">☺</button><button data-mm="${m.id}" type="button" title="Ещё: изменить, удалить, скопировать">⋯</button></div>`:""}</div>${rxH(m)}</div>`;
   }
   function renderLog(o){
     const log=$("#chLog");if(!log||!chat) return;o=o||{};
@@ -10954,7 +11000,7 @@ const FR=(()=>{
   async function loadChat(){
     const c=chat;
     try{const j=await NET.call("chat/list",{with:c.uid});if(chat!==c) return;
-      merge(j.rows);c.seen=j.seen;c.more=j.more;renderLog({bottom:true});refreshUn()}
+      merge(j.rows);c.seen=j.seen;c.more=j.more;c.since=j.now||0;renderLog({bottom:true});refreshUn()}
     catch(e){const l=$("#chLog");if(l) l.innerHTML=`<div class="frnone">${esc(e.msg)}</div>`}
   }
   async function loadOlder(){
@@ -10967,8 +11013,12 @@ const FR=(()=>{
     if(!chat||view!=="chat"||!(isOpen()||docked)||document.hidden) return;
     const c=chat;
     try{
-      const j=await NET.call("chat/list",{with:c.uid,after:c.last});if(chat!==c) return;
-      const n=merge(j.rows),ch=j.seen!==c.seen;c.seen=j.seen;
+      const j=await NET.call("chat/list",{with:c.uid,after:c.last,since:c.since||0});if(chat!==c) return;
+      const n=merge(j.rows);let ch=j.seen!==c.seen;c.seen=j.seen;if(j.now) c.since=j.now;
+      for(const u of j.upd||[]){                          // правки, удаления и реакции
+        const i=c.rows.findIndex(r=>r.id===u.id);if(i<0) continue;
+        if(u.hid) c.rows.splice(i,1);else Object.assign(c.rows[i],u);ch=true;
+      }
       if(n&&j.rows.some(r=>r.a!==me())){try{SND.play("msg")}catch(e){}refreshUn()}
       if(n||ch) renderLog();
     }catch(e){}
@@ -10988,10 +11038,83 @@ const FR=(()=>{
     if(chat===c) renderLog();
   }
   function sendText(){
-    const t=$("#chTx");if(!t) return;const v=t.value.trim();if(!v) return;
+    const t=$("#chTx");if(!t) return;const v=t.value.trim();
+    if(chat&&chat.edit!=null){saveEdit(v);return}
+    if(!v) return;
     const ep=$("#emoP");if(ep) ep.hidden=true;
     t.value="";fitTx();send("t",{tx:v});
   }
+  /* ---------- изменение, удаление и реакции ---------- */
+  const msgById=id=>chat&&chat.rows.find(r=>r.id===+id);
+  function startEdit(id){
+    const m=msgById(id);if(!m||m.a!==me()||m.del) return;
+    chat.edit=m.id;const t=$("#chTx");if(!t) return;
+    let bar=root().querySelector(".chedb");
+    if(!bar){bar=document.createElement("div");bar.className="chedb";root().querySelector(".chin").before(bar)}
+    bar.innerHTML=`<i>✏️</i><div><b>Редактирование</b><span>${esc((m.tx||(m.k==="img"?"Фото":"Оценка")).slice(0,90))}</span></div><button data-ca="edx" type="button" title="Отменить (Esc)">✕</button>`;
+    t.value=m.tx||"";t.placeholder=m.k==="t"?"Новый текст сообщения…":"Подпись…";fitTx();t.focus();t.setSelectionRange(t.value.length,t.value.length);renderLog();
+  }
+  function stopEdit(){
+    if(!chat||chat.edit==null) return;chat.edit=null;
+    const bar=root().querySelector(".chedb");if(bar) bar.remove();
+    const t=$("#chTx");if(t){t.value="";t.placeholder=`Сообщение для ${chat.p.nick}…`;fitTx()}renderLog();
+  }
+  async function saveEdit(v){
+    const m=msgById(chat.edit);stopEdit();if(!m) return;
+    if(m.k==="t"&&!v){toast("Пустое сообщение нельзя сохранить — лучше удали его",true);return}
+    if(v===(m.tx||"")) return;
+    const old={tx:m.tx,ed:m.ed};m.tx=v;m.ed=Date.now();renderLog();
+    try{const j=await NET.call("chat/edit",{id:m.id,tx:v});Object.assign(m,j.msg)}catch(e){Object.assign(m,old);toast(e.msg,true)}
+    renderLog();
+  }
+  async function delMsg(id,all){
+    const m=msgById(id);if(!m) return;
+    const i=chat.rows.indexOf(m),snap={...m};
+    if(all) Object.assign(m,{del:true,tx:"",ext:null,rx:{}});else chat.rows.splice(i,1);
+    renderLog();
+    try{await NET.call("chat/del",{id:m.id,all:!!all});toast(all?"Сообщение удалено у всех":"Сообщение удалено у тебя")}
+    catch(e){if(all) Object.assign(m,snap);else chat.rows.splice(i,0,m);renderLog();toast(e.msg,true)}
+  }
+  async function react(id,e){
+    const m=msgById(id);if(!m||m.del) return;
+    const old=JSON.stringify(m.rx||{});m.rx=Object.assign({},m.rx||{});
+    if(m.rx[me()]===e) delete m.rx[me()];else m.rx[me()]=e;renderLog();
+    try{SND.play("click")}catch(x){}
+    try{const j=await NET.call("chat/react",{id:m.id,e});Object.assign(m,j.msg)}catch(x){m.rx=JSON.parse(old);toast(x.msg,true)}
+    renderLog();
+  }
+  /* всплывающее меню у сообщения: быстрые реакции, все эмодзи, действия */
+  let menuEl=null;
+  function closeMenu(){if(menuEl){menuEl.remove();menuEl=null}}
+  function openMenu(id,anchor,full){
+    closeMenu();const m=msgById(id);if(!m||m.del) return;
+    const mine=m.a===me(),my=(m.rx||{})[me()];
+    const all=Object.values(EMO).join(" ").split(" ");
+    menuEl=document.createElement("div");menuEl.className="chmenu";
+    menuEl.innerHTML=`<div class="chqr">${QR.map(e=>`<button class="${my===e?"on":""}" data-qr="${e}" type="button">${e}</button>`).join("")}<button class="more" data-qrm type="button" title="Все эмодзи">＋</button></div>
+      <div class="chqa" hidden>${all.map(e=>`<button class="${my===e?"on":""}" data-qr="${e}" type="button">${e}</button>`).join("")}</div>
+      ${full?`<div class="chml">
+        ${mine?`<button data-ma="edit" type="button"><i>✏️</i>Изменить</button>`:""}
+        ${m.tx?`<button data-ma="copy" type="button"><i>📋</i>Скопировать текст</button>`:""}
+        <button data-ma="delme" type="button"><i>🗑️</i>Удалить у меня</button>
+        ${mine?`<button class="bad" data-ma="delall" type="button"><i>⛔</i>Удалить у всех</button>`:""}</div>`:""}`;
+    document.body.append(menuEl);
+    const r=anchor.getBoundingClientRect(),w=menuEl.offsetWidth,h=menuEl.offsetHeight;
+    let x=mine?r.right-w:r.left,y=r.top-h-8;if(y<10) y=Math.min(innerHeight-h-10,r.bottom+8);
+    menuEl.style.left=Math.max(10,Math.min(innerWidth-w-10,x))+"px";menuEl.style.top=y+"px";
+    menuEl.addEventListener("click",async e=>{
+      e.stopPropagation();
+      if(e.target.closest("[data-qrm]")){const a=menuEl.querySelector(".chqa");a.hidden=!a.hidden;const rr=menuEl.getBoundingClientRect();if(rr.top<10||rr.bottom>innerHeight) menuEl.style.top=Math.max(10,innerHeight-rr.height-10)+"px";return}
+      const q=e.target.closest("[data-qr]");if(q){closeMenu();react(id,q.dataset.qr);return}
+      const a=e.target.closest("[data-ma]");if(!a) return;const k=a.dataset.ma;
+      if(k==="edit"){closeMenu();startEdit(id)}
+      else if(k==="copy"){closeMenu();try{await navigator.clipboard.writeText(m.tx)}catch(x){}toast("Текст скопирован")}
+      else if(k==="delme"){closeMenu();delMsg(id,false)}
+      else if(k==="delall"){if(!a.dataset.sure){a.dataset.sure=1;a.innerHTML="<i>⛔</i>Точно? Нажми ещё раз";return}closeMenu();delMsg(id,true)}
+    });
+  }
+  document.addEventListener("pointerdown",e=>{if(menuEl&&!menuEl.contains(e.target)&&!e.target.closest("[data-mm],[data-mr]")) closeMenu()},true);
+  document.addEventListener("keydown",e=>{if(menuEl&&e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();closeMenu()}},true);
   function fitTx(){const t=$("#chTx");if(!t) return;t.style.height="auto";t.style.height=Math.min(140,t.scrollHeight)+"px"}
   const readUrl=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});
   async function prepImg(f){
@@ -11202,6 +11325,7 @@ const FR=(()=>{
       else if(k==="rate") ratePicker(ext=>send("rate",{ext}));
       else if(k==="prof"){cur=null;const u=chat.uid;prevView="list";openUser(u)}
       else if(k==="min") minimize();
+      else if(k==="edx") stopEdit();
       else if(k==="max") maximize();
       else if(k==="dx") undock(true);
       return}
@@ -11209,6 +11333,9 @@ const FR=(()=>{
     const em=e.target.closest("[data-em]");if(em){addEmo(em.dataset.em);return}
     const im=e.target.closest("img.chimg");if(im){OV.open(`<img src="${im.src}" alt=""><button class="pround" data-ovx type="button" title="Закрыть"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`,"ovimg");return}
     const pl=e.target.closest("[data-pl]");if(pl){togglePl(pl.dataset.pl);return}
+    const mr=e.target.closest("[data-mr]");if(mr){e.stopPropagation();if(menuEl){closeMenu();return}openMenu(+mr.dataset.mr,mr.closest(".chbw").querySelector(".chb"),false);return}
+    const mm=e.target.closest("[data-mm]");if(mm){e.stopPropagation();if(menuEl){closeMenu();return}openMenu(+mm.dataset.mm,mm.closest(".chbw").querySelector(".chb"),true);return}
+    const rx=e.target.closest("[data-rx]");if(rx){react(+rx.dataset.rx,rx.dataset.e);return}
     const ta=e.target.closest("[data-tra]");if(ta){const m=chat&&chat.rows.find(r=>String(r.id)===ta.dataset.tra);if(m) tryAlbum(m.ext,ta);return}
     const tr=e.target.closest("[data-try]");if(tr){const m=chat&&chat.rows.find(r=>String(r.id)===tr.dataset.try);if(m) tryRate(m.ext);return}
     if(!e.target.closest("#emoP,[data-ca=emo]")){const p=$("#emoP");if(p&&!p.hidden) p.hidden=true}
@@ -11216,10 +11343,14 @@ const FR=(()=>{
   });
   on("keydown",e=>{
     if(e.target.id==="chTx"&&e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendText();return}
+    if(e.target.id==="chTx"&&e.key==="Escape"&&chat&&chat.edit!=null){e.preventDefault();e.stopPropagation();stopEdit();return}
+    if(e.target.id==="chTx"&&e.key==="ArrowUp"&&!e.target.value&&chat&&chat.edit==null){const m=[...chat.rows].reverse().find(r=>r.a===me()&&!r.del&&typeof r.id==="number"&&r.k==="t");if(m){e.preventDefault();startEdit(m.id)}}
     if(e.key==="Enter"&&e.target.id==="frId"){e.preventDefault();add()}
     else if(e.key==="Enter"&&(e.target.classList.contains("frr"))) e.target.click();
   });
   on("input",e=>{if(e.target.id==="chTx") fitTx()});
+  on("contextmenu",e=>{const b=e.target.closest("[data-ctx]");if(!b||e.target.closest("a")) return;e.preventDefault();openMenu(+b.dataset.ctx,b,true)});
+  on("scroll",e=>{if(e.target.id==="chLog") closeMenu()},true);
   on("paste",e=>{
     if(view!=="chat") return;const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(i=>i.kind==="file"&&i.type.startsWith("image/"));
     if(it){e.preventDefault();sendImg(it.getAsFile())}
@@ -11233,6 +11364,7 @@ const FR=(()=>{
   document.addEventListener("keydown",e=>{
     if(e.key!=="Escape"||!isOpen()||OV.isOpen()||!$("#gft").hidden) return;
     const p=$("#emoP");if(p&&!p.hidden){e.preventDefault();p.hidden=true;return}
+    if(chat&&chat.edit!=null){e.preventDefault();stopEdit();return}
     e.preventDefault();if(view!=="list") back();else close();
   });
   navBtn.addEventListener("click",()=>isOpen()?close():open());
