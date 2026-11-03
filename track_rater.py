@@ -35,9 +35,9 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "4.6"
-APP_NOTES = "Сообщения можно изменять, удалять и ставить на них реакции"
-UPDATE_URL = ""          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
+APP_VERSION = "4.7"
+APP_NOTES = "Обновления приходят сразу после выхода новой версии"
+UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
 NET_FILE = DATA_DIR / "net.json"
@@ -326,13 +326,30 @@ def upd_url():
     return norm_upd(u or UPDATE_URL)
 
 
+def upd_fetch(u):
+    """Свежий файл обновления. С GitHub — через его API: обычная raw-ссылка кэшируется и до 5 минут отдаёт старую версию."""
+    m = re.match(r"^https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/([^?#]+)", u)
+    if m:
+        o, r, br, p = m.groups()
+        try:
+            req = urllib.request.Request(f"https://api.github.com/repos/{o}/{r}/contents/{p}?ref={br}",
+                                         headers={"User-Agent": UA, "Accept": "application/vnd.github.raw", "Cache-Control": "no-cache"})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                body = resp.read(8 * 1024 * 1024 + 1)[:8 * 1024 * 1024]
+            if b"APP_VERSION" in body:
+                return body
+        except Exception as e:
+            launch_log(f"обновление: GitHub API не ответил ({e}) — беру обычную ссылку")
+    sep = "&" if "?" in u else "?"
+    return http_get(u + sep + "t=" + str(int(time.time())), timeout=15, maxb=8 * 1024 * 1024)[0]
+
+
 def upd_check():
     u = upd_url()
     res = {"cur": APP_VERSION, "url": u, "available": False, "latest": None, "notes": ""}
     if not u:
         return res
-    sep = "&" if "?" in u else "?"
-    raw, _ = http_get(u + sep + "t=" + str(int(time.time())), timeout=15, maxb=8 * 1024 * 1024)
+    raw = upd_fetch(u)
     src = raw.decode("utf-8")
     m = re.search(r'^APP_VERSION\s*=\s*"([^"]+)"', src, re.M)
     if not m or "PULSE RATER" not in src or "class Handler" not in src:
@@ -412,9 +429,10 @@ var THEMES=[
  {id:"cosmo",n:"Космический борщ",t:"Глубокий фиолет с нотками свёклы",h:268,cy:false},
  {id:"candy",n:"Сладкая вата",t:"Розовый сахарный взрыв",h:322,cy:false}
 ];
-var APPV="4.6";
+var APPV="4.7";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"4.7",fix:["Обновления приходят сразу, как только новая версия выложена на GitHub, — раньше GitHub мог до 5 минут отдавать старую"],chg:["Ссылка на обновления вписана в программу — у друзей автообновление работает без настройки"]},
  {v:"4.6",add:["Реакции на сообщения — свои и друга: наведи на сообщение и нажми ☺ или кликни правой кнопкой","Изменение своих сообщений — рядом со временем появится «изменено»","Удаление сообщений: «у меня» — пропадёт только у тебя, «у всех» — у обоих"]},
  {v:"4.5",add:["Чат с другом можно свернуть: он встаёт под «Итоговую оценку», а ты продолжаешь оценивать треки и переписываться","Кнопки «Развернуть» и «Закрыть» у свёрнутого чата"]},
  {v:"4.4",add:["Окно «Что нового» после каждого обновления — перед экраном «Начать»","Прогресс скачивания треков, присланных другом: в медиатеке и в треклисте альбома видно, сколько уже загрузилось","«Загрузка N%» и полоска под названием трека в плеере, пока трек скачивается (SoundCloud, присланные файлы)"],
