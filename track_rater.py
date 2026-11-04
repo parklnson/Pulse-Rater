@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.2.1"
-APP_NOTES = "Рулетка-колесо: чёрное ×2, жёлтое ×3, красное ×5, зелёное ×48 · Копилка кэшбэка больше не сгорает · Игры не зависают · Новое сердце в «Пульсе»"
+APP_VERSION = "5.2.2"
+APP_NOTES = "Кэшбэк летит прямо в баланс игр · На странице игр один баланс · Плавная анимация центра колеса"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -434,9 +434,10 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.2.1";
+var APPV="5.2.2";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.2.2",add:[],chg:["На странице игр остаётся один баланс — верхний, а монеты кэшбэка летят прямо в него","Центр колеса рулетки плавно показывает результат и больше не съезжает"],fix:[],del:[]},
  {v:"5.2.1",add:["Рулетка стала колесом фортуны: чёрное ×2, жёлтое ×3, красное ×5, зелёное ×48","Копилка кэшбэка: процент с каждой проигранной ставки откладывается и не сгорает от выигрышей — забирай, когда захочешь","Статистика «Сегодня» сохраняется до полуночи и считает каждую ставку"],chg:["Новое сердце в «Пульсе» — объёмное, с бликами и волной от удара","Поле авто-вывода стало крупнее и без стрелочек","Заголовок раздела без обрезанной «у»"],fix:["Минки, Plinko и другие игры больше не зависают после нескольких раундов «Пульса»","Ряды и риск в Plinko снова переключаются","Больше не просит «доиграть текущую игру», когда игра уже закончена","Плашка обновления показывает, что нового именно в этой версии"],del:[]},
  {v:"5.2",add:["Игры на пульсы — теперь отдельная страница, как остальные разделы: игры, баланс, кэшбэк и история ставок на одном экране","Кэшбэк: с каждой проигранной ставки процент откладывается в копилку — выигрыши её не уменьшают. 12 уровней — от 0 до 15%, уровень растёт от общей суммы ставок и никогда не падает","Рулетка стала колесом фортуны: чёрное ×2, жёлтое ×3, красное ×5, зелёное ×48","Новый дизайн всех пяти игр: кардиомонитор в «Пульсе», кристаллы и бомбы в «Минках», неоновое Plinko и настоящие карты в HiLo","Звуки в играх, монеты при выигрыше и экран «Крупный выигрыш» для ×10 и больше","Статистика за сегодня и лента последних ставок","20 новых достижений за игры на пульсы"],chg:["Игры запоминают ставку, количество мин, ряды и риск Plinko и авто-вывод в «Пульсе»"],fix:[],del:[]},
  {v:"5.1.1",add:[],chg:["Аудио из чата и онлайн-комнат хранится на сервере 2 дня — программа друга скачивает его к себе раньше"],fix:["Ошибка «Exceeded maximum DB size»: сервер переполнялся аудиофайлами — теперь он сам удаляет старое аудио, друзья и сообщения снова видны"],del:[]},
@@ -3671,14 +3672,22 @@ html.netdown .netst.on>i{background:#ffb84a;box-shadow:0 0 10px #ffb84a}
 .rwptr{position:absolute;left:50%;top:-14px;z-index:3;width:34px;height:44px;margin-left:-17px;background:linear-gradient(180deg,#fff3c4,#ffc23d 55%,#b07a14);clip-path:polygon(0 0,100% 0,50% 100%);filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,200,80,.8));transform-origin:50% 0}
 .rwwrap.tk .rwptr{animation:rwTk .12s ease-out}
 @keyframes rwTk{40%{transform:rotate(-14deg)}}
-.rwhub{position:absolute;left:50%;top:50%;z-index:2;width:34%;height:34%;transform:translate(-50%,-50%);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#3a2a18,#120a08 70%);box-shadow:inset 0 0 0 4px #ffd76a,inset 0 0 0 7px #6b4608,0 8px 24px rgba(0,0,0,.6);transition:background .4s}
+.rwhub{position:absolute;left:33%;top:33%;z-index:2;width:34%;height:34%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#3a2a18,#120a08 70%);box-shadow:inset 0 0 0 4px #ffd76a,inset 0 0 0 7px #6b4608,0 8px 24px rgba(0,0,0,.6);transition:background .4s}
 .rwhub b{font-size:clamp(26px,3.2vw,42px);font-weight:900;letter-spacing:-.03em;line-height:1;color:#ffd76a}
 .rwhub span{margin-top:4px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)}
 .rwhub.spin b{animation:czPulse .8s ease-in-out infinite}
 .rwhub.k b{color:#e6e6ee}.rwhub.y b{color:#ffd23d}.rwhub.r b{color:#ff5a6e}.rwhub.z b{color:#3ff08f}
 .rwwrap.won .rwhub{animation:rwWin 1s ease-out 2}
 @keyframes rwWin{30%{box-shadow:inset 0 0 0 4px #ffd76a,inset 0 0 0 7px #6b4608,0 0 60px 10px rgba(255,200,80,.8)}}
-.rwwrap.lost .rwhub{animation:shake .45s}
+.rwwrap.lost .rwhub{animation:rwLost .5s ease-out}
+@keyframes rwLost{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.rwhub b,.rwhub span{transition:color .3s}
+.rwwrap.won .rwhub b,.rwwrap.lost .rwhub b{animation:rwPop .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes rwPop{from{transform:scale(.6);opacity:.3}}
+#balPill{transition:opacity .3s,transform .3s var(--ease)}
+body.czon #balPill{opacity:0;transform:scale(.85);pointer-events:none}
+.czbal.bump{animation:czBump .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes czBump{40%{transform:scale(1.07);box-shadow:inset 0 0 0 1px rgba(255,210,100,.8),0 0 40px -6px rgba(255,190,60,.9)}}
 .rwside{min-width:0}
 .rwside .cres{text-align:left;margin-top:0}
 .rubtns{grid-template-columns:1fr 1fr!important}
@@ -7809,8 +7818,8 @@ const CAS=(()=>{
     const n=cbPot();if(n<1){toast("Кэшбэк пока не накопился — он считается от проигрышей",true);return}
     cbBusy=true;if(btn) btn.disabled=true;
     try{
-      if(NET.on){const j=await NET.call("cb/claim");ME.netReward(j,{from:btn});snd("cash");coins(btn,14);toast(`Кэшбэк зачислен: +${ME.fmtN(j.n)} пульсов`)}
-      else{const D=ME.data;D.cbp=Math.max(0,(+D.cbp||0)-n);ME.reward(n,0,{from:btn});snd("cash");coins(btn,14);toast(`Кэшбэк зачислен: +${ME.fmtN(n)} пульсов`)}
+      if(NET.on){const j=await NET.call("cb/claim");ME.netReward(j,{from:btn});snd("cash");toast(`Кэшбэк зачислен: +${ME.fmtN(j.n)} пульсов`)}
+      else{const D=ME.data;D.cbp=Math.max(0,(+D.cbp||0)-n);ME.reward(n,0,{from:btn});snd("cash");toast(`Кэшбэк зачислен: +${ME.fmtN(n)} пульсов`)}
       try{QA.ev("cb",{n})}catch(e){}
     }catch(e){toast(e.msg||"Не получилось забрать кэшбэк",true)}
     finally{cbBusy=false;if(btn) btn.disabled=false;paintSide()}
@@ -8531,12 +8540,14 @@ const CZ=(()=>{
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
     show(cur,true);ME.paintAll&&ME.paintAll();
     document.querySelectorAll("#gmp [data-bal]").forEach(x=>x.textContent=ME.fmtN(ME.data.bal));
+    document.body.classList.add("czon");
     CAS.paintSide();
   }
   function close(keep){
     if(opening||el.hidden||el.classList.contains("out")) return;
     games[cur].pause();
     if(keep!==true) document.body.classList.remove("pg");
+    document.body.classList.remove("czon");
     navBtn.classList.remove("on");el.classList.add("out");
     closeT=setTimeout(()=>{el.hidden=true;el.classList.remove("out")},280);
   }
@@ -10700,7 +10711,7 @@ const ME=(()=>{
     document.querySelectorAll("[data-bal]").forEach(el=>{if(from!=null&&el.isConnected&&el.offsetParent!==null&&Math.abs(D.bal-from)<5000) countUp(el,from,D.bal);else el.textContent=fmtN(D.bal)});
   }
   function fly(from,n,old){
-    const pill=$("#balPill"),pr=pill.getBoundingClientRect();
+    const pill=(()=>{const g=$("#gmp");if(g&&!g.hidden&&!g.classList.contains("out")){const b=g.querySelector(".czbal");if(b) return b}return $("#balPill")})(),pr=pill.getBoundingClientRect();
     const fr=from?from.getBoundingClientRect():{left:innerWidth/2-20,top:innerHeight-120,width:40,height:40};
     const x0=fr.left+fr.width/2,y0=fr.top+fr.height/2,x1=pr.left+18,y1=pr.top+pr.height/2;
     const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
