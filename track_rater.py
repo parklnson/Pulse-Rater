@@ -35,7 +35,7 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.0"
+APP_VERSION = "5.1"
 APP_NOTES = "Лента друзей, «сейчас слушает», сезонный пропуск и колесо фортуны · Ответы в чате, новые эмодзи, чёрный и белый цвета, живая «Туманность»"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
@@ -431,9 +431,11 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.0";
+var APPV="5.1";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.1",add:["Онлайн — отдельная страница с комнатами на общем сервере: создай комнату, позови друзей приглашением в чат или кодом и слушайте треки одновременно","В комнате ведущий включает трек из каталога релизов, из своих оценок или свой аудиофайл — у друзей он играет синхронно","Все оценивают трек по пяти критериям, потом открываются результаты: оценка каждого, средний балл и разбор по критериям. Трек можно сохранить себе в медиатеку","Чат комнаты — общайтесь, пока слушаете","Каталог релизов запоминает поисковые запросы — недавние видны под строкой поиска, их можно повторить в один клик","«Оценить позже»: синглы, EP и альбомы можно отложить — из редактора, со страницы альбома, из чата и из ленты друзей. В медиатеке — фильтр «⏱ Позже»","Кнопка «Проверить подарки» в «Подарках»"],
+  chg:[],fix:["Подарки от друзей приходят сразу — приложение проверяет их и в свёрнутом окне, и если сервер подключили уже после запуска","Плашка опыта за оценку показывала весь накопленный опыт (например, +1550) — теперь показывает, сколько начислено на самом деле"],del:[]},
  {v:"5.0",add:["Лента друзей: что они недавно оценили — с обложками, оценками и кнопкой «Оценить самому»","«Сейчас слушает» — в профиле и в списке друзей видно, какой трек играет","Сезонный пропуск «Сверхновая»: 30 уровней наград, эксклюзивные значок, ник, фон и рамка","Колесо фортуны — раз в день, до 3 000 пульсов"],
   chg:["Настройки разбиты на вкладки: Вид, Звук, Оценивание, Аккаунт","Задания дня стали разнообразнее: теперь их 4 — оценки, рецензии, жанры, друзья, музыка и игры","Бонус дня — 100 пульсов и 60 опыта"],fix:[],del:[]},
  {v:"4.9.2",add:["Премиум-коллекция «Чёрная дыра»: настоящий 3D-рендер с гравитационным линзированием — фон «Гаргантюа», рамка «Горизонт событий», нимб, ник, значок и аккреционный поток","Раздел «Премиум-коллекции» в магазине"],chg:[],fix:[],del:[]},
@@ -2539,6 +2541,158 @@ body.mpon .pbody,body.mpon .content{padding-bottom:110px}
 #mp .mpx svg{width:18px;height:18px}
 @media(max-width:900px){#mp{grid-template-columns:minmax(0,1fr) auto 34px;gap:10px}.mpseek,.mpvol{display:none}}
 /* ---------- онлайн-комната: отдельная страница ---------- */
+/* ---------- онлайн-комнаты ---------- */
+.olp .pbody{padding-bottom:28px}
+.olnote{max-width:720px;display:flex;flex-direction:column;gap:8px;padding:22px 24px;border-radius:18px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.olnote b{font-size:18px}.olnote span{color:var(--sub);font-size:14px;line-height:1.5}
+.olrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.olbtn{padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:800;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);transition:background .2s,transform .2s var(--ease),box-shadow .2s;white-space:nowrap}
+.olbtn:hover:not(:disabled){background:rgba(255,255,255,.15);transform:translateY(-1px)}
+.olbtn.pri{background:linear-gradient(135deg,var(--g2),var(--g0));box-shadow:0 10px 26px -12px rgba(var(--ar),.9)}
+.olbtn.pri:hover:not(:disabled){background:linear-gradient(135deg,var(--g4),var(--g))}
+.olbtn.ghost{background:none}
+.olbtn.sm{padding:7px 14px;font-size:12.5px}
+.olbtn:disabled{opacity:.45;cursor:default}
+.ollob{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:900px}
+.olcard{display:flex;flex-direction:column;gap:10px;padding:22px;border-radius:20px;background:linear-gradient(160deg,rgba(var(--ar),.16),rgba(0,0,0,.35) 60%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);animation:pgItem .55s var(--ease) backwards}
+.olcard:nth-child(2){animation-delay:.07s}
+.olcard h3{margin:0;font-size:20px;font-weight:900;letter-spacing:-.02em}
+.olcard p{margin:0;color:var(--sub);font-size:13px;line-height:1.45;flex:1}
+.olcard input,.olff input{height:44px;padding:0 16px;border-radius:12px;background:rgba(0,0,0,.45);border:0;outline:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);font-size:14px;transition:box-shadow .2s}
+.olcard input:focus,.olff input:focus{box-shadow:inset 0 0 0 1px rgba(255,255,255,.4)}
+#olCode{text-transform:uppercase;letter-spacing:.2em;font-weight:800}
+.olic{font-size:30px;line-height:1}
+.olrech{margin:26px 0 10px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--sub)}
+.olrec{display:flex;flex-wrap:wrap;gap:10px;max-width:900px}
+.olrc{display:flex;flex-direction:column;align-items:flex-start;padding:10px 16px;border-radius:14px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);transition:background .2s}
+.olrc:hover{background:rgba(255,255,255,.1)}
+.olrc b{font-size:14px}.olrc span{font-size:11.5px;color:var(--sub);letter-spacing:.14em}
+.ollan{margin-top:22px;font-size:13px;color:var(--sub);text-decoration:underline;text-underline-offset:3px}
+.ollan:hover{color:#fff}
+.olroom{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;padding-top:24px;height:100%;min-height:0;animation:pgSlide .45s var(--ease) backwards}
+.olp .pbody:has(.olroom){overflow:hidden;display:flex;flex-direction:column}
+.olp .pbody:has(.olroom)>.olroom{flex:1}
+.olmain{min-width:0;overflow:auto;padding-right:4px}
+.olhd{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.olhn h2{margin:0;font-size:clamp(28px,3.6vw,48px);font-weight:900;letter-spacing:-.04em;line-height:1.1;overflow-wrap:anywhere}
+.olcode{margin-top:6px;font-size:13px;color:var(--sub);padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.06)}
+.olcode b{color:#fff;letter-spacing:.16em;margin-left:4px}
+.olcode:hover{background:rgba(255,255,255,.12)}
+.olhb{display:flex;gap:8px}
+.olmem{display:flex;flex-wrap:wrap;gap:14px;margin:18px 0}
+.olm{display:flex;flex-direction:column;align-items:center;gap:5px;width:62px;opacity:.45;transition:opacity .3s}
+.olm.on{opacity:1}
+.olm span{font-size:11.5px;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.olma{position:relative;width:40px;height:40px}
+.olcr{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-style:normal;font-size:13px}
+.olok{position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border-radius:50%;background:#3ddc84;color:#04170c;font-size:11px;font-weight:900;font-style:normal;display:grid;place-items:center;box-shadow:0 0 0 2px #0b0508;animation:pgItem .4s var(--ease)}
+.olidle{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:28px;border-radius:20px;background:rgba(0,0,0,.3);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.olidle b{font-size:20px}.olidle span{color:var(--sub);font-size:14px}
+.olidle .olbtn{margin-top:6px}
+.olnow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:22px;align-items:center;padding:18px;border-radius:22px;background:linear-gradient(120deg,rgba(var(--ar),.18),rgba(0,0,0,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);animation:pgItem .5s var(--ease) backwards}
+.olcov{width:150px;height:150px;border-radius:14px;background:rgba(255,255,255,.06) center/cover;display:grid;place-items:center;font-size:44px;color:var(--sub);box-shadow:0 18px 40px -18px #000}
+.olnt{min-width:0}
+.olnt em{display:block;font-style:normal;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--sub)}
+.olnt>b{display:block;margin-top:4px;font-size:clamp(20px,2.4vw,30px);font-weight:900;letter-spacing:-.02em;line-height:1.15;overflow-wrap:anywhere}
+.olnt>span{display:block;margin-top:2px;color:rgba(255,255,255,.8);font-size:14px}
+.olpl{display:flex;align-items:center;gap:12px;margin-top:14px}
+.olpp{flex:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center;transition:transform .2s var(--ease)}
+.olpp:hover{transform:scale(1.07)}
+.olpp svg{width:18px;height:18px;fill:currentColor}
+.olpp:disabled{opacity:.4}
+.olwho{flex:none;font-size:12px;color:var(--sub);white-space:nowrap}
+.olbar{flex:1;min-width:60px;height:6px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+.olbar.can{cursor:var(--cur-p)}
+.olbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--g2),var(--g4));border-radius:inherit;transition:width .45s linear}
+.olt{flex:none;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+.olvol{flex:none;display:flex;align-items:center;gap:6px;color:var(--sub)}
+.olvol svg{width:18px;height:18px}
+.olvol input{width:80px;accent-color:#fff}
+.oltap{margin-top:12px;padding:9px 16px;border-radius:999px;background:#fff;color:#000;font-weight:800;font-size:13px}
+.olnoau{margin-top:10px;font-size:12.5px;color:var(--sub)}
+.olnoau a{color:#fff}
+.olrt,.olres{margin-top:18px;padding:20px 22px;border-radius:22px;background:rgba(0,0,0,.32);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);animation:pgItem .5s var(--ease) .06s backwards}
+.olrth{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+.olrth b{font-size:18px}
+.oltot{font-size:38px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;transition:color .3s}
+.olsl{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr) 44px;gap:14px;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)}
+.olsln b{display:block;font-size:14px}.olsln span{display:block;font-size:11.5px;color:var(--sub);line-height:1.3}
+.olsl input{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:linear-gradient(90deg,var(--g2) var(--p,50%),rgba(255,255,255,.14) var(--p,50%));outline:0}
+.olsl input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.5);cursor:var(--cur-p)}
+.olsl output{font-weight:900;font-size:16px;text-align:right;font-variant-numeric:tabular-nums}
+.olvs{font-size:12.5px;color:var(--sub);flex:1}
+.olrsh{display:flex;flex-wrap:wrap;gap:24px;align-items:center;margin-bottom:12px}
+.olrsh>div:first-child em{display:block;font-style:normal;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--sub)}
+.olrsh>div:first-child b{display:block;font-size:56px;font-weight:900;line-height:1;letter-spacing:-.04em}
+.olrsh>div:first-child span{font-size:12.5px;color:var(--sub)}
+.olcrit{flex:1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.olcrit div{padding:10px;border-radius:12px;background:rgba(255,255,255,.04);text-align:center}
+.olcrit span{display:block;font-size:10.5px;color:var(--sub);line-height:1.2;min-height:2.4em}
+.olcrit b{font-size:20px;font-weight:900}
+.olrows{display:flex;flex-direction:column;gap:6px}
+.olrr{display:grid;grid-template-columns:22px 32px minmax(0,1fr) auto 54px;gap:10px;align-items:center;padding:7px 10px;border-radius:12px;background:rgba(255,255,255,.04);animation:pgItem .45s var(--ease) calc(var(--i)*60ms) backwards}
+.olrr b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.olpos{font-style:normal;font-weight:900;color:var(--sub);text-align:center}
+.olsc{display:flex;gap:4px}
+.olsc i{font-style:normal;font-size:11.5px;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.06);color:var(--sub);font-variant-numeric:tabular-nums}
+.olrr em{font-style:normal;font-weight:900;font-size:20px;text-align:right;font-variant-numeric:tabular-nums}
+.olchat{display:flex;flex-direction:column;min-height:0;border-radius:20px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);overflow:hidden}
+.olchh{padding:14px 18px;font-weight:900;font-size:15px;border-bottom:1px solid rgba(255,255,255,.07)}
+.ollog{flex:1;min-height:0;overflow:auto;padding:12px 12px 6px;display:flex;flex-direction:column;gap:6px}
+.olempty{margin:auto;color:var(--sub);font-size:13px}
+.olsys{align-self:center;max-width:92%;text-align:center;font-size:12px;color:var(--sub);padding:3px 10px}
+.olsys.big{color:#fff;background:rgba(255,255,255,.06);border-radius:10px;padding:6px 12px}
+.olsys i,.olbb i{font-style:normal;font-size:10px;opacity:.55;margin-left:6px}
+.olmsg{display:flex;gap:8px;align-items:flex-end;max-width:92%;animation:pgItem .35s var(--ease) backwards}
+.olmsg.me{align-self:flex-end}
+.olmav{flex:none;width:28px;height:28px}
+.olbb{padding:7px 11px;border-radius:14px 14px 14px 4px;background:rgba(255,255,255,.08);font-size:13.5px;line-height:1.4;overflow-wrap:anywhere}
+.olmsg.me .olbb{border-radius:14px 14px 4px 14px;background:linear-gradient(135deg,rgba(var(--ar),.55),rgba(var(--ar),.32))}
+.olbb b{display:block;font-size:11.5px;color:var(--g4);margin-bottom:1px}
+.olbb a{color:#fff;text-decoration:underline}
+.olin{display:flex;gap:8px;align-items:flex-end;padding:10px;border-top:1px solid rgba(255,255,255,.07)}
+.olin textarea{flex:1;min-height:40px;max-height:120px;resize:none;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.06);border:0;outline:0;font:inherit;font-size:13.5px;line-height:1.4;color:inherit}
+.olsend{flex:none;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--g2),var(--g0));display:grid;place-items:center}
+.olsend svg{width:18px;height:18px}
+.olpkw{width:min(640px,94vw)}
+.olpk{display:flex;flex-direction:column;gap:12px;max-height:min(78vh,720px)}
+.olpkh{display:flex;align-items:center;justify-content:space-between}
+.olpkh b{font-size:20px;font-weight:900}
+.olpkp{margin:0;color:var(--sub);font-size:13px}
+.olpkp b{color:#fff;letter-spacing:.14em}
+.olpkt{align-self:flex-start}
+.olpkb{display:flex;flex-direction:column;gap:10px;min-height:0;flex:1}
+.olpkb .ctin{flex:none}
+.olpkl{overflow:auto;display:flex;flex-direction:column;gap:6px;min-height:120px;max-height:52vh;padding-right:4px}
+.olpke{padding:30px 10px;text-align:center;color:var(--sub);font-size:13px}
+.olpr{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto auto;gap:10px;align-items:center;padding:6px 10px 6px 6px;border-radius:12px;background:rgba(255,255,255,.04)}
+.olpr.fr{grid-template-columns:40px minmax(0,1fr) auto}
+.olpr .im{width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,.08) center/cover}
+.olpn{min-width:0}
+.olpn b,.olpn span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.olpn b{font-size:13.5px}.olpn span{font-size:12px;color:var(--sub)}
+.olpr em{font-style:normal;font-size:11px;color:var(--sub);padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06)}
+.olpr em.ok{color:#8ff0b6;background:rgba(61,220,132,.12)}
+.olpsc{font-style:normal;font-weight:900;font-size:15px}
+.olfile{display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;padding:30px 20px;border-radius:16px;border:1.5px dashed rgba(255,255,255,.22);cursor:var(--cur-p);transition:border-color .2s,background .2s}
+.olfile:hover{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.03)}
+.olfile b{font-size:16px}.olfile span{font-size:12.5px;color:var(--sub);max-width:380px}
+.olff{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.olff .olbtn{grid-column:1/-1;justify-self:start}
+.chroom{display:flex;flex-direction:column;gap:6px;padding:12px 14px;min-width:230px;border-radius:14px;background:linear-gradient(135deg,rgba(var(--ar),.35),rgba(0,0,0,.25))}
+.chroom b{font-size:15px}.chroom span{font-size:12px;color:rgba(255,255,255,.75)}
+.chroom button{align-self:flex-start;margin-top:4px;padding:7px 16px;border-radius:999px;background:#fff;color:#000;font-weight:800;font-size:12.5px}
+.cthist{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 8px}
+.cthist[hidden]{display:none}
+.cthist>em{font-style:normal;font-size:11.5px;color:var(--sub);margin-right:2px}
+.cthc{display:inline-flex;align-items:center;border-radius:999px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);transition:background .2s;animation:pgItem .35s var(--ease) backwards}
+.cthc:hover{background:rgba(255,255,255,.12)}
+.cthc button{padding:6px 4px 6px 12px;font-size:12.5px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cthc button+button{padding:6px 10px 6px 6px;opacity:.5;font-size:11px}
+.cthc button+button:hover{opacity:1}
+.cthclr{font-size:11.5px;color:var(--sub);padding:6px 8px}
+.cthclr:hover{color:#fff}
+@media (max-width:1100px){.olroom{grid-template-columns:1fr;height:auto}.olp .pbody:has(.olroom){overflow:auto;display:block}.olchat{height:420px}.olcrit{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .rmp .pbody{padding-bottom:40px}
 .rmv{animation:pgSlide .45s var(--ease) backwards}
 .rmcards{max-width:900px;margin-top:4px}
@@ -3396,6 +3550,14 @@ html[data-design=polar] .stp{background:linear-gradient(180deg,rgba(14,40,52,.98
   -webkit-text-stroke:.7px rgba(255,196,130,.75);animation:bhNm 5s linear infinite;filter:drop-shadow(0 0 1.5px rgba(255,220,170,.95)) drop-shadow(0 0 8px rgba(255,140,50,.75)) drop-shadow(0 0 20px rgba(255,80,10,.45))}
 @keyframes bhNm{from{background-position:120% 0}to{background-position:-120% 0}}
 
+/* ---------- 5.1: оценить позже ---------- */
+.ibtn.latb.on{color:#ffd45a;background:rgba(255,212,90,.14)}
+.chip em{font-style:normal;opacity:.7;margin-left:4px}
+.ashb.lat{margin-right:8px;background:rgba(255,255,255,.08)}.ashb.lat.on{color:#ffd45a;background:rgba(255,212,90,.14)}
+.chrlt{display:block;width:100%;margin-top:8px;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);transition:background .15s}
+.chrlt:hover{background:rgba(255,212,90,.16);color:#ffd45a}
+.fdbs{display:flex;gap:6px}.fdr.lt{padding:8px 11px}
+.gfchk{width:100%;margin:0 0 12px}
 /* ---------- 5.0: сейчас слушает ---------- */
 .npl{display:inline-flex;align-items:center;gap:9px;margin:6px 0 2px;padding:6px 12px 6px 10px;border-radius:999px;font-size:13px;color:rgba(255,255,255,.82);background:rgba(30,215,96,.1);box-shadow:inset 0 0 0 1px rgba(30,215,96,.35);max-width:100%}
 .npl span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -3890,6 +4052,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
       <div class="chips" id="chips">
         <button class="chip on" data-f="all">Все</button>
         <button class="chip" data-f="fav">♥ Любимые</button>
+        <button class="chip" data-f="later" id="chipLater">⏱ Позже</button>
       </div>
       <div class="srow">
         <div class="sbox"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><input id="q" placeholder="Поиск в медиатеке" autocomplete="off"></div>
@@ -3919,6 +4082,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
         <button class="ibtn" id="reset" title="Очистить форму (новая оценка)"><svg class="ico" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
         <button class="ibtn favb" id="favCur" type="button" hidden><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/></svg></button>
         <button class="ibtn" id="shareCur" title="Поделиться: карточка для сторис и Telegram" hidden><svg class="ico" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>
+        <button class="ibtn latb" id="laterCur" type="button" title="Оценить позже" hidden><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3"/></svg></button>
         <button class="ibtn" id="delCur" title="Удалить эту оценку" hidden><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>
 
@@ -4033,6 +4197,11 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
     <div class="pm-bg"></div>
     <div class="ptop"><span class="sp"></span><button class="pround" id="ctClose" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="pbody" id="ctBody"></div>
+  </section>
+  <section class="pm olp" id="olp" hidden aria-label="Онлайн">
+    <div class="pm-bg"></div>
+    <div class="ptop"><span class="sp"></span><button class="pround" id="olClose" type="button" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <div class="pbody" id="olBody"></div>
   </section>
   <section class="pm rmp" id="rmp" hidden aria-label="Онлайн-комната">
     <div class="pm-bg"></div>
@@ -5118,7 +5287,9 @@ function renderLib(){
   let list=state.tracks.slice();
   const f=state.filter;
   if(state.cat&&state.catVal) list=list.filter(catMatch);
-  if(f!=="all") list=list.filter(isRated);
+  {const nL=state.tracks.filter(t=>t.later&&t.unrated).length,ch=$("#chipLater");if(ch) ch.innerHTML=`⏱ Позже${nL?` <em>${nL}</em>`:""}`}
+  if(f==="later") list=list.filter(t=>t.later&&t.unrated);
+  else if(f!=="all") list=list.filter(isRated);
   if(f==="fav"){const ft=new Set((ME.data.favTracks||[]).map(String));list=list.filter(t=>t.fav||ft.has(String(t.id)))}
   const q=state.q.trim().toLowerCase();
   if(q) list=list.filter(t=>(t.title+" "+t.artist+" "+(t.beat||"")+" "+(t.genre||"")).toLowerCase().includes(q));
@@ -5304,10 +5475,47 @@ function paintMode(){
   $("#eyebrow").textContent=ed?(cur&&cur.unrated?"Оцени трек из альбома":"Редактирование оценки"):"Новая оценка";
   $("#eqTop").hidden=!ed;
   $("#delCur").hidden=!ed;
+  paintLater();
   try{SH.paint()}catch(e){}
   try{paintFav()}catch(e){}
   $("#save").title=ed?"Обновить оценку (Ctrl+Enter)":"Добавить в медиатеку (Ctrl+Enter)";
   paintNav();
+}
+/* ---------- «Оценить позже» ---------- */
+function paintLater(){
+  const b=$("#laterCur");if(!b) return;
+  const cur=state.editing!=null&&state.tracks.find(x=>x.id===state.editing);
+  b.hidden=cur?!cur.unrated:!state.title.trim();
+  const on=!!(cur&&cur.later);b.classList.toggle("on",on);
+  b.title=cur?(on?"Убрать из «Оценить позже»":"Отложить в «Оценить позже»"):"Отложить в «Оценить позже» — без оценки";
+}
+$("#laterCur").addEventListener("click",()=>{
+  const cur=state.editing!=null&&state.tracks.find(x=>x.id===state.editing);
+  if(cur){cur.later=!cur.later;if(!cur.later) delete cur.later;persist();renderLib();paintLater();toast(cur.later?"Добавлено в «Оценить позже»":"Убрано из «Оценить позже»");return}
+  if(save(true)){paintLater();renderLib()}
+});
+titleEl.addEventListener("input",()=>setTimeout(paintLater,0));
+function laterAlbum(aid,on){
+  let n=0;state.tracks.forEach(t=>{if(t.albumId===aid&&t.unrated){if(on) t.later=true;else delete t.later;n++}});
+  persist();renderLib();return n;
+}
+/* трек, присланный другом или из ленты, — сразу в медиатеку «на потом» */
+async function laterSingle(x,o){
+  o=o||{};const ti=String(x.ti||"").trim();if(!ti) return;
+  const ar=String(x.ar||"").trim()||"—";
+  const ex=state.tracks.find(t=>low(t.title)===low(ti)&&low(t.artist)===low(ar));
+  if(ex){if(!ex.unrated){toast(`«${ti}» уже оценён — ${fmt(ex.total)}`);return}ex.later=true;persist();renderLib();toast(`«${ti}» уже в медиатеке — отмечен «⏱ Позже»`);return}
+  const id=Date.now();
+  const rec={id,artist:ar,title:ti,genre:x.ge||"",...(x.be?{beat:x.be}:{}),...(x.y?{year:String(x.y)}:{}),scores:[5,5,5,5,5],total:5,unrated:true,later:true,...(x.st?{stream:x.st}:{}),...(x.cat?{cat:x.cat}:{}),...(x.em?{embed:x.em}:{})};
+  state.tracks.push(rec);persist();renderStats();renderLib();
+  toast(`«${ti}» — в «Оценить позже»`);
+  if(x.c&&/^data:image/.test(x.c)){try{const b=await (await fetch(x.c)).blob();const r=await fetch(`/api/img/cover/${id}`,{method:"POST",body:b});if(r.ok){rec.cover=Date.now();persist();renderLib()}}catch(e){}}
+  if(x.au&&NET.on){
+    DLS.set(id,{st:"load",p:0});paintDL();
+    const tm=setInterval(async()=>{try{const j=await (await fetch("/api/net/audprog?aid="+x.au.id)).json();const d=DLS.get(id);if(d){d.p=j.p;paintDL()}}catch(e){}},300);
+    try{const r=await NET.local("audimport",{aid:x.au.id,tid:id});rec.audio={name:x.au.name||`${ar} - ${ti}.${r.ext}`,ext:r.ext,size:r.size}}catch(e){toast("Аудиофайл не скачался — трек сохранён без него",true)}
+    clearInterval(tm);DLS.delete(id);persist();renderLib();
+  }
 }
 /* ---------- переход между треками: «← Вернуться» / «Оценить следующий →» ---------- */
 function navList(){
@@ -5374,21 +5582,22 @@ function removeTrack(id){
   if(state.editing===id){state.editing=null;fillEditor(null);paintMode()}
   persist();renderStats();renderLib();toast("Удалено из медиатеки");
 }
-function save(){
+function save(later){
+  later=later===true;
   const title=state.title.trim();
   if(!title){
     const w=$("#titlew");w.classList.remove("shake");void w.offsetWidth;w.classList.add("shake");
     toast("Введи название трека",true);titleEl.focus();return false;
   }
   const pv0=state.editing!=null?state.tracks.find(x=>x.id===state.editing):null,fresh=!pv0||!!pv0.unrated;
-  if(fresh){                                            // новая оценка — не чаще раза в 30 секунд
+  if(fresh&&!later){                                    // новая оценка — не чаще раза в 30 секунд
     let left=0;try{left=ME.cdLeft()}catch(e){}
     if(left>0){
       const b=$("#save");b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake");
       toast(`Перезарядка: следующую оценку можно поставить через ${Math.ceil(left/1000)} с`,true);return false;
     }
   }
-  try{ME.noteRate()}catch(e){}
+  if(!later) try{ME.noteRate()}catch(e){}
   const id=state.editing??Date.now(),file=state.file,prev=state.tracks.find(x=>x.id===id);
   const audio=file?{name:file.name,ext:extOf(file.name),size:file.size}:(state.audio||null);
   const coverBlob=state.coverBlob,cover=coverBlob?Date.now():(state.cover||null);
@@ -5401,6 +5610,7 @@ function save(){
     else albumId=Date.now();
   }
   const rec={id,artist:state.artist.trim()||"—",...(state.beat.trim()?{beat:state.beat.trim()}:{}),title,genre:state.genre.trim(),...(prev&&prev.ord!=null?{ord:prev.ord}:{}),...(prev&&prev.fav?{fav:true}:{}),...(prev&&prev.bestPick?{bestPick:true}:{}),ra:Date.now(),...(albumId&&(prev&&prev.albumId===albumId&&prev.albCover||albCov(albumId))?{albCover:prev&&prev.albumId===albumId&&prev.albCover||albCov(albumId)}:{}),...((state.note||"").trim()?{note:state.note.trim(),...(state.noteK==="q"?{noteK:"q"}:{})}:{}),scores:[...state.vals],total:total(),...(albName?{album:albName,albumId}:{}),...(audio?{audio}:{}),...(cover?{cover}:{}),...(state.cat?{cat:state.cat}:{}),...(state.catAlb?{catAlb:state.catAlb}:{}),...(/^(19|20)\d\d$/.test(state.year||"")?{year:state.year}:{}),...(state.embed?{embed:state.embed}:{}),...(state.stream?{stream:state.stream}:{})};
+  if(later){rec.unrated=true;rec.later=true;rec.scores=[5,5,5,5,5];rec.total=5;delete rec.ra}
   const idx=state.tracks.findIndex(x=>x.id===rec.id);
   const upd=idx>=0;
   if(upd) state.tracks[idx]=rec;else state.tracks.push(rec);
@@ -5415,15 +5625,15 @@ function save(){
   AU.adopt(k0);
   paintMode();renderLib();paintCover();
   if(!upd){const it=$(`.item[data-id="${rec.id}"]`);if(it) it.classList.add("new")}
-  toast(upd?"Оценка обновлена":"Добавлено в медиатеку");
+  toast(later?"Добавлено в «Оценить позже» — найдёшь в медиатеке по фильтру «⏱ Позже»":upd?"Оценка обновлена":"Добавлено в медиатеку");
   if(file) uploadAudio(rec.id,rec.audio.ext,file);
   else if(prev&&prev.audio&&!audio) delAudio(rec.id);
   if(coverBlob) uploadImg("cover",rec.id,coverBlob,()=>{const t=state.tracks.find(x=>x.id===rec.id);if(t){delete t.cover;persist();renderLib()}});
   else if(prev&&prev.cover&&!cover) delImg("cover",rec.id);
   else if(!cover&&state.cat&&!state.catCovOff&&(state.catCov||state.coverPrev||!prev)) saveCatCover(rec.id,state.cat,state.catCov);
-  if(albumId&&prev&&prev.unrated){const a=albumInfo(albumId);if(a&&a.complete) toast(`Альбом «${a.name}» оценён: ${fmt(a.avg)}`)}
-  if(fresh) try{ME.cdStart()}catch(e){}
-  if(fresh) try{QA.ev("rate",{t:rec,cat:!!state.cat})}catch(e){}
+  if(!later&&albumId&&prev&&prev.unrated){const a=albumInfo(albumId);if(a&&a.complete) toast(`Альбом «${a.name}» оценён: ${fmt(a.avg)}`)}
+  if(fresh&&!later) try{ME.cdStart()}catch(e){}
+  if(fresh&&!later) try{QA.ev("rate",{t:rec,cat:!!state.cat})}catch(e){}
   return true;
 }
 function exportCsv(){
@@ -7946,12 +8156,14 @@ const RM=(()=>{
   function open(){
     clearTimeout(closeT);
     if(isOpen()){show("menu");return}
+    try{OL.close(true)}catch(e){}
     try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}try{FR.close(true)}catch(e){}
     el.classList.remove("out");el.hidden=false;document.body.classList.add("pg");navBtn.classList.add("on");
     if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
     show("menu");
   }
   function close(keep){
+    try{OL.close(keep)}catch(e){}
     if(el.hidden||el.classList.contains("out")) return;
     if(keep!==true) document.body.classList.remove("pg");
     navBtn.classList.remove("on");el.classList.add("out");
@@ -7964,7 +8176,7 @@ const RM=(()=>{
     e.preventDefault();
     if(view!=="menu") show("menu");else close();
   });
-  navBtn.addEventListener("click",()=>isOpen()?close():open());
+  navBtn.addEventListener("click",()=>{if(isOpen()) close();else if(OL.isOpen()) OL.close();else if(NET.on) OL.open();else open()});
   return{open,close,isOpen};
 })();
 
@@ -8143,9 +8355,10 @@ const CT=(()=>{
     body.innerHTML=`<div class="phead"><div><h2>Каталог релизов</h2><p>Ищи треки и исполнителей на площадках и оценивай без скачивания</p></div></div>
       <div class="ctbar"><label class="ctin"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="ctQ" type="text" placeholder="Трек, исполнитель или альбом" autocomplete="off" spellcheck="false"></label>
       <div class="ctseg" role="group" aria-label="Площадка"><button data-src="sc" type="button" class="${src==="sc"?"on":""}">SoundCloud</button><button data-src="it" type="button" class="${src==="it"?"on":""}">Apple Music</button></div></div>
+      <div class="cthist" id="ctHist" hidden></div>
       <div class="ctnote">SoundCloud — треки целиком (кроме платных SoundCloud Go+), Apple Music — 30-секундные превью. Ничего не скачивается на диск.</div>
       <div id="ctV"></div>`;
-    view=$("#ctV");
+    view=$("#ctV");paintHist();
   }
   const put=h=>{view.innerHTML=`<div class="ctv">${h}</div>`};
 
@@ -8189,8 +8402,18 @@ const CT=(()=>{
   }
   function go(v){stack.push(cur);show(v)}
   function back(){const v=stack.pop();if(v) show(v)}
+  /* история поиска: запросы запоминаются, чтобы не вводить одно и то же */
+  let histT=0;
+  const hist=()=>{try{const a=JSON.parse(localStorage.getItem("ctHist")||"[]");return Array.isArray(a)?a.filter(x=>typeof x==="string"&&x.trim()):[]}catch(e){return []}};
+  const histSave=a=>{try{localStorage.setItem("ctHist",JSON.stringify(a.slice(0,12)))}catch(e){}paintHist()};
+  function histAdd(q){q=String(q||"").trim();if(q.length<2) return;const l=q.toLowerCase();histSave([q,...hist().filter(x=>x.toLowerCase()!==l)])}
+  function paintHist(){
+    const b=$("#ctHist");if(!b) return;const a=hist();b.hidden=!a.length;
+    b.innerHTML=a.length?`<em>Недавние:</em>${a.map((q,i)=>`<span class="cthc" style="--i:${i}"><button data-hq="${esc(q)}" type="button" title="Искать снова">${esc(q)}</button><button data-hx="${esc(q)}" type="button" title="Убрать из истории">✕</button></span>`).join("")}<button class="cthclr" data-hclr type="button">Очистить</button>`:"";
+  }
   const runQuery=()=>{
     const q=($("#ctQ").value||"").trim();stack=[];
+    clearTimeout(histT);if(q) histT=setTimeout(()=>{const i=$("#ctQ");if(i&&(i.value||"").trim()===q) histAdd(q)},2500);
     show(q?{t:"search",q}:{t:"home",g:0});
   };
 
@@ -8298,6 +8521,12 @@ const CT=(()=>{
   /* ----- события ----- */
   body.addEventListener("click",e=>{
     if(!e.target.closest(".ctmenu")&&!e.target.closest('[data-a="full"]')) closeMenu();
+    const hq=e.target.closest("[data-hq]");
+    if(hq){const q=$("#ctQ");q.value=hq.dataset.hq;clearTimeout(tmr);runQuery();histAdd(hq.dataset.hq);return}
+    const hx=e.target.closest("[data-hx]");
+    if(hx){const l=hx.dataset.hx.toLowerCase();histSave(hist().filter(x=>x.toLowerCase()!==l));return}
+    if(e.target.closest("[data-hclr]")){histSave([]);return}
+    if(cur&&cur.t==="search"&&e.target.closest(".ctr,[data-go]")) histAdd(cur.q);
     const sg=e.target.closest(".ctseg button");
     if(sg){src=sg.dataset.src;setST({catSrc:src});
       body.querySelectorAll(".ctseg button").forEach(b=>b.classList.toggle("on",b===sg));
@@ -8328,7 +8557,7 @@ const CT=(()=>{
     }
   });
   body.addEventListener("input",e=>{if(e.target.id==="ctQ"){clearTimeout(tmr);tmr=setTimeout(runQuery,420)}});
-  body.addEventListener("keydown",e=>{if(e.target.id==="ctQ"&&e.key==="Enter"){clearTimeout(tmr);runQuery()}});
+  body.addEventListener("keydown",e=>{if(e.target.id==="ctQ"&&e.key==="Enter"){clearTimeout(tmr);runQuery();histAdd(e.target.value)}});
 
   const isOpen=()=>!el.hidden&&!el.classList.contains("out");
   function open(){
@@ -8435,6 +8664,7 @@ const LB=(()=>{
     paint(`<div class="ahead" style="--i:0"><div class="lbcv big acv" data-acv="1" style="${albCover(a)}" title="Нажми, чтобы сменить обложку альбома">${albHas(a)?"":NOTE}<div class="covh"><svg class="ico" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>${isEP(a)?"Обложка EP":"Обложка альбома"}</span></div>${albCov(a.id)?'<button class="covx" data-acx="1" type="button" title="Убрать обложку"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>':""}</div>
       <div><div class="eyebrow">${isEP(a)?"EP":"Альбом"}<button class="ren" type="button" title="Изменить название">${PEN}</button></div><h3 id="lbTitle">${esc(a.name)}</h3>
       <p>${artLinks(a)}${(()=>{const y=a.items.map(t=>t.year).find(Boolean);return y?` · ${esc(y)}`:""})()} · ${cnt(a.n)} · ${a.complete?`общая <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:a.done?`оценено ${a.done} из ${a.n}, пока <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:`оценено 0 из ${a.n}`}</p>
+      ${a.done<a.n?`<button class="ashb lat${a.items.some(t=>t.later&&t.unrated)?" on":""}" data-alater="${a.id}" type="button"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>${a.items.some(t=>t.later&&t.unrated)?"В «Оценить позже» ✓":"Оценить позже"}</button>`:""}
       ${a.done?`<button class="ashb" data-ash="${a.id}" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>Поделиться ${isEP(a)?"EP":"альбомом"}</button>`:""}</div></div>
       <div class="alh" style="--i:1">Треки <span class="hint">— нажми, чтобы изменить оценку; перетаскивай или двигай стрелками, чтобы поменять порядок</span></div>`
       +(ties.length>1?`<div class="albtie" style="--i:1"><b>★</b><span>У ${ties.length} треков одинаковая высшая оценка ${fmt(ties[0].total)}. ${ties.some(t=>t.bestPick)?"Лучший выбран — можно поменять:":"Выбери лучший:"} нажми ☆ рядом с названием</span></div>`:"")
@@ -8584,6 +8814,8 @@ const LB=(()=>{
     if(e.target.closest(".ren")){startRename();return}
     if(e.target.closest("[data-acx]")){removeAlbCover();return}
     if(e.target.closest("[data-acv]")){pickImage(setAlbCover);return}
+    const lt=e.target.closest("[data-alater]");
+    if(lt){const a=albOf(curAlb);if(a){const on=!a.items.some(t=>t.later&&t.unrated);laterAlbum(a.id,on);toast(on?`${isEP(a)?"EP":"Альбом"} «${a.name}» — в «Оценить позже»`:"Убрано из «Оценить позже»");showAlbum(a.id,true)}return}
     const art=e.target.closest("[data-art]");
     if(art){const id=curAlb,kind=curKind,k=art.dataset.art.toLowerCase();close(true);AP.open();
       AP.showArtist(k,"open",{ret:{label:"Назад: альбом",go:()=>{open(kind);showAlbum(id)}}});return}
@@ -9643,12 +9875,13 @@ const ME=(()=>{
     if(inboxBusy) return;inboxBusy=true;
     for(const g of list){
       try{
+        if(D.giftSeen&&D.giftSeen.includes(g.id)) continue;
         const r=await NET.call("gift/open",{id:g.id}),G=r.gift,what=giftWhat(G.k,G.v),msg=G.m||"";
         const old=D.bal;applyMe(r,{paint:false});paintAll();if(r.n) D.bal=old+0,paintBal(),D.bal=r.bal;
         const sub=G.k==="p"?`На баланс зачислено ${what}.`:r.n?`${cap1(what)} у тебя уже есть — вместо этого зачислено ${fmtN(r.n)} ${plural(r.n,"пульс","пульса","пульсов")}.`:`${cap1(what)} — теперь в твоём гардеробе. Надень в профиле.`;
         D.giftIn=(Array.isArray(D.giftIn)?D.giftIn:[]).concat(Object.assign({f:G.fn||"Друг",k:G.k,v:G.k==="p"?+G.v:G.v,d:Date.now()},msg?{m:msg}:{})).slice(-30);save();
         whenFree(()=>card({n:r.n,label:r.n?"+"+fmtN(r.n):"✦",gift:true,quiet:!r.n,noShop:true,ok:"Спасибо!",title:`Подарок от ${G.fn||"друга"}!`,sub:(msg?`«${msg}» — `:"")+sub}));
-      }catch(e){}
+      }catch(e){if(/уже открыт/.test(e.msg||"")){D.giftSeen=(D.giftSeen||[]).concat(g.id).slice(-50);save()}}
     }
     inboxBusy=false;
   }
@@ -9696,8 +9929,12 @@ const ME=(()=>{
       await NET.call("profile",{av:data});D.avSent=v;D.avGif=gif;D.avPV=2;lastPush="";save();
     }catch(e){}
   }
-  async function netPoll(){
-    if(!NET.on||document.hidden) return;
+  let pollN=0,pollAt=0;
+  async function netPoll(force){
+    if(!NET.on) return;
+    if(force&&Date.now()-pollAt<5000) return;
+    if(document.hidden&&!force&&(++pollN%3)) return;     // в свёрнутом окне — раз в минуту, чтобы подарки всё равно доходили
+    pollAt=Date.now();
     try{
       const j=await NET.call("me");
       const busyGame=!$("#gm").hidden;
@@ -9729,16 +9966,16 @@ const ME=(()=>{
     try{
       const j=await NET.call("earn",{tracks:tr.map(x=>({k:x.k,a:x.a})),rels:rels.map(x=>({a:x.a,kind:x.kind,n:x.n}))});
       tr.forEach(x=>{got.add(x.k);got.add(x.k2)});rels.forEach(x=>got.add(x.k));D.got=[...got];
-      const old=D.bal;applyMe(j,{paint:false});
+      const old=D.bal,ox=D.xp||0;applyMe(j,{paint:false});const gx=j.gx!=null?+j.gx:Math.max(0,(D.xp||0)-ox);   // сервер присылает весь опыт — показываем разницу
       const tsum=j.grants.reduce((s,g)=>s+g.n,0),rsum=j.rels.reduce((s,r)=>s+r.n,0),sum=tsum+rsum+(j.up?j.up.bonus:0);
       const fromBtn=performance.now()-lastRate<2500?$("#save"):null;
       if(sum) fly(fromBtn,sum,old);else paintBal(old);
-      if(j.xp) flyXp(fromBtn,j.xp,!!sum);
+      if(gx) flyXp(fromBtn,gx,!!sum);
       paintLvl();try{PF.refresh()}catch(e){}
       if(j.up&&j.up.after>j.up.before){const b=j.up.bonus;whenFree(()=>card({n:b,quiet:true,title:`Новый уровень ${j.up.after}!`,sub:`Опыт за оценки привёл тебя на уровень ${j.up.after}. Награда — ${b} ${plural(b,"пульс","пульса","пульсов")}.`,lvl:j.up.after}))}
       j.rels.forEach(r=>{const R=rels.find(x=>x.a===r.a);try{QA.ev(r.kind)}catch(e){}
         whenFree(()=>card({n:r.n,quiet:true,title:r.kind==="ep"?"EP оценён полностью":"Альбом оценён полностью",sub:`«${R?R.name:"Релиз"}» — ${r.kind==="ep"?"EP":"альбом"} целиком в твоей медиатеке. Ещё +${r.n} опыта.`}))});
-      if(!j.rels.length&&tsum) toastCoin(`+${tsum} ${plural(tsum,"пульс","пульса","пульсов")} и +${j.xp} опыта за оценку`);
+      if(!j.rels.length&&tsum) toastCoin(`+${tsum} ${plural(tsum,"пульс","пульса","пульсов")} ${gx?` и +${gx} опыта`:""} за оценку`);
       else if(!j.rels.length&&j.grants.some(g=>g.limit)) toast("Лимит наград за оценки на сегодня исчерпан — оценка сохранена, пульсы завтра",true);
     }catch(e){
       if(performance.now()-netErrT>60000){netErrT=performance.now();toast("Награда за оценку пока не начислена: "+e.msg+". Начислим, когда сервер станет доступен",true)}
@@ -9746,10 +9983,10 @@ const ME=(()=>{
   }
   /* награда с сервера (задания, достижения): анимация как у обычной */
   function netReward(j,o){
-    o=o||{};const old=D.bal;applyMe(j,{paint:false});
+    o=o||{};const old=D.bal,ox=D.xp||0;applyMe(j,{paint:false});const gx=j.gx!=null?+j.gx:Math.max(0,(D.xp||0)-ox);
     const n=(j.n||0)+(j.up?j.up.bonus:0);
     if(n&&o.from) fly(o.from,n,old);else paintBal(old);
-    if(j.xp&&o.from) flyXp(o.from,j.xp,!!n);
+    if(gx&&o.from) flyXp(o.from,gx,!!n);
     paintLvl();try{PF.refresh()}catch(e){}
     if(j.up&&j.up.after>j.up.before){const b=j.up.bonus;whenFree(()=>card({n:b,quiet:true,title:`Новый уровень ${j.up.after}!`,sub:`Награда — ${b} ${plural(b,"пульс","пульса","пульсов")}.`,lvl:j.up.after}))}
   }
@@ -9829,7 +10066,10 @@ const ME=(()=>{
       catch(e){setTimeout(()=>toast("Общий сервер недоступен: "+e.msg+". Награды и игры заработают, когда связь вернётся",true),3500)}
     }
     ready=true;paintAll();
-    if(NET.on){netPush();setInterval(netPoll,20000)}
+    if(NET.on) netPush();
+    setInterval(()=>netPoll(),20000);                   // работает, даже если сервер подключили уже после запуска
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden) netPoll(true)});
+    addEventListener("focus",()=>netPoll(true));
     if(refund){save();setTimeout(()=>toastCoin(`Рамку «Радуга» убрали из магазина — ${refund} пульсов вернули на баланс`),2500)}
     scan(true);
   }
@@ -10136,7 +10376,8 @@ const ME=(()=>{
     try{PF.refresh()}catch(e){}
     try{SHOP.refresh()}catch(e){}
   }
-  return{load,scan,buy,reward,spend,payout,save,redeem,giftMake,giftOpen,giftWhat,uidFmt,applyMe,netReward,netSettle,netRefund,favMax,buySlot,SLOT_P,netImport,netStart,netPush,equip,equipSet,setInfo,owns,eq,avatar,badge,nameH,avUrl,tryAdmin,fmtN,get role(){return role},lvl:()=>lvl(D.xp),
+  async function checkGifts(){if(!NET.on) return 0;const j=await NET.call("me");const n=(j.inbox||[]).length;applyMe(j);return n}
+  return{checkGifts,netPoll:()=>netPoll(true),load,scan,buy,reward,spend,payout,save,redeem,giftMake,giftOpen,giftWhat,uidFmt,applyMe,netReward,netSettle,netRefund,favMax,buySlot,SLOT_P,netImport,netStart,netPush,equip,equipSet,setInfo,owns,eq,avatar,badge,nameH,avUrl,tryAdmin,fmtN,get role(){return role},lvl:()=>lvl(D.xp),
     cdLeft,cdStart,CD,
     get data(){return D},get admin(){return admin},noteRate(){lastRate=performance.now()},paintBal,card,toastCoin};
 })();
@@ -10680,7 +10921,7 @@ const QA=(()=>{
       const b=el.querySelector(`[data-claim="${id}"]`);if(b){if(b.disabled) return;b.disabled=true}
       NET.call("claim",{t:"q",id,day:Q.day}).then(j=>{
         Q.c[id]=1;D().qDone=(D().qDone||0)+1;ME.netReward(j,{from:b});
-        toast(`+${j.n} пульсов и +${j.xp} опыта за «${Qd.n}»`);render();paintDot();setTimeout(()=>checkAch(false),300);
+        toast(`+${j.n} пульсов и +${Qd.x} опыта за «${Qd.n}»`);render();paintDot();setTimeout(()=>checkAch(false),300);
       }).catch(e=>{if(/уже получена/.test(e.msg)){Q.c[id]=1;ME.save();render();paintDot()}else{toast(e.msg,true);if(b) b.disabled=false}});
       return;
     }
@@ -10695,7 +10936,7 @@ const QA=(()=>{
       const b=el.querySelector("[data-bonus]");if(b){if(b.disabled) return;b.disabled=true}
       NET.call("claim",{t:"qb",day:Q.day}).then(j=>{
         Q.bonus=true;ME.netReward(j,{from:b});
-        ME.card({n:j.n,quiet:true,noShop:true,title:"Все задания дня выполнены!",sub:`Бонус дня: +${j.n} пульсов и +${j.xp} опыта. Новые задания появятся завтра.`});render();paintDot();
+        ME.card({n:j.n,quiet:true,noShop:true,title:"Все задания дня выполнены!",sub:`Бонус дня: +${j.n} пульсов и +${BONUS.x} опыта. Новые задания появятся завтра.`});render();paintDot();
       }).catch(async e=>{
         if(/уже получен/.test(e.msg)){Q.bonus=true;ME.save();render();paintDot();return}
         if(/Сначала забери/.test(e.msg)&&!claimBonus.again){        // задания забраны до подключения к серверу — отмечаем их на сервере и пробуем снова
@@ -11370,7 +11611,7 @@ const GF=(()=>{
   function getH(){
     const inn=(D().giftIn||[]).slice().reverse(),out=(D().giftOut||[]).slice().reverse();
     const row=(a,b,c,x)=>`<div class="gfh"><b>${a}</b><span>${b}</span><em>${c}</em>${x||"<i></i>"}</div>`;
-    if(NET.on) return `${idBox()}<div class="gfon">${GIFTI}<div><b>Подарки приходят сами</b><span>С общим сервером коды не нужны: подарок от друга откроется автоматически, как только ты запустишь приложение.</span></div></div>
+    if(NET.on) return `${idBox()}<button class="gbtn ghost gfchk" data-chk type="button">${GIFTI}Проверить подарки</button><div class="gfon">${GIFTI}<div><b>Подарки приходят сами</b><span>С общим сервером коды не нужны: подарок от друга откроется автоматически, как только ты запустишь приложение.</span></div></div>
       ${inn.length||out.length?`<div class="gfhs">${inn.length?`<em>Получено</em>${inn.map(g=>row("от "+esc(g.f),esc(ME.giftWhat(g.k,g.v))+(g.m?` · «${esc(g.m)}»`:""),dt(g.d))).join("")}`:""}
         ${out.length?`<em>Отправлено</em>${out.map(g=>row("для "+ME.uidFmt(g.t),esc(ME.giftWhat(g.k,g.v)),dt(g.d))).join("")}`:""}</div>`:""}`;
     return `${idBox()}
@@ -11423,6 +11664,8 @@ const GF=(()=>{
       if(!r.ok){paintGo();toast(r.msg,true);shake(r.f==="to"?$("#gfTo"):sd);return}
       last=r;msgV="";render();return;
     }
+    const ck=e.target.closest("[data-chk]");
+    if(ck){ck.disabled=true;try{const n=await ME.checkGifts();toast(n?`Новых подарков: ${n} — открываю`:"Новых подарков нет")}catch(x){toast(x.msg,true)}ck.disabled=false;return}
     const op=e.target.closest("[data-open]");
     if(op){
       const i=$("#gfIn");op.disabled=true;const r=await ME.giftOpen(i.value);op.disabled=false;
@@ -11552,6 +11795,7 @@ function rateCardH(x,mine,mid){
       <div class="chrt"><em>${x.ep?"EP":"Альбом"} · ${x.n} ${plural(x.n,"трек","трека","треков")}</em><b>${esc(x.na)}</b><span>${esc(x.ar)}</span></div>
       <div class="chrs" style="color:${col}">${x.done?fmt(x.avg):"—"}</div></div>
       <div class="chrl">${(x.items||[]).map((it,i)=>`<div><i>${it.au||it.st?`<button class="chrlp" data-pl="${mid}:${i}" type="button" title="${it.au?"Слушать файл":"Слушать с SoundCloud"}">▶</button>`:i+1}</i><span>${it.f?'<s class="chf">♥</s>':""}${it.b?'<s class="chf st">★</s>':""}${esc(it.ti)}</span><b style="color:${it.to==null?"var(--sub)":rgCol(it.to)}">${it.to==null?"—":fmt(it.to)}</b></div>`).join("")}</div>
+      ${mine?"":`<button class="chrlt" data-latera="${mid}" type="button" title="Добавить в медиатеку и отложить">⏱ Оценить позже</button>`}
       ${mine?"":`<button class="chrgo" data-tra="${mid}" type="button">Оценить ${x.ep?"EP":"альбом"} самому · ${x.n} ${plural(x.n,"трек","трека","треков")}${(x.items||[]).some(it=>it.au)?" с аудиофайлами":(x.items||[]).some(it=>it.st)?" с SoundCloud":""}</button>`}</div>`;
   }
   const sc=Array.isArray(x.sc)?x.sc:[];
@@ -11561,6 +11805,7 @@ function rateCardH(x,mine,mid){
     <div class="chrb">${sc.map((v,i)=>`<div><span>${CRIT[i]?CRIT[i][0]:""}</span><i><s style="width:${Math.max(3,v*10)}%;background:${rgCol(v)}"></s></i><b style="color:${rgCol(v)}">${fmt(v)}</b></div>`).join("")}</div>
     ${x.nt?`<div class="chrn${x.nk==="q"?" q":""}"><em>${x.nk==="q"?"Любимая строчка":"Рецензия"}</em>${esc(x.nt)}</div>`:""}
     ${x.au||x.st?`<button class="chrpl" data-pl="${mid}" type="button"><i>▶</i><span>${x.au?"Слушать файл":"Слушать с SoundCloud"}</span></button>`:""}
+    ${mine?"":`<button class="chrlt" data-latert="${mid}" type="button" title="Добавить в медиатеку и отложить">⏱ Оценить позже</button>`}
     ${mine?"":`<button class="chrgo" data-try="${mid}" type="button">Оценить самому${x.au?" · с аудиофайлом":x.st?" · с SoundCloud":""}</button>`}</div>`;
 }
 
@@ -11709,7 +11954,7 @@ const FR=(()=>{
         <div class="fdt"><div class="fdh"><b data-u="${x.p.uid}">${nm(x.p)}</b><span>оценил(а) · ${ago2(x.r.d)}</span></div>
           <div class="fdn">${esc(x.r.t)}</div><div class="fda">${esc(x.r.a||"")}${x.r.al?` · «${esc(x.r.al)}»`:""}${x.r.y?` · ${esc(x.r.y)}`:""}</div></div>
         <div class="fds" style="color:${rgCol(x.r.s)}">${fmt(x.r.s)}</div>
-        <button class="fdr" data-fdr="${i}" type="button">Оценить самому</button></div>`).join("");
+        <div class="fdbs"><button class="fdr" data-fdr="${i}" type="button">Оценить самому</button><button class="fdr lt" data-fdl="${i}" type="button" title="Оценить позже">⏱</button></div></div>`).join("");
       if(!setBox(box,h||`<div class="frnone">Друзья пока ничего не оценили — или у них старая версия приложения. Лента обновится сама, когда они поставят оценку.</div>`)) return;
     }else if(tab==="msg"){
       if(!data||!heads){setBox(box,`<div class="frld"></div>`);return}
@@ -11822,7 +12067,9 @@ const FR=(()=>{
     if(m.del) return `<div class="chm ${mine?"me":"th"} gone" data-mid="${m.id}"><div class="chbw"><div class="chb"><div class="chtx dl">🚫 Сообщение удалено</div><span class="chtm">${hm(m.t)}</span></div></div></div>`;
     if(m.k==="img") inner=`<img class="chimg" src="${m.local||`/api/net/img/${m.id}`}" data-img="${m.local?"":m.id}" alt="Фото">`;
     else if(m.k==="rate") inner=rateCardH(m.ext,mine,m.id);
-    if(m.tx) inner+=`<div class="chtx${bigEmo(m.tx)?" emo":""}">${linkify(esc(m.tx))}</div>`;
+    const isRoom=m.ext&&m.ext.t==="room";
+    if(isRoom) inner=`<div class="chroom"><b>🎧 ${esc(m.ext.name||"Онлайн-комната")}</b><span>${mine?"Ты позвал(а) в онлайн-комнату":"Зовёт в онлайн-комнату — слушать и оценивать треки вместе"} · код ${esc(m.ext.rid||"")}</span><button data-olj="${esc(m.ext.rid||"")}" type="button">${mine?"Открыть комнату":"Войти"}</button></div>`;
+    if(m.tx&&!isRoom) inner+=`<div class="chtx${bigEmo(m.tx)?" emo":""}">${linkify(esc(m.tx))}</div>`;
     if(m.rq) inner=`<div class="chq" data-jump="${m.re}" title="Перейти к сообщению"><b>${esc(whoName(m.rq.a))}</b><span>${esc(quoteTxt(m.rq))}</span></div>`+inner;
     const tick=mine?(m.fail?`<i class="chtk bad" title="Не отправлено">!</i>`:m.pend?`<i class="chtk">…</i>`:`<i class="chtk${m.id<=chat.seen?" rd":""}">${m.id<=chat.seen?"✓✓":"✓"}</i>`):"";
     const real=typeof m.id==="number";
@@ -12087,22 +12334,27 @@ const FR=(()=>{
     }else toast(x.st?"Трек с SoundCloud уже в плеере — оцени его сам":"Название и артист уже вписаны — оцени трек сам");
   }
   /* присланный альбом → в свою медиатеку неоценённым: аудиофайлы и SoundCloud подтягиваются, оцениваешь по очереди */
-  async function tryAlbum(x,btn){
+  async function tryAlbum(x,btn,o){
+    o=o||{};
     if(!x||!Array.isArray(x.items)||!x.items.length) return;
     const ex=state.tracks.find(t=>t.albumId&&low(t.album)===low(x.na));
+    if(ex&&o.later){const n=laterAlbum(ex.albumId,true);toast(n?`«${x.na}» уже в медиатеке — отмечен «⏱ Позже»`:`«${x.na}» уже оценён целиком`);if(btn) btn.textContent="✓ В «Оценить позже»";return}
     if(ex){close();stopPl();toast(`«${x.na}» уже есть в медиатеке — открываю`);const f=state.tracks.filter(t=>t.albumId===ex.albumId).sort(byOrd);loadTrack((f.find(t=>t.unrated)||f[0]).id);return}
     if(btn) btn.disabled=true;
     const aid=Date.now(),base=aid+1;
     const recs=x.items.map((it,i)=>({id:base+i,artist:it.ar||x.ar||"—",title:it.ti||`Трек ${i+1}`,genre:it.ge||"",...(it.be?{beat:it.be}:{}),scores:[5,5,5,5,5],total:5,
-      album:x.na,albumId:aid,ord:i,unrated:true,...(it.st?{stream:it.st}:{}),...(it.cat?{cat:it.cat}:{})}));
+      album:x.na,albumId:aid,ord:i,unrated:true,...(o.later?{later:true}:{}),...(it.st?{stream:it.st}:{}),...(it.cat?{cat:it.cat}:{})}));
     if(x.c){try{const b=await (await fetch(x.c)).blob();const r=await fetch(`/api/img/album/${aid}`,{method:"POST",body:b});if(r.ok){const v=Date.now();recs.forEach(t=>t.albCover=v)}}catch(e){}}
     const au=x.items.map((it,i)=>[it,recs[i]]).filter(([it])=>it.au);
     au.forEach(([,rec])=>DLS.set(rec.id,{st:"wait",p:0}));
     recs.forEach(r=>state.tracks.push(r));ALBC.map=null;persist();renderStats();renderLib();
     if(btn) btn.disabled=false;
+    if(o.later){if(btn) btn.textContent="✓ В «Оценить позже»";toast(`${x.ep?"EP":"Альбом"} «${x.na}» — в «Оценить позже»${au.length?`, скачиваю ${au.length} ${plural(au.length,"трек","трека","треков")}`:""}`)}
+    else{
     close();stopPl();
     try{LB.open(x.items.length<=6?"eps":"albums");LB.showAlbum(aid)}catch(e){}       // альбом открывается сразу — видно, как качаются треки
-    toast(au.length?`${x.ep?"EP":"Альбом"} «${x.na}» добавлен — скачиваю ${au.length} ${plural(au.length,"трек","трека","треков")}`:`${x.ep?"EP":"Альбом"} «${x.na}» добавлен в медиатеку — оцени треки по очереди`);
+    toast(au.length?`${x.ep?"EP":"Альбом"} «${x.na}» добавлен — скачиваю ${au.length} ${plural(au.length,"трек","трека","треков")}`:`${x.ep?"EP":"Альбом"} «${x.na}» добавлен в медиатеку — оцени треки по очереди`)
+    };
     let fail=0;
     for(const [it,rec] of au){
       DLS.set(rec.id,{st:"load",p:0});paintDL();
@@ -12248,6 +12500,9 @@ const FR=(()=>{
     const rx=e.target.closest("[data-rx]");if(rx){react(+rx.dataset.rx,rx.dataset.e);return}
     const ta=e.target.closest("[data-tra]");if(ta){const m=chat&&chat.rows.find(r=>String(r.id)===ta.dataset.tra);if(m) tryAlbum(m.ext,ta);return}
     const fd=e.target.closest("[data-fdr]");if(fd){const it=feedItems[+fd.dataset.fdr];if(it){window.__feedRate={ti:it.r.t,at:Date.now()};tryRate({ti:it.r.t,ar:it.r.a})}return}
+    const la=e.target.closest("[data-latera]");if(la){const m=chat&&chat.rows.find(r=>String(r.id)===la.dataset.latera);if(m) tryAlbum(m.ext,la,{later:true});return}
+    const lt1=e.target.closest("[data-latert]");if(lt1){const m=chat&&chat.rows.find(r=>String(r.id)===lt1.dataset.latert);if(m){lt1.disabled=true;laterSingle(m.ext).finally(()=>{lt1.disabled=false;lt1.textContent="✓ В «Оценить позже»"})}return}
+    const fl=e.target.closest("[data-fdl]");if(fl){const it=feedItems[+fl.dataset.fdl];if(it){fl.disabled=true;laterSingle({ti:it.r.t,ar:it.r.a,y:it.r.y,c:it.c}).finally(()=>{fl.textContent="✓ Позже"})}return}
     const tr=e.target.closest("[data-try]");if(tr){const m=chat&&chat.rows.find(r=>String(r.id)===tr.dataset.try);if(m) tryRate(m.ext);return}
     if(!e.target.closest("#emoP,[data-ca=emo]")){const p=$("#emoP");if(p&&!p.hidden) p.hidden=true}
     const r=e.target.closest("[data-u]");if(r){openUser(r.dataset.u)}
@@ -12284,6 +12539,499 @@ const FR=(()=>{
   setInterval(()=>{if(isOpen()&&view==="list"&&tab==="msg"&&!document.hidden) load()},8000);
   function refresh(){data=null;topD=null;heads=null;if(isOpen()&&view==="list"){shell();load()}}
   return{open,close,isOpen,badge,unread,refresh,load,openUser,openChat,shareTo,minimize,maximize,EMO,get docked(){return docked}};
+})();
+
+/* ---------- ОНЛАЙН: комнаты на общем сервере — слушаем треки вместе, оцениваем и общаемся ---------- */
+const OL=(()=>{
+  const el=$("#olp"),body=$("#olBody"),navBtn=$("#navRoom");
+  const ls=(k,v)=>{try{if(v===undefined) return localStorage.getItem(k);if(v===null) localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}};
+  const me=()=>NET.st.uid;
+  const plural=(n,a,b,c)=>{const m=n%100,d=n%10;return m>10&&m<20?c:d===1?a:d>1&&d<5?b:c};
+  const PLAYI='<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>',PAUSEI='<svg viewBox="0 0 24 24"><path d="M6 4h4.5v16H6zM13.5 4H18v16h-4.5z"/></svg>';
+  const VOLI='<svg class="ico" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>';
+  const SENDI='<svg class="ico" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>';
+  let closeT=0,opening=false,R=null,S=null,skew=0,after=0,evs=[],pollT=0,polling=false,names={},sig={},myV=null,revRnd=-1,lastMsgN=0,inFlight=false;
+  try{R=JSON.parse(ls("olRoom")||"null")}catch(e){R=null}
+  if(R&&!R.rid) R=null;
+  const isOpen=()=>!el.hidden&&!el.classList.contains("out");
+  const nick=u=>u===me()?"Ты":(names[u]||"Участник");
+  const isHost=()=>!!(S&&S.host===me());
+  const memOf=u=>S&&S.mem?S.mem.find(m=>m.uid===u):null;
+  const avOf=(p,size)=>ME.avatar(size,p.eq||{},{u:NET.avUrl(p.uid,p.avv),nick:p.nick,crop:p.st&&p.st.avc});
+  const hm=t=>new Date(t).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+  const tm=s=>{s=isFinite(s)&&s>0?Math.floor(s):0;return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+  const covOf=tr=>tr?(tr.c||(tr.cu?"/api/cat/img?u="+encodeURIComponent(tr.cu):"")):"";
+  const recent=()=>{try{return JSON.parse(ls("olRecent")||"[]").filter(x=>x&&x.rid)}catch(e){return []}};
+  function remember(r){const a=recent().filter(x=>x.rid!==r.rid);a.unshift({rid:r.rid,name:r.name,t:Date.now()});ls("olRecent",JSON.stringify(a.slice(0,6)))}
+  function forget(rid){ls("olRecent",JSON.stringify(recent().filter(x=>x.rid!==rid)))}
+
+  /* ---------- общий плеер: у всех играет одно и то же место трека ---------- */
+  const au=new Audio();au.preload="auto";
+  let auKey="",auUrl="",auReady=false,needTap=false,auLoad=0,progT=0;
+  try{au.volume=Math.max(0,Math.min(1,+(ls("olVol")||.8)))}catch(e){}
+  const target=()=>{const p=S&&S.st&&S.st.play;if(!p) return 0;return p.on?p.pos+Math.max(0,(Date.now()+skew-p.at)/1000):p.pos};
+  async function loadAudio(tr,key){
+    au.pause();auReady=false;needTap=false;
+    if(auUrl){try{URL.revokeObjectURL(auUrl)}catch(e){}auUrl=""}
+    au.removeAttribute("src");try{au.load()}catch(e){}
+    if(!tr) return;
+    if(tr.au){
+      auLoad=0.001;paintPlayer();
+      const iv=setInterval(async()=>{try{const j=await (await fetch("/api/net/audprog?aid="+tr.au.id)).json();if(auKey===key){auLoad=Math.max(.001,j.p||0);paintPlayer()}}catch(e){}},400);
+      try{
+        const r=await fetch(`/api/net/aud/${tr.au.id}`);if(!r.ok) throw 0;
+        const b=await r.blob();if(auKey!==key) return;
+        auUrl=URL.createObjectURL(b);au.src=auUrl;
+      }catch(e){if(auKey===key) toast("Не получилось загрузить аудио трека",true)}
+      finally{clearInterval(iv);if(auKey===key){auLoad=0;paintPlayer()}}
+    }else if(tr.st&&tr.st.url) au.src="/api/cat/stream?u="+encodeURIComponent(tr.st.url);
+    if(auKey!==key||!au.getAttribute("src")) return;
+    await new Promise(res=>{if(au.readyState>=1) return res();const f=()=>{au.removeEventListener("loadedmetadata",f);au.removeEventListener("error",f);res()};au.addEventListener("loadedmetadata",f);au.addEventListener("error",f)});
+    if(auKey!==key) return;
+    auReady=true;syncAudio();paintPlayer();
+  }
+  function syncAudio(){
+    const st=S&&S.st,tr=st&&st.tr;
+    const key=tr?st.rnd+":"+(tr.au?tr.au.id:(tr.st&&tr.st.url)||"-"):"";
+    if(key!==auKey){auKey=key;loadAudio(tr,key);return}
+    if(!auReady||!st.play) return;
+    const p=st.play,t=target(),dur=au.duration||0;
+    if(p.on){
+      if(dur&&t>=dur-.25){if(!au.paused) au.pause();return}
+      if(au.paused){
+        try{AU.pause()}catch(e){}
+        try{au.currentTime=t}catch(e){}
+        au.play().then(()=>{needTap=false;paintPlayer()}).catch(()=>{needTap=true;paintPlayer()});
+      }else if(Math.abs(au.currentTime-t)>1.5){try{au.currentTime=t}catch(e){}}
+    }else{
+      if(!au.paused) au.pause();
+      if(Math.abs(au.currentTime-t)>.6){try{au.currentTime=Math.min(t,dur||t)}catch(e){}}
+    }
+  }
+  au.addEventListener("play",()=>{try{AU.pause()}catch(e){}paintPlayer()});
+  au.addEventListener("pause",paintPlayer);
+  au.addEventListener("ended",()=>{if(isHost()&&S.st.play&&S.st.play.on) hostPlay(false,0)});
+  function stopAudio(){auKey="";au.pause();au.removeAttribute("src");try{au.load()}catch(e){}if(auUrl){try{URL.revokeObjectURL(auUrl)}catch(e){}auUrl=""}auReady=false}
+  async function hostPlay(on,pos){
+    if(!R||!isHost()) return;
+    if(pos==null) pos=auReady?au.currentTime:target();
+    S.st.play={on,pos,at:Date.now()+skew};syncAudio();paintPlayer();
+    try{await NET.call("room/play",{rid:R.rid,on,pos})}catch(e){toast(e.msg,true)}
+  }
+  function paintPlayer(){
+    const box=$("#olPl");if(!box) return;
+    const st=S&&S.st,p=st&&st.play,dur=au.duration||0,cur=auReady?au.currentTime:target();
+    const has=!!(st&&st.tr&&(st.tr.au||st.tr.st));
+    const pb=box.querySelector("[data-o='pp']");
+    if(pb){const on=p&&p.on;pb.innerHTML=on?PAUSEI:PLAYI;pb.classList.toggle("on",!!on);pb.disabled=!has}
+    const f=box.querySelector(".olbar i");if(f) f.style.width=(dur?Math.min(100,cur/dur*100):0)+"%";
+    const tl=box.querySelector(".olt");if(tl) tl.textContent=has?(auLoad>0?`Загружаю ${Math.round(auLoad*100)}%`:`${tm(cur)} / ${dur?tm(dur):"—:—"}`):"без аудио";
+    const tap=box.querySelector(".oltap");if(tap) tap.hidden=!needTap;
+  }
+  setInterval(()=>{if(R&&auReady&&!au.paused) paintPlayer()},500);
+
+  /* ---------- сервер ---------- */
+  function schedule(ms){clearTimeout(pollT);if(R) pollT=setTimeout(poll,ms)}
+  async function poll(){
+    if(!R||polling) return;polling=true;
+    const rid=R.rid,t0=Date.now();
+    try{
+      const j=await NET.call("room/poll",{rid,after});
+      if(!R||R.rid!==rid) return;
+      skew=j.now-(t0+Date.now())/2;
+      j.mem.forEach(m=>{names[m.uid]=m.nick});
+      S=j;R.name=j.name;
+      const fresh=j.ev||[];
+      if(fresh.length){after=fresh[fresh.length-1].id;evs.push(...fresh);if(evs.length>400) evs=evs.slice(-300)}
+      if(myV&&myV.rnd!==S.rnd) myV=null;
+      render(fresh);
+      if(!isOpen()){
+        const msgs=fresh.filter(e=>e.k==="chat"&&e.uid!==me());
+        if(msgs.length&&lastMsgN){const m=msgs[msgs.length-1];toast(`💬 ${nick(m.uid)}: ${String(m.d&&m.d.tx||"").slice(0,80)}`)}
+      }
+      lastMsgN=1;
+      autoReveal();
+    }catch(e){
+      if(e&&(e.code===403||e.code===404)){toast(e.msg||"Комната закрыта",true);drop();return}
+    }finally{polling=false}
+    schedule(document.hidden?5000:(isOpen()?1600:3500));
+  }
+  function autoReveal(){
+    if(!isHost()||!S.st||S.st.phase!=="rate"||revRnd===S.rnd) return;
+    const on=S.mem.filter(m=>m.on||m.uid===me());
+    if(S.votes.length&&on.every(m=>S.votes.includes(m.uid))){revRnd=S.rnd;reveal(true)}
+  }
+  async function reveal(auto){
+    try{await NET.call("room/reveal",{rid:R.rid});if(auto) toast("Все оценили — показываю результаты");poll()}catch(e){toast(e.msg,true)}
+  }
+  function enter(j){
+    R={rid:j.rid,name:j.name};ls("olRoom",JSON.stringify(R));remember(R);
+    S=null;after=0;evs=[];sig={};myV=null;revRnd=-1;lastMsgN=0;
+    shell();poll();
+  }
+  function drop(){
+    clearTimeout(pollT);stopAudio();
+    if(R) forget(R.rid);
+    R=null;S=null;ls("olRoom",null);
+    if(isOpen()) shell();
+  }
+  async function create(){
+    if(inFlight) return;inFlight=true;
+    const nm=($("#olName")||{}).value||"";
+    try{const j=await NET.call("room/new",{name:nm.trim()});enter(j);toast("Комната создана — позови друзей")}catch(e){toast(e.msg,true)}finally{inFlight=false}
+  }
+  async function join(code){
+    code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    if(code.length<4){toast("Введи код комнаты",true);return}
+    if(!NET.on){toast("Подключи общий сервер в Настройках → Аккаунт",true);return}
+    if(R&&R.rid===code){open();return}
+    if(inFlight) return;inFlight=true;
+    try{
+      if(R){try{await NET.call("room/leave",{rid:R.rid})}catch(e){}drop()}
+      const j=await NET.call("room/join",{rid:code});
+      if(!isOpen()) open(true);
+      enter(j);
+    }catch(e){toast(e.msg,true)}finally{inFlight=false}
+  }
+  async function leave(){
+    if(!R) return;
+    const rid=R.rid;
+    try{await NET.call("room/leave",{rid})}catch(e){}
+    drop();toast("Ты вышел из комнаты");
+  }
+  async function say(){
+    const t=$("#olTx");if(!t||!R) return;
+    const tx=t.value.trim();if(!tx) return;
+    t.value="";fitTx();
+    try{await NET.call("room/say",{rid:R.rid,tx});poll()}catch(e){toast(e.msg,true);t.value=tx}
+  }
+  function fitTx(){const t=$("#olTx");if(!t) return;t.style.height="auto";t.style.height=Math.min(120,t.scrollHeight)+"px"}
+
+  /* ---------- разметка ---------- */
+  function shell(){
+    sig={};
+    if(!NET.on){
+      body.innerHTML=`<div class="phead"><div><h2>Онлайн</h2><p>Слушайте треки вместе с друзьями, оценивайте и общайтесь в чате</p></div></div>
+        <div class="olnote"><b>Нужен аккаунт на общем сервере</b><span>Онлайн-комнаты работают через общий сервер PULSE RATER. Подключи его в «Настройки → Аккаунт» — и сможешь звать друзей.</span>
+        <div class="olrow"><button class="olbtn pri" data-o="acc" type="button">Открыть настройки</button><button class="olbtn" data-o="lan" type="button">Комната по локальной сети</button></div></div>`;
+      return;
+    }
+    if(!R){
+      const rc=recent();
+      body.innerHTML=`<div class="phead"><div><h2>Онлайн</h2><p>Слушайте треки вместе с друзьями, оценивайте и общайтесь в чате</p></div></div>
+        <div class="ollob">
+          <div class="olcard"><div class="olic">🎧</div><h3>Создать комнату</h3><p>Ты ведёшь: включаешь треки из каталога, из своих оценок или свой файл — у друзей играет то же самое</p>
+            <input id="olName" type="text" maxlength="40" placeholder="Название, например «Пятничный разбор»" autocomplete="off"><button class="olbtn pri" data-o="new" type="button">Создать</button></div>
+          <div class="olcard"><div class="olic">🔑</div><h3>Войти по коду</h3><p>Попроси код у друга или прими приглашение в чате «Друзья»</p>
+            <input id="olCode" type="text" maxlength="8" placeholder="Код из 6 символов" autocomplete="off" spellcheck="false"><button class="olbtn pri" data-o="join" type="button">Войти</button></div>
+        </div>
+        ${rc.length?`<div class="olrech">Недавние комнаты</div><div class="olrec">${rc.map(x=>`<button class="olrc" data-orj="${esc(x.rid)}" type="button"><b>${esc(x.name||"Комната")}</b><span>${esc(x.rid)}</span></button>`).join("")}</div>`:""}
+        <button class="ollan" data-o="lan" type="button">Нет сервера? Комната по локальной сети →</button>`;
+      return;
+    }
+    body.innerHTML=`<div class="olroom">
+      <div class="olmain">
+        <div class="olhd"><div class="olhn"><h2 id="olTitle">${esc(R.name||"Комната")}</h2><button class="olcode" data-o="copy" type="button" title="Скопировать код">Код <b>${esc(R.rid)}</b> ⧉</button></div>
+          <div class="olhb"><button class="olbtn" data-o="inv" type="button">＋ Пригласить друга</button><button class="olbtn ghost" data-o="leave" type="button">Выйти</button></div></div>
+        <div class="olmem" id="olMem"></div>
+        <div id="olNow"></div>
+        <div id="olRate"></div>
+      </div>
+      <aside class="olchat"><div class="olchh">Чат комнаты</div><div class="ollog" id="olLog"></div>
+        <div class="olin"><textarea id="olTx" rows="1" maxlength="500" placeholder="Сообщение…"></textarea><button class="olsend" data-o="say" type="button" title="Отправить (Enter)">${SENDI}</button></div></aside>
+    </div>`;
+    if(S) render(evs,true);
+  }
+  const put=(id,k,h)=>{const x=$("#"+id);if(!x) return null;if(sig[id]===k) return null;sig[id]=k;x.innerHTML=h;return x};
+  function render(fresh,all){
+    if(!R||!S||!$("#olNow")) return;
+    const st=S.st||{},host=isHost(),tr=st.tr;
+    const t=$("#olTitle");if(t&&t.textContent!==S.name) t.textContent=S.name;
+    /* участники */
+    put("olMem",JSON.stringify([S.host,S.votes,S.mem.map(m=>[m.uid,m.on,m.avv,m.nick])]),S.mem.map(m=>`<div class="olm${m.on||m.uid===me()?" on":""}" title="${esc(m.nick)}${m.uid===S.host?" — ведёт комнату":""}">
+      <div class="olma">${avOf(m,40)}${m.uid===S.host?'<i class="olcr">👑</i>':""}${st.phase==="rate"&&S.votes.includes(m.uid)?'<i class="olok">✓</i>':""}</div><span>${esc(m.uid===me()?"Ты":m.nick)}</span></div>`).join(""));
+    /* сейчас играет */
+    if(!tr){
+      put("olNow","idle:"+host,`<div class="olidle"><div class="olic">🎵</div><b>Пока ничего не играет</b><span>${host?"Включи трек — у всех в комнате он заиграет одновременно":`Ждём, пока ${esc(nick(S.host))} включит трек`}</span>${host?'<button class="olbtn pri" data-o="pick" type="button">Включить трек</button>':""}</div>`);
+    }else{
+      const cov=covOf(tr),has=!!(tr.au||tr.st);
+      const nb=put("olNow",[S.rnd,host,has].join(":"),`<div class="olnow">
+        <div class="olcov"${cov?` style="background-image:url('${esc(cov)}')"`:""}>${cov?"":"♪"}</div>
+        <div class="olnt"><em>Сейчас играет · трек №${S.rnd}</em><b>${esc(tr.ti)}</b><span>${esc(tr.ar||"—")}${tr.al?" · "+esc(tr.al):""}${tr.y?" · "+esc(tr.y):""}</span>
+          <div class="olpl" id="olPl">
+            ${host?`<button class="olpp" data-o="pp" type="button" title="Пауза / играть">${PLAYI}</button>`:`<span class="olwho">Плеером управляет ${esc(nick(S.host))}</span>`}
+            <div class="olbar${host?" can":""}" data-o="seek"><i></i></div><span class="olt"></span>
+            <label class="olvol" title="Громкость у тебя">${VOLI}<input type="range" id="olVol" min="0" max="1" step=".01" value="${au.volume}"></label>
+          </div>
+          <button class="oltap" data-o="tap" type="button" hidden>▶ Нажми, чтобы слушать вместе со всеми</button>
+          ${!has?`<div class="olnoau">У этого трека нет аудио в комнате — включите его у себя${tr.st&&tr.st.link?` · <a href="${esc(tr.st.link)}" target="_blank" rel="noopener">открыть</a>`:""}</div>`:""}
+          ${host?'<div class="olrow"><button class="olbtn" data-o="pick" type="button">Сменить трек</button></div>':""}
+        </div></div>`);
+      if(nb) paintPlayer();
+    }
+    /* оценка или итоги */
+    if(tr&&st.phase==="rate") paintRate(host);
+    else if(tr&&st.phase==="res") paintRes(host);
+    else put("olRate","none","");
+    syncAudio();
+    logAdd(fresh,all);
+  }
+  function paintRate(host){
+    if(!myV||myV.rnd!==S.rnd) myV={rnd:S.rnd,sc:[5,5,5,5,5],sent:false,tot:null};
+    const step=ST.decimals?.1:1;
+    const x=put("olRate","rate:"+S.rnd,`<div class="olrt"><div class="olrth"><b>Твоя оценка</b><span class="oltot" id="olTot"></span></div>
+      ${CRIT.map((c,i)=>`<div class="olsl"><div class="olsln"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></div><input type="range" min="0" max="10" step="${step}" value="${myV.sc[i]}" data-ci="${i}"><output data-co="${i}">${fmt(myV.sc[i])}</output></div>`).join("")}
+      <div class="olrow"><button class="olbtn pri" data-o="vote" type="button" id="olVoteB">Отправить оценку</button><span class="olvs" id="olVs"></span>${host?'<button class="olbtn" data-o="reveal" type="button" id="olRevB">Показать результаты</button>':""}</div></div>`);
+    if(x) paintTot();
+    const on=S.mem.length,n=S.votes.length;
+    const vs=$("#olVs");if(vs) vs.textContent=`Оценили ${n} из ${on}`+(myV.sent?" · можно поправить и отправить ещё раз":"");
+    const vb=$("#olVoteB");if(vb) vb.textContent=myV.sent?"Обновить оценку":"Отправить оценку";
+    const rb=$("#olRevB");if(rb) rb.disabled=!n;
+  }
+  function paintTot(){
+    const tot=calc(myV.sc),o=$("#olTot");if(o){o.textContent=fmt(tot);o.style.color=rgCol(tot)}
+    body.querySelectorAll("#olRate output[data-co]").forEach(x=>{x.textContent=fmt(myV.sc[+x.dataset.co])});
+    body.querySelectorAll("#olRate input[data-ci]").forEach(x=>{x.style.setProperty("--p",(x.value*10)+"%")});
+  }
+  function paintRes(host){
+    const res=S.st.res||{rows:[],avg:0,crit:[0,0,0,0,0]};
+    const rows=res.rows.slice().sort((a,b)=>b.tot-a.tot);
+    const mine=res.rows.find(r=>r.uid===me());
+    put("olRate","res:"+S.rnd+":"+host,`<div class="olres"><div class="olrsh"><div><em>Итог комнаты</em><b style="color:${rgCol(res.avg)}">${fmt(res.avg)}</b><span>${rows.length} ${plural(rows.length,"оценка","оценки","оценок")}</span></div>
+      <div class="olcrit">${CRIT.map((c,i)=>`<div><span>${esc(c[0])}</span><b style="color:${rgCol(res.crit[i])}">${fmt(res.crit[i])}</b></div>`).join("")}</div></div>
+      <div class="olrows">${rows.map((r,i)=>{const m=memOf(r.uid)||{uid:r.uid,nick:nick(r.uid),eq:{}};return `<div class="olrr" style="--i:${i}"><i class="olpos">${i+1}</i>${avOf(m,32)}<b>${esc(r.uid===me()?"Ты":m.nick||nick(r.uid))}</b><span class="olsc">${r.sc.map(v=>`<i>${fmt(v)}</i>`).join("")}</span><em style="color:${rgCol(r.tot)}">${fmt(r.tot)}</em></div>`}).join("")}</div>
+      <div class="olrow"><button class="olbtn" data-o="save" type="button">${mine?"Сохранить мою оценку в медиатеку":"Сохранить средний балл в медиатеку"}</button>${host?'<button class="olbtn pri" data-o="pick" type="button">Следующий трек</button>':""}</div></div>`);
+  }
+  /* чат комнаты */
+  function evH(e){
+    const d=e.d||{},n=esc(nick(e.uid));
+    if(e.k==="chat"){
+      const m=memOf(e.uid)||{uid:e.uid,nick:nick(e.uid),eq:{}},mine=e.uid===me();
+      return `<div class="olmsg${mine?" me":""}">${mine?"":`<div class="olmav">${avOf(m,28)}</div>`}<div class="olbb">${mine?"":`<b>${n}</b>`}<span>${linkTx(d.tx)}</span><i>${hm(e.t)}</i></div></div>`;
+    }
+    const tx={new:`${n} создал(а) комнату`,join:`${n} зашёл(ла) в комнату`,leave:`${n} вышел(ла) из комнаты`,host:`${n} теперь ведёт комнату`,
+      track:`🎵 ${n} включил(а) «${esc(d.ti||"")}»${d.ar?" — "+esc(d.ar):""}`,vote:`${n} оценил(а) трек`,
+      res:`🏁 Итог «${esc(d.ti||"")}»: <b style="color:${rgCol(d.avg||0)}">${fmt(d.avg||0)}</b> · ${d.n||0} ${plural(d.n||0,"оценка","оценки","оценок")}`}[e.k];
+    return tx?`<div class="olsys${e.k==="track"||e.k==="res"?" big":""}">${tx}<i>${hm(e.t)}</i></div>`:"";
+  }
+  const linkTx=s=>esc(s||"").replace(/https?:\/\/[^\s<]+/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  function logAdd(fresh,all){
+    const log=$("#olLog");if(!log) return;
+    const list=all||!log.childElementCount?evs:fresh;
+    if(all||!log.childElementCount) log.innerHTML="";
+    if(!list.length){if(!log.childElementCount) log.innerHTML=`<div class="olempty">Здесь будет чат комнаты</div>`;return}
+    const bottom=log.scrollHeight-log.scrollTop-log.clientHeight<90;
+    const em=log.querySelector(".olempty");if(em) em.remove();
+    log.insertAdjacentHTML("beforeend",list.map(evH).join(""));
+    while(log.childElementCount>300) log.firstElementChild.remove();
+    if(bottom||all||list===evs) log.scrollTop=log.scrollHeight;
+  }
+
+  /* ---------- выбор трека (ведущий) ---------- */
+  let pk=null;
+  function pickOpen(){
+    if(!isHost()){toast("Трек включает тот, кто ведёт комнату",true);return}
+    pk={tab:"cat",res:[],q:ls("olPkQ")||""};
+    const box=OV.open(`<div class="olpk"><div class="olpkh"><b>Включить трек</b><button class="pround" data-ovx type="button" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <div class="ctseg olpkt" role="tablist"><button data-pt="cat" class="on" type="button">Каталог релизов</button><button data-pt="lib" type="button">Мои оценки</button><button data-pt="file" type="button">Свой файл</button></div>
+      <div id="olPkB" class="olpkb"></div></div>`,"olpkw");
+    box.addEventListener("click",pkClick);box.addEventListener("input",pkInput);box.addEventListener("keydown",e=>{if(e.target.id==="olPkQ"&&e.key==="Enter"){clearTimeout(pk.t);pkSearch()}});
+    box.addEventListener("change",e=>{if(e.target.id==="olPkF") pkFile(e.target.files&&e.target.files[0])});
+    pkTab("cat");
+  }
+  function pkTab(k){
+    pk.tab=k;const b=$("#olPkB");if(!b) return;
+    OV.el.querySelectorAll("[data-pt]").forEach(x=>x.classList.toggle("on",x.dataset.pt===k));
+    if(k==="cat"){
+      b.innerHTML=`<label class="ctin"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="olPkQ" type="text" placeholder="Трек или исполнитель на SoundCloud" autocomplete="off" spellcheck="false" value="${esc(pk.q)}"></label><div class="olpkl" id="olPkL"></div>`;
+      setTimeout(()=>{const q=$("#olPkQ");if(q){q.focus();q.select()}},60);
+      if(pk.q) pkSearch();else $("#olPkL").innerHTML=`<div class="olpke">Найди трек — он заиграет у всех в комнате</div>`;
+    }else if(k==="lib"){
+      b.innerHTML=`<label class="ctin"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="olPkLq" type="text" placeholder="Фильтр по названию или артисту" autocomplete="off"></label><div class="olpkl" id="olPkL"></div>`;
+      pkLib("");setTimeout(()=>{const q=$("#olPkLq");if(q) q.focus()},60);
+    }else{
+      b.innerHTML=`<label class="olfile"><input id="olPkF" type="file" accept=".mp3,.wav,.flac,audio/mpeg,audio/wav,audio/flac" hidden><b>Выбери аудиофайл</b><span>MP3, WAV или FLAC до 30 МБ — файл загрузится на сервер, и друзья услышат его у себя</span></label>
+        <div class="olff" id="olFF" hidden><input id="olFt" type="text" maxlength="120" placeholder="Название трека"><input id="olFa" type="text" maxlength="80" placeholder="Исполнитель"><button class="olbtn pri" data-pk="up" type="button">Загрузить и включить</button></div>`;
+    }
+  }
+  async function pkSearch(){
+    const qi=$("#olPkQ"),L=$("#olPkL");if(!qi||!L) return;
+    const q=qi.value.trim();pk.q=q;ls("olPkQ",q);
+    if(!q){L.innerHTML=`<div class="olpke">Найди трек — он заиграет у всех в комнате</div>`;return}
+    const my=pk.tk=(pk.tk||0)+1;L.innerHTML=`<div class="ctload"><i></i>Ищу…</div>`;
+    try{
+      const r=await fetch("/api/cat/search?src=sc&q="+encodeURIComponent(q));if(!r.ok) throw 0;
+      const j=await r.json();if(my!==pk.tk) return;
+      pk.res=(j.tracks||[]).slice(0,30);
+      L.innerHTML=pk.res.length?pk.res.map((t,i)=>`<div class="olpr"><div class="im" style="${t.cover?`background-image:url('/api/cat/img?u=${encodeURIComponent(t.cover)}')`:""}"></div><div class="olpn"><b>${esc(t.title)}</b><span>${esc(t.artist)}${t.album?" · "+esc(t.album):""}</span></div>${t.drm||!t.preview?'<em title="Звук этого трека недоступен — у друзей будет только карточка">без звука</em>':""}<button class="olbtn pri sm" data-pc="${i}" type="button">Включить</button></div>`).join(""):`<div class="olpke">Ничего не нашлось</div>`;
+    }catch(e){if(my===pk.tk) L.innerHTML=`<div class="olpke">Каталог не ответил. Проверь интернет.</div>`}
+  }
+  function pkLib(q){
+    const L=$("#olPkL");if(!L) return;q=low(q||"");
+    const list=state.tracks.filter(t=>!q||low(t.title).includes(q)||low(t.artist).includes(q)).sort((a,b)=>b.id-a.id).slice(0,80);
+    L.innerHTML=list.length?list.map(t=>{const cu=covUrlOf(t);return `<div class="olpr"><div class="im" style="${cu?`background-image:url('${cu}')`:""}"></div><div class="olpn"><b>${esc(t.title)}</b><span>${esc(t.artist)}${t.album?" · "+esc(t.album):""}</span></div>${t.audio?'<em class="ok">файл</em>':t.stream?'<em class="ok">стрим</em>':'<em>без звука</em>'}${t.unrated?"":`<i class="olpsc" style="color:${rgCol(t.total)}">${fmt(t.total)}</i>`}<button class="olbtn pri sm" data-pl="${t.id}" type="button">Включить</button></div>`}).join(""):`<div class="olpke">${state.tracks.length?"Ничего не нашлось":"В медиатеке пока пусто"}</div>`;
+  }
+  function pkInput(e){
+    if(e.target.id==="olPkQ"){clearTimeout(pk.t);pk.t=setTimeout(pkSearch,450)}
+    else if(e.target.id==="olPkLq") pkLib(e.target.value);
+  }
+  function pkFile(f){
+    if(!f) return;
+    const ext=extOf(f.name);
+    if(!["mp3","wav","flac"].includes(ext)){toast("Нужен MP3, WAV или FLAC",true);return}
+    if(f.size>30*1024*1024){toast("Файл больше 30 МБ",true);return}
+    pk.file=f;
+    const base=f.name.replace(/\.[^.]+$/,"").replace(/_/g," ").trim();
+    const m=base.split(/\s+[-–—]\s+/);
+    $("#olFF").hidden=false;$("#olFt").value=m.length>1?m.slice(1).join(" - "):base;$("#olFa").value=m.length>1?m[0]:"";
+    const lb=OV.el.querySelector(".olfile b");if(lb) lb.textContent=f.name;
+  }
+  async function pkClick(e){
+    const t=e.target.closest("[data-pt]");if(t){pkTab(t.dataset.pt);return}
+    const c=e.target.closest("[data-pc]"),l=e.target.closest("[data-pl]"),u=e.target.closest("[data-pk='up']");
+    if(!c&&!l&&!u) return;
+    const btn=c||l||u;if(btn.disabled) return;
+    OV.el.querySelectorAll(".olbtn").forEach(b=>b.disabled=true);btn.textContent="Готовлю…";
+    try{
+      let tr;
+      if(c){
+        const x=pk.res[+c.dataset.pc];
+        tr={ti:x.title,ar:x.artist,al:x.album||"",y:x.year?String(x.year):"",cu:x.coverBig||x.cover||""};
+        if(x.preview&&!x.drm) tr.st={url:x.preview,src:x.src||"sc",link:x.link||"",name:`${x.artist} — ${x.title}`};
+      }else if(l){
+        const x=state.tracks.find(z=>z.id===+l.dataset.pl);if(!x) throw{msg:"Трек не найден"};
+        tr={ti:x.title,ar:x.artist==="—"?"":x.artist,al:x.album||"",y:x.year||""};
+        const c2=await thumbData(covUrlOf(x),160);if(c2&&c2.length<40000) tr.c=c2;
+        if(x.audio){btn.textContent="Загружаю аудио…";const r=await NET.local("audup",{tid:x.id});tr.au={id:r.id,ext:r.ext,size:r.size,name:x.audio.name||""}}
+        else if(x.stream&&x.stream.url) tr.st=x.stream;
+      }else{
+        const f=pk.file;if(!f) throw{msg:"Выбери файл"};
+        const ti=$("#olFt").value.trim()||f.name.replace(/\.[^.]+$/,""),ar=$("#olFa").value.trim();
+        const ext=extOf(f.name),tid=990000000000000+Math.floor(Math.random()*9e12);
+        btn.textContent="Загружаю файл…";
+        const r0=await fetch(`/api/audio/${tid}?ext=${ext}`,{method:"POST",body:f});if(!r0.ok) throw{msg:"Не удалось прочитать файл"};
+        try{const r=await NET.local("audup",{tid});tr={ti,ar,au:{id:r.id,ext:r.ext,size:r.size,name:f.name}}}
+        finally{fetch(`/api/audio/${tid}`,{method:"DELETE"}).catch(()=>{})}
+      }
+      await setTrack(tr);OV.close();
+    }catch(err){toast((err&&err.msg)||"Не получилось включить трек",true);OV.el.querySelectorAll(".olbtn").forEach(b=>b.disabled=false);btn.textContent="Включить"}
+  }
+  async function setTrack(tr){
+    await NET.call("room/track",{rid:R.rid,tr});
+    myV=null;
+    await NET.call("room/play",{rid:R.rid,on:true,pos:0}).catch(()=>{});
+    await poll();
+  }
+
+  /* ---------- пригласить друга ---------- */
+  async function invite(){
+    const box=OV.open(`<div class="olpk"><div class="olpkh"><b>Пригласить в комнату</b><button class="pround" data-ovx type="button" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+      <p class="olpkp">Друг получит приглашение в чат — нажмёт «Войти» и окажется здесь. Или просто скажи ему код <b>${esc(R.rid)}</b></p><div class="olpkl" id="olInvL"><div class="ctload"><i></i>Загружаю друзей…</div></div></div>`,"olpkw");
+    let fr=[];
+    try{const j=await NET.call("fr");fr=(j.friends||[]).slice().sort((a,b)=>(+b.seen||0)-(+a.seen||0))}catch(e){}
+    const L=$("#olInvL");if(!L) return;
+    const inRoom=new Set((S&&S.mem||[]).map(m=>m.uid));
+    L.innerHTML=fr.length?fr.map(p=>`<div class="olpr fr">${avOf(p,40)}<div class="olpn"><b>${esc(p.nick)}</b><span>${Date.now()-(+p.seen||0)<3*60e3?"в сети":"не в сети"}</span></div>${inRoom.has(p.uid)?'<em class="ok">уже здесь</em>':`<button class="olbtn pri sm" data-iv="${esc(p.uid)}" type="button">Позвать</button>`}</div>`).join(""):`<div class="olpke">Пока нет друзей — добавь их во вкладке «Друзья»</div>`;
+    box.addEventListener("click",async e=>{
+      const b=e.target.closest("[data-iv]");if(!b||b.disabled) return;b.disabled=true;
+      try{await NET.call("room/invite",{rid:R.rid,to:b.dataset.iv});b.textContent="Позвал ✓";b.classList.remove("pri")}catch(err){toast(err.msg,true);b.disabled=false}
+    });
+  }
+
+  /* ---------- сохранить трек из комнаты в медиатеку ---------- */
+  async function saveLib(){
+    const st=S&&S.st,tr=st&&st.tr;if(!tr) return;
+    const res=st.res||{rows:[],crit:[5,5,5,5,5]},mine=res.rows.find(r=>r.uid===me());
+    const sc=(mine?mine.sc:res.crit).map(v=>+v||0),ti=tr.ti,ar=tr.ar||"—";
+    const ex=state.tracks.find(t=>low(t.title)===low(ti)&&low(t.artist)===low(ar));
+    if(ex&&!ex.unrated){toast(`«${ti}» уже есть в медиатеке — ${fmt(ex.total)}`);return}
+    const id=ex?ex.id:Date.now();
+    const rec=ex||{id,artist:ar,title:ti,genre:""};
+    Object.assign(rec,{scores:sc,total:calc(sc),...(tr.y?{year:tr.y}:{}),...(tr.st&&!tr.au?{stream:tr.st}:{})});
+    delete rec.unrated;delete rec.later;
+    rec.note=rec.note||`Онлайн-комната «${S.name}»`;
+    if(!ex) state.tracks.push(rec);
+    persist();renderStats();renderLib();
+    toast(`«${ti}» сохранён в медиатеку — ${fmt(rec.total)}`);
+    try{
+      let b=null;
+      if(tr.c) b=await (await fetch(tr.c)).blob();
+      else if(tr.cu){const r=await fetch("/api/cat/img?u="+encodeURIComponent(tr.cu));if(r.ok) b=await r.blob()}
+      if(b){const r=await fetch(`/api/img/cover/${id}`,{method:"POST",body:b});if(r.ok){rec.cover=Date.now();persist();renderLib()}}
+    }catch(e){}
+    if(tr.au&&!rec.audio){
+      try{const r=await NET.local("audimport",{aid:tr.au.id,tid:id});rec.audio={name:tr.au.name||`${ar} - ${ti}.${r.ext}`,ext:r.ext,size:r.size};persist();renderLib()}catch(e){}
+    }
+  }
+
+  /* ---------- события ---------- */
+  body.addEventListener("click",e=>{
+    const rj=e.target.closest("[data-orj]");if(rj){join(rj.dataset.orj);return}
+    const o=e.target.closest("[data-o]");if(!o) return;
+    switch(o.dataset.o){
+      case "new":create();break;
+      case "join":join(($("#olCode")||{}).value);break;
+      case "lan":close(true);RM.open();break;
+      case "acc":close();try{SET.open();SET.tab("a")}catch(err){}break;
+      case "copy":try{navigator.clipboard.writeText(R.rid);toast("Код комнаты скопирован — отправь его другу")}catch(err){}break;
+      case "inv":invite();break;
+      case "leave":leave();break;
+      case "pick":pickOpen();break;
+      case "say":say();break;
+      case "pp":if(S&&S.st&&S.st.play) hostPlay(!S.st.play.on);break;
+      case "tap":needTap=false;try{AU.pause()}catch(err){}au.play().catch(()=>{});syncAudio();paintPlayer();break;
+      case "seek":if(isHost()&&au.duration){const r=o.getBoundingClientRect();hostPlay(S.st.play?S.st.play.on:true,Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*au.duration)}break;
+      case "vote":vote();break;
+      case "reveal":revRnd=S.rnd;reveal(false);break;
+      case "save":saveLib();break;
+    }
+  });
+  body.addEventListener("input",e=>{
+    const i=e.target;
+    if(i.id==="olVol"){au.volume=+i.value;ls("olVol",String(i.value));return}
+    if(i.id==="olTx"){fitTx();return}
+    if(i.dataset&&i.dataset.ci!=null&&myV){myV.sc[+i.dataset.ci]=+i.value;paintTot()}
+  });
+  body.addEventListener("keydown",e=>{
+    if(e.target.id==="olTx"&&e.key==="Enter"&&!e.shiftKey){e.preventDefault();say()}
+    else if(e.target.id==="olCode"&&e.key==="Enter"){e.preventDefault();join(e.target.value)}
+    else if(e.target.id==="olName"&&e.key==="Enter"){e.preventDefault();create()}
+  });
+  async function vote(){
+    if(!myV||!R) return;
+    const b=$("#olVoteB");if(b) b.disabled=true;
+    try{const j=await NET.call("room/vote",{rid:R.rid,rnd:myV.rnd,sc:myV.sc});myV.sent=true;toast(`Оценка отправлена — ${fmt(j.tot)}`);poll()}catch(err){toast(err.msg,true)}
+    finally{if(b) b.disabled=false}
+  }
+  /* приглашение в чате «Друзья» */
+  document.addEventListener("click",e=>{const b=e.target.closest("[data-olj]");if(b){e.preventDefault();e.stopPropagation();join(b.dataset.olj)}},true);
+
+  /* ---------- страница ---------- */
+  function open(quiet){
+    clearTimeout(closeT);
+    if(isOpen()) return;
+    opening=true;
+    try{AP.close(true);TOP.close(true);RK.close(true);CT.close(true);LB.close(true);RM.close(true)}catch(e){}try{PF.close(true);SHOP.close(true)}catch(e){}try{FR.close(true)}catch(e){}
+    opening=false;
+    el.classList.remove("out");el.hidden=false;document.body.classList.add("pg");navBtn.classList.add("on");
+    if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
+    shell();
+    if(R) poll();
+  }
+  function close(keep){
+    if(opening||el.hidden||el.classList.contains("out")) return;
+    if(keep!==true) document.body.classList.remove("pg");
+    navBtn.classList.remove("on");el.classList.add("out");
+    closeT=setTimeout(()=>{el.hidden=true;el.classList.remove("out")},280);   // музыка и чат комнаты продолжают жить
+  }
+  $("#olClose").addEventListener("click",()=>close());
+  document.addEventListener("keydown",e=>{
+    if(e.key!=="Escape"||!isOpen()||OV.isOpen()) return;
+    if(document.activeElement&&document.activeElement.id==="olTx"&&document.activeElement.value){return}
+    e.preventDefault();close();
+  });
+  document.addEventListener("visibilitychange",()=>{if(R&&!document.hidden) schedule(200)});
+  return{open,close,isOpen,join,get room(){return R}};
 })();
 
 /* ---------- автообновление: программа сама проверяет новую версию ---------- */
