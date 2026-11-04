@@ -35,7 +35,7 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "4.9"
+APP_VERSION = "4.9.1"
 APP_NOTES = "Ответы в чате, новые эмодзи, чёрный и белый цвета, живая «Туманность»"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
@@ -431,10 +431,12 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="4.9";
+var APPV="4.9.1";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
- {v:"4.9",add:["Уведомления о сообщениях друзей: всплывающая карточка в приложении и уведомление Windows, если окно свёрнуто","«Поделиться топ-10» в «Общем рейтинге» — картинка для сторис или отправка другу в чат","Новые достижения — теперь их больше 60"],
+ {v:"4.9.1",add:["Год релиза трека — рядом с альбомом, его можно поменять. Для треков из каталога год подставляется сам","«Поделиться топом»: можно выбрать топ-5 или топ-10","20 новых промокодов","Ещё 26 достижений — всего больше сотни"],
+  chg:["Год релиза виден на странице альбома"],fix:[],del:[]},
+ {v:"4.9",add:["Уведомления о сообщениях друзей: всплывающая карточка в приложении и уведомление Windows, если окно свёрнуто","«Поделиться топом» в «Общем рейтинге» — картинка для сторис или отправка другу в чат","Новые достижения — теперь их больше 60"],
   chg:["В «Общий рейтинг» артистов попадают только те, у кого оценено 5 треков и больше","Любимых треков, артистов и альбомов в профиле — не больше 10 каждого","Подсветка сердца на заставке стала ровной и симметричной","Сумму подарка можно вписывать с пробелами — например, 5 000"],
   fix:["Обложки альбома больше не пропадают после оценки треков — и пропавшие раньше вернутся сами","Открытый чат больше не дёргается, когда пишешь или ставишь реакции","Подарок отправляет ровно ту сумму, что вписана в поле","Скрытый гардероб действительно остаётся скрытым после перезапуска"],del:[]},
  {v:"4.8.1",add:["Заставка с бьющимся сердцем и пульсом: играет при запуске, пока мышка не двигается, и возвращается через минуту бездействия","В «Подарках» друга можно выбрать из списка друзей — ID искать не нужно"],
@@ -743,6 +745,7 @@ body.pg .main{opacity:0;transform:scale(.985);pointer-events:none}
 .prodw{display:inline-flex;align-items:baseline;gap:6px}
 .prod{font-size:12px;font-weight:700;letter-spacing:.04em;color:#7f7f89}
 .art.beat{width:min(190px,28vw);color:#9d9da7;font-weight:600;font-size:15px}
+.art.yr{width:3.4em;font-variant-numeric:tabular-nums}
 .phs.pb{background:linear-gradient(100deg,#4e4e57 0%,#6f6f79 25%,#a2a2ac 40%,#6a6a74 60%,#4e4e57 100%);background-size:var(--tile) 100%;-webkit-background-clip:text;background-clip:text;font-weight:600;font-size:15px}
 .tx span .pb,.pb{font-style:normal;color:#7d7d87;font-weight:600}
 .sub b{font-weight:800}
@@ -2682,7 +2685,8 @@ body.bye #bc{display:none}
 .chkl u{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background-size:cover;background-position:center;text-decoration:none;font-size:11px;font-weight:900}
 .chkl small{margin-left:auto;padding-left:8px;font-size:11px;color:var(--sub)}
 .chkl i.t1{color:#ffd45a}.chkl i.t2{color:#dfe6ef}.chkl i.t3{color:#e9a26a}
-#rk .phead .gbtn{align-self:center}
+#rk .phead .gbtn{align-self:center;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+#rk .phead .gbtn .ico{width:18px;height:18px}
 /* заставка с сердцем */
 #welcome .att{position:fixed;inset:0;z-index:5;display:grid;place-items:center;overflow:hidden;opacity:0;visibility:hidden;transition:opacity .8s ease,visibility 0s linear .8s;cursor:none}
 #welcome.att .att{opacity:1;visibility:visible;transition:opacity 1.1s ease,visibility 0s}
@@ -3773,7 +3777,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
       <div class="meta">
         <div class="eyebrow"><span class="eq" id="eqTop" hidden><i></i><i></i><i></i><i></i></span><span id="eyebrow">Новая оценка</span></div>
         <div class="titlew" id="titlew"><div class="ph"><input class="big" id="title" placeholder="Название трека" autocomplete="off" maxlength="80"><span class="phs pt" aria-hidden="true">Название трека</span></div></div>
-        <div class="sub"><span class="ph inl"><input class="art" id="artist" placeholder="Исполнитель" autocomplete="off" maxlength="60"><span class="phs pa" aria-hidden="true">Исполнитель</span></span><span class="prodw"><span class="prod">prod.</span><span class="ph inl"><input class="art beat" id="beat" placeholder="Битмейкер" autocomplete="off" maxlength="60" spellcheck="false"><span class="phs pa pb" aria-hidden="true">битмейкер</span></span></span><span class="dot">•</span><span class="ph inl"><input class="art gen" id="genre" placeholder="Жанр" list="genres" autocomplete="off" maxlength="40"><span class="phs pa" aria-hidden="true">Жанр</span></span><datalist id="genres"></datalist><span class="dot">•</span><span class="ph inl"><input class="art gen" id="album" placeholder="Альбом" list="albums" autocomplete="off" maxlength="60"><span class="phs pa" aria-hidden="true">Альбом</span></span><datalist id="albums"></datalist><span class="dot">•</span><span id="heroScore"><b>5.0</b> из 10</span></div>
+        <div class="sub"><span class="ph inl"><input class="art" id="artist" placeholder="Исполнитель" autocomplete="off" maxlength="60"><span class="phs pa" aria-hidden="true">Исполнитель</span></span><span class="prodw"><span class="prod">prod.</span><span class="ph inl"><input class="art beat" id="beat" placeholder="Битмейкер" autocomplete="off" maxlength="60" spellcheck="false"><span class="phs pa pb" aria-hidden="true">битмейкер</span></span></span><span class="dot">•</span><span class="ph inl"><input class="art gen" id="genre" placeholder="Жанр" list="genres" autocomplete="off" maxlength="40"><span class="phs pa" aria-hidden="true">Жанр</span></span><datalist id="genres"></datalist><span class="dot">•</span><span class="ph inl"><input class="art gen" id="album" placeholder="Альбом" list="albums" autocomplete="off" maxlength="60"><span class="phs pa" aria-hidden="true">Альбом</span></span><datalist id="albums"></datalist><span class="dot">•</span><span class="ph inl"><input class="art yr" id="year" placeholder="Год" inputmode="numeric" autocomplete="off" maxlength="4" title="Год релиза"><span class="phs pa" aria-hidden="true">Год</span></span><span class="dot">•</span><span id="heroScore"><b>5.0</b> из 10</span></div>
       </div>
     </section>
 
@@ -5097,7 +5101,7 @@ $("#sort").addEventListener("click",()=>{
 });
 
 /* ---------- редактор ---------- */
-const titleEl=$("#title"),beatEl=$("#beat"),artistEl=$("#artist"),genreEl=$("#genre"),albumEl=$("#album"),coverEl=$("#cover");
+const titleEl=$("#title"),beatEl=$("#beat"),artistEl=$("#artist"),genreEl=$("#genre"),albumEl=$("#album"),yearEl=$("#year"),coverEl=$("#cover");
 /* ---------- заметка к оценке: короткая рецензия или любимая строчка ---------- */
 const noteEl=$("#noteIn"),NOTE_PH={r:"Пара слов о треке — что зацепило, а что нет",q:"Любимая строчка из трека — её будет видно на картинке «Поделиться»"};
 let noteT=0;
@@ -5214,6 +5218,7 @@ function fillEditor(rec){
   state.beat=rec?(rec.beat||""):"";beatEl.value=state.beat;
   state.genre=rec?(rec.genre||""):"";
   state.album=rec?(rec.album||""):"";state.albumId=rec?(rec.albumId||null):null;
+  state.year=rec&&rec.year?String(rec.year):"";yearEl.value=state.year;if(rec&&!rec.year) yearFetch(rec);
   state.title=rec?rec.title:"";
   state.vals=rec&&!rec.unrated?[...rec.scores]:Array(5).fill(stStart());
   artistEl.value=state.artist;titleEl.value=state.title;genreEl.value=state.genre;albumEl.value=state.album;
@@ -5264,10 +5269,11 @@ function save(){
     else if(state.albumId){albumId=state.albumId;state.tracks.forEach(t=>{if(t.albumId===albumId) t.album=albName})}   // переименование всего альбома
     else albumId=Date.now();
   }
-  const rec={id,artist:state.artist.trim()||"—",...(state.beat.trim()?{beat:state.beat.trim()}:{}),title,genre:state.genre.trim(),...(prev&&prev.ord!=null?{ord:prev.ord}:{}),...(prev&&prev.fav?{fav:true}:{}),...(prev&&prev.bestPick?{bestPick:true}:{}),...(albumId&&(prev&&prev.albumId===albumId&&prev.albCover||albCov(albumId))?{albCover:prev&&prev.albumId===albumId&&prev.albCover||albCov(albumId)}:{}),...((state.note||"").trim()?{note:state.note.trim(),...(state.noteK==="q"?{noteK:"q"}:{})}:{}),scores:[...state.vals],total:total(),...(albName?{album:albName,albumId}:{}),...(audio?{audio}:{}),...(cover?{cover}:{}),...(state.cat?{cat:state.cat}:{}),...(state.catAlb?{catAlb:state.catAlb}:{}),...(state.embed?{embed:state.embed}:{}),...(state.stream?{stream:state.stream}:{})};
+  const rec={id,artist:state.artist.trim()||"—",...(state.beat.trim()?{beat:state.beat.trim()}:{}),title,genre:state.genre.trim(),...(prev&&prev.ord!=null?{ord:prev.ord}:{}),...(prev&&prev.fav?{fav:true}:{}),...(prev&&prev.bestPick?{bestPick:true}:{}),...(albumId&&(prev&&prev.albumId===albumId&&prev.albCover||albCov(albumId))?{albCover:prev&&prev.albumId===albumId&&prev.albCover||albCov(albumId)}:{}),...((state.note||"").trim()?{note:state.note.trim(),...(state.noteK==="q"?{noteK:"q"}:{})}:{}),scores:[...state.vals],total:total(),...(albName?{album:albName,albumId}:{}),...(audio?{audio}:{}),...(cover?{cover}:{}),...(state.cat?{cat:state.cat}:{}),...(state.catAlb?{catAlb:state.catAlb}:{}),...(/^(19|20)\d\d$/.test(state.year||"")?{year:state.year}:{}),...(state.embed?{embed:state.embed}:{}),...(state.stream?{stream:state.stream}:{})};
   const idx=state.tracks.findIndex(x=>x.id===rec.id);
   const upd=idx>=0;
   if(upd) state.tracks[idx]=rec;else state.tracks.push(rec);
+  if(rec.year&&albumId) state.tracks.forEach(t=>{if(t.albumId===albumId&&!t.year) t.year=rec.year});
   persist();renderStats();
   /* остаёмся на этом же треке — ничего не переключается и музыка не прерывается */
   const k0=AU.key();
@@ -5313,6 +5319,24 @@ artistEl.addEventListener("input",e=>{state.artist=e.target.value;paintCover()})
 beatEl.addEventListener("input",e=>{state.beat=e.target.value});
 genreEl.addEventListener("input",e=>{state.genre=e.target.value});
 albumEl.addEventListener("input",e=>{state.album=e.target.value});
+yearEl.addEventListener("input",e=>{const v=e.target.value.replace(/\D/g,"").slice(0,4);if(v!==e.target.value) e.target.value=v;state.year=v;yearSync()});
+/* год правится и у уже оценённого трека — сохраняется сразу, без новой оценки */
+let yearT=0;
+function yearSync(){
+  clearTimeout(yearT);yearT=setTimeout(()=>{
+    const t=state.editing!=null&&state.tracks.find(x=>x.id===state.editing);if(!t) return;
+    const y=/^(19|20)\d\d$/.test(state.year)?state.year:"";if((t.year||"")===y) return;
+    if(y){t.year=y;if(t.albumId) state.tracks.forEach(x=>{if(x.albumId===t.albumId&&!x.year) x.year=y})}else delete t.year;
+    persist();renderLib();
+  },600);
+}
+async function yearFetch(rec){                      // трек из каталога без года — узнаём год у площадки
+  if(!rec||rec.year||!rec.cat) return;
+  try{const j=await (await fetch(`/api/cat/year?k=${encodeURIComponent(rec.cat)}&alb=${encodeURIComponent(rec.catAlb||"")}`)).json();
+    const y=String(j.year||"");if(!/^(19|20)\d\d$/.test(y)) return;
+    rec.year=y;persist();if(state.editing===rec.id&&!state.year){state.year=y;yearEl.value=y}
+  }catch(e){}
+}
 [titleEl,artistEl,beatEl,genreEl,albumEl].forEach(el=>el.addEventListener("keydown",e=>{if(e.key==="Enter") save()}));
 function rateFx(e){
   const b=$("#save"),r=b.getBoundingClientRect(),bg=$(".rbg",b),l=$(".rl",b);
@@ -6492,7 +6516,7 @@ const RK=(()=>{
     }
     const all=qual().length;
     const chip=(k,lab,n)=>`<button class="rkc${genre===k?" on":""}" data-g="${esc(k)}" type="button">${esc(lab)}<em>${n}</em></button>`;
-    body.innerHTML=`<div class="phead"><div><h2>Общий рейтинг</h2><p class="rksub"></p></div><button class="gbtn" data-rksh type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>Поделиться топ-10</button></div>
+    body.innerHTML=`<div class="phead"><div><h2>Общий рейтинг</h2><p class="rksub"></p></div><button class="gbtn" data-rksh type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>Поделиться топом</button></div>
       <div class="rkg" role="group" aria-label="Жанр">${chip("all","Все жанры",all)}${gs.map(x=>chip(x.k,gLab(x.k),x.n)).join("")}</div>
       <div class="rkl"></div>`;
     paintList();body.scrollTop=0;
@@ -6500,7 +6524,7 @@ const RK=(()=>{
   body.addEventListener("click",e=>{
     if(!e.target.closest("[data-rksh]")) return;
     const rows=board().slice(0,10).map(g=>({n:g.name,a:g.avg,c:g.n,b:g.best,u:AP.avUrl(g.name)}));
-    if(rows.length) SH.openTop({g:genre==="all"?"":gLab(genre),rows});
+    if(rows.length) SH.openTop({g:genre==="all"?"":gLab(genre),all:rows,k:rows.length>5?10:5});
   });
   const isOpen=()=>!el.hidden&&!el.classList.contains("out");
   function open(){
@@ -8065,15 +8089,17 @@ const CT=(()=>{
         catCover(t,()=>state.editing===ex.id&&!state.coverBlob&&!state.cover);
       }
       return}
-    let genre=t.genre||"";
+    let genre=t.genre||"",yr="";
     if(!genre&&t.src==="dz"&&t.albumId){
       toast("Загружаю данные трека…");
-      try{genre=(await api("genre?album="+t.albumId)).genre||""}catch(e){}
+      try{const gj=await api("genre?album="+t.albumId);genre=gj.genre||"";yr=gj.year||""}catch(e){}
     }
     stopPv();if(PAGE_CLOSE) PAGE_CLOSE();
     newTrack();
     state.artist=t.artist;state.title=t.title;state.genre=genre;state.album=t.album||"";
     artistEl.value=state.artist;titleEl.value=state.title;genreEl.value=state.genre;albumEl.value=state.album;
+    state.year=/^(19|20)\d\d$/.test(String(t.year||yr||""))?String(t.year||yr):"";yearEl.value=state.year;
+    if(!state.year) yearFetch({cat:t.k,catAlb:t.albumId||"",get year(){return ""},set year(v){if(state.editing===null&&state.title===t.title&&!state.year){state.year=v;yearEl.value=v}}});
     state.stream=t.preview?{url:t.preview,src:t.src,link:t.link||"",name:`${t.artist} — ${t.title}`}:null;
     state.cat=t.k;state.catAlb=t.albumId||null;AU.sync();
     state.catCov=t.coverBig||t.cover||null;                    // по этой ссылке сервер сохранит обложку при оценке
@@ -8095,7 +8121,7 @@ const CT=(()=>{
       }
     }
   }
-  const mkRec=(t,id,extra)=>({id,artist:t.artist||"—",title:t.title,genre:t.genre||"",scores:[5,5,5,5,5],total:5,unrated:true,cat:t.k,catAlb:t.albumId||null,
+  const mkRec=(t,id,extra)=>({id,artist:t.artist||"—",title:t.title,genre:t.genre||"",scores:[5,5,5,5,5],total:5,unrated:true,cat:t.k,catAlb:t.albumId||null,...(/^(19|20)\d\d$/.test(String(t.year||""))?{year:String(t.year)}:{}),
     ...(t.preview&&!t.drm?{stream:{url:t.preview,src:t.src,link:t.link||"",name:`${t.artist} — ${t.title}`}}:{}),...extra});
   async function saveCovers(list){          // обложки скачивает сам сервер — по две за раз, с повтором при сбое
     let i=0;
@@ -8275,7 +8301,7 @@ const LB=(()=>{
     const items=a.items.slice().sort(byOrd),bestT=albBest(items),ties=albTies(items);
     paint(`<div class="ahead" style="--i:0"><div class="lbcv big acv" data-acv="1" style="${albCover(a)}" title="Нажми, чтобы сменить обложку альбома">${albHas(a)?"":NOTE}<div class="covh"><svg class="ico" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>${isEP(a)?"Обложка EP":"Обложка альбома"}</span></div>${albCov(a.id)?'<button class="covx" data-acx="1" type="button" title="Убрать обложку"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>':""}</div>
       <div><div class="eyebrow">${isEP(a)?"EP":"Альбом"}<button class="ren" type="button" title="Изменить название">${PEN}</button></div><h3 id="lbTitle">${esc(a.name)}</h3>
-      <p>${artLinks(a)} · ${cnt(a.n)} · ${a.complete?`общая <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:a.done?`оценено ${a.done} из ${a.n}, пока <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:`оценено 0 из ${a.n}`}</p>
+      <p>${artLinks(a)}${(()=>{const y=a.items.map(t=>t.year).find(Boolean);return y?` · ${esc(y)}`:""})()} · ${cnt(a.n)} · ${a.complete?`общая <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:a.done?`оценено ${a.done} из ${a.n}, пока <b style="color:${rgCol(a.avg)}">${fmt(a.avg)}</b>`:`оценено 0 из ${a.n}`}</p>
       ${a.done?`<button class="ashb" data-ash="${a.id}" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>Поделиться ${isEP(a)?"EP":"альбомом"}</button>`:""}</div></div>
       <div class="alh" style="--i:1">Треки <span class="hint">— нажми, чтобы изменить оценку; перетаскивай или двигай стрелками, чтобы поменять порядок</span></div>`
       +(ties.length>1?`<div class="albtie" style="--i:1"><b>★</b><span>У ${ties.length} треков одинаковая высшая оценка ${fmt(ties[0].total)}. ${ties.some(t=>t.bestPick)?"Лучший выбран — можно поменять:":"Выбери лучший:"} нажми ☆ рядом с названием</span></div>`:"")
@@ -9030,7 +9056,7 @@ const ADMIN_ROLES={                                    // отпечатки к�
   "a2db1503aa58bcbe333cce4b12775d49867802c61e7ef497656732fe6d900851":{items:["n_stars"],nick:"7jade"}
 };
 const ADMIN_ITEMS={n_blood:"#d0001a",n_stars:"var(--g2)"};
-const PROMO={"c061948ed6b16e9ad7f511039edb40b9347f8fb6a943d778af5f2dc895f2f9a2": 10000, "049369fa3e7694651942a37ccc4c92c13894ebd3aff1757831bdae420f9610cf": 10000, "2784596a3c5e96e09143fad5e06612a6ca55eb239d1da9365e25eed0c8ce169e": 10000, "9864e2c8390b98edb1e412a706eb1ccb698cdfe13a3bdacf7b1c8687554c8a7c": 10000, "c54c47f2a779a1e2ba57075c4050980246fa75ace4979fa946e7d7fafa7e79bb": 10000, "c2da0fe926bad819d5efc1bc2c927d7087a8622f968e446a661d2536ed4b26cd": 10000, "9fb68678a13a5f3a04dd67860868d4ef987cac2a200877094f3a2a68c63962b5": 10000, "53fa1a1f4f4a69d204ce4f2005c43350f9b2e7f92d94254adaa75a3024455394": 10000, "c957a991d23bd79ce1bc1ba4c7f6ff4f363160224e466cab77137eb60bebe417": 10000, "432ae59fdde455187cd840e134117b602865a9d17f122b630547e9da54ee0ccd": 10000, "74e69b433b431f04aeb099705fa6fc29d1b4b85e0a8e9922204940fa1d4219fd": 100000, "897b4beffde9caaa9c4b87c1083c18dab2e1f3d10b9ad868eb3e1ff01620e3d4": 100000, "feac0f99eb945d3a1f9ff87599d53a7c47b8b1acf51ef9d0dc796aa3e5b2640c": 100000, "28d4a3d0ebbfd2a25c85eb3f26dad7bcc0958dab75b7b206dd9acaf62d116556": 100000, "147848a4b32aa834a3d51d140446683b8918ada6a1bbf6df6f3b6becd3032fa3": 100000, "ac9de396413f309a98d39bdc579f5f5eb86bd586670fca1fb556bc7c4b070f9b": 100000, "76926804ccd3fe04cf4f0cde99ac0188d523689565e68f5ceece639a70250886": 100000, "909344e9971ceb1603bed87e3f9c962570e4e7f7672e7d22e9b196775422b1bf": 100000, "b87808622e8d6b779d48e1183bffd37bfcf79b4a9cf4ae688ef7c74a657dde87": 100000, "626d2d9bad70ec699c16ae344e2112572c4bd573bbaed17046037a9b7eb58e06": 100000};   // отпечатки промокодов → сколько пульсов дают (сами коды в программе не хранятся)
+const PROMO={"c061948ed6b16e9ad7f511039edb40b9347f8fb6a943d778af5f2dc895f2f9a2": 10000, "049369fa3e7694651942a37ccc4c92c13894ebd3aff1757831bdae420f9610cf": 10000, "2784596a3c5e96e09143fad5e06612a6ca55eb239d1da9365e25eed0c8ce169e": 10000, "9864e2c8390b98edb1e412a706eb1ccb698cdfe13a3bdacf7b1c8687554c8a7c": 10000, "c54c47f2a779a1e2ba57075c4050980246fa75ace4979fa946e7d7fafa7e79bb": 10000, "c2da0fe926bad819d5efc1bc2c927d7087a8622f968e446a661d2536ed4b26cd": 10000, "9fb68678a13a5f3a04dd67860868d4ef987cac2a200877094f3a2a68c63962b5": 10000, "53fa1a1f4f4a69d204ce4f2005c43350f9b2e7f92d94254adaa75a3024455394": 10000, "c957a991d23bd79ce1bc1ba4c7f6ff4f363160224e466cab77137eb60bebe417": 10000, "432ae59fdde455187cd840e134117b602865a9d17f122b630547e9da54ee0ccd": 10000, "74e69b433b431f04aeb099705fa6fc29d1b4b85e0a8e9922204940fa1d4219fd": 100000, "897b4beffde9caaa9c4b87c1083c18dab2e1f3d10b9ad868eb3e1ff01620e3d4": 100000, "feac0f99eb945d3a1f9ff87599d53a7c47b8b1acf51ef9d0dc796aa3e5b2640c": 100000, "28d4a3d0ebbfd2a25c85eb3f26dad7bcc0958dab75b7b206dd9acaf62d116556": 100000, "147848a4b32aa834a3d51d140446683b8918ada6a1bbf6df6f3b6becd3032fa3": 100000, "ac9de396413f309a98d39bdc579f5f5eb86bd586670fca1fb556bc7c4b070f9b": 100000, "76926804ccd3fe04cf4f0cde99ac0188d523689565e68f5ceece639a70250886": 100000, "909344e9971ceb1603bed87e3f9c962570e4e7f7672e7d22e9b196775422b1bf": 100000, "b87808622e8d6b779d48e1183bffd37bfcf79b4a9cf4ae688ef7c74a657dde87": 100000, "626d2d9bad70ec699c16ae344e2112572c4bd573bbaed17046037a9b7eb58e06": 100000, "cac90c5bfc017d59f0792276e652d3faa06d6865ae192b2e46d9ec93e7dd29c3": 297865, "f45e7883112c4354fe498f21276be2aff8fa17804f66ed30a31a78b5d6d7c9d9": 213919, "6bffc5fa4daee8acbf86be5f6622b7fae1286cc479f095182fd169a3acb54947": 609981, "6ac0e6f6d41b873de3c3b7bf67c30f165ef25358ff376566465359d98593d249": 70787, "3b94c94c6fcb100c043420fc29dd4ddfbd7fbb8e63aa802dd9582b3447a32a8e": 174697, "924ccb8c31e21181ba60d4168eed940311e76ab7054462bb7d968c2becbc7194": 300385, "67bf20a6d965b4c612facb9507622026de0b690451ae08ce5f82458072b230c0": 96118, "1c99903799e8aa4c48f21a6c4d12e987b9276855fd9057a123ed38a338fbcb58": 122598, "9bd38491576e1b450c12a5b620de8905773d32980b674fd0e9b3c7f0d040fa8e": 231169, "3f87be599b924a16bbcffa74ec16bc36444bc8d21ae111a05b211090ccaccbe3": 464370, "49c9f1dd25839d6f1184a760ce9e467c2a20811dbc3863cdeac5881384e3f123": 381436, "c6171f04ff9e0300f6e54092ea5db3389fa98a25f198ef813fb39955fefbc0aa": 143439, "e11bec249f4525c207d899344d92cb54da16b6290327acab422c92a1a5f585c8": 370319, "18bda0c7cc53ce19d706d819145e7531abc44b17d3e4f716cce12b6148798c0c": 264206, "a6eccac189627df5b4eedda43592cb6d0389f8829d79ccae5f2eb05b849bb2d6": 840574, "dd2c0221ddc2ca33a4bd56db4db7f8c9e45661de11832a8076f8b6163e9cd7c7": 281358, "81bfdbe4a3b91c8819c52921e5fa8fec5bdf6c284577314027fd949ef5fbbabc": 267262, "ccb59604086dbf91fd4ff4bf37c56fc550f0f5b77eb76734389d096471a6a783": 126389, "da1884eee2c649320ce80d212424f73469d53447c3ca988f3fdece2261df0569": 173048, "c534e77a613e2a8ad8b0d3870c2646c858d86e8b5a5860a9d7da6539b5fa8963": 843432};   // отпечатки промокодов → сколько пульсов дают (сами коды в программе не хранятся)
 
 /* ---------- игровые коллекции и коллекции новых дизайнов ---------- */
 const KOUT="#111";
@@ -10551,7 +10577,35 @@ const QA=(()=>{
     ["msg100","Болтун","100 сообщений друзьям","s","chat",150,S=>S.msgs>=100],
     ["msg500","Душа компании","500 сообщений друзьям","g","chat",400,S=>S.msgs>=500],
     ["bet25","Азартный","Сделай 25 ставок в играх","s","dice",100,S=>S.bets>=25],
-    ["bet100","Хайроллер","100 ставок в играх","g","dice",300,S=>S.bets>=100]
+    ["bet100","Хайроллер","100 ставок в играх","g","dice",300,S=>S.bets>=100],
+    ["r2000","Две тысячи","2 000 оценок","p","crown",2500,S=>S.n>=2000],
+    ["a250","Знает всех","250 разных исполнителей","p","mic",1200,S=>S.arts>=250],
+    ["ep30","Король EP","30 EP целиком","p","layers",800,S=>S.eps>=30],
+    ["al50","Музей альбомов","50 альбомов целиком","p","crown",2500,S=>S.albs>=50],
+    ["p10","Десять идеалов","10 оценок 10/10","p","star",700,S=>S.ten>=10],
+    ["h9100","Сокровищница","100 треков с оценкой 9+","p","star",1000,S=>S.h9>=100],
+    ["low25","Жёсткий критик","25 треков ниже 4.0","g","skull",250,S=>S.low4>=25],
+    ["mid10","Весы","10 треков ровно на 5.0","s","target",120,S=>S.mid>=10],
+    ["g30","Музыкальный глобус","30 разных жанров","p","globe",900,S=>S.genres>=30],
+    ["dec3","Машина времени","Треки из 3 разных десятилетий","s","cal",120,S=>S.decs>=3],
+    ["dec5","Через эпохи","Треки из 5 разных десятилетий","g","cal",350,S=>S.decs>=5],
+    ["old1","Олдскул","Оцени трек, вышедший до 2000 года","s","disc",100,S=>S.old],
+    ["new25","Свежак","25 треков текущего года","s","flame",150,S=>S.fresh>=25],
+    ["st100","Сто дней","100 дней подряд","p","flame",3500,S=>S.streak>=100],
+    ["q250","Неутомимый","250 ежедневных заданий","p","check",1800,S=>S.qDone>=250],
+    ["l75","Уровень 75","Набери 75 уровень","p","crown",3500,S=>S.lvl>=75],
+    ["e250k","Пульсовый олигарх","Заработай 250 000 пульсов","p","coin",3000,S=>S.earned>=250000],
+    ["buy10","Шопоголик","10 покупок в магазине","s","bag",120,S=>S.buys>=10],
+    ["kitall","Полная коллекция","Собери все коллекции магазина","p","gem",5000,S=>S.kits>=KITS.length],
+    ["sh100","Медийная личность","100 карточек оценки","p","share",900,S=>S.shares>=100],
+    ["gf50","Филантроп","Отправь 50 подарков","p","gift",900,S=>S.gifts>=50],
+    ["qt50","Поэт","50 любимых строчек","g","pen",350,S=>S.quotes>=50],
+    ["fava10","Мои артисты","10 любимых артистов в профиле","g","mic",200,S=>S.favA10],
+    ["favl10","Мои альбомы","10 любимых альбомов в профиле","g","disc",200,S=>S.favL10],
+    ["fr10","Тусовка","10 друзей","g","users",400,S=>S.frN>=10],
+    ["msg2k","Не замолкает","2 000 сообщений друзьям","p","chat",900,S=>S.msgs>=2000],
+    ["green5","Везунчик","5 выигрышей на зелёном в «Рулетке»","p","target",800,S=>S.green>=5],
+    ["pu25","Сердце льва","Забери ×25 и больше в «Пульсе»","p","heart",900,S=>S.puMax>=25]
   ].map(([id,n,d,t,i,r,f,item])=>({id,n,d,t,i,r,f,item}));
   function stats(){
     const d=D(),tr=state.tracks.filter(isRated),st=d.st||{};
@@ -10564,7 +10618,10 @@ const QA=(()=>{
       qDone:d.qDone||0,lvl:ME.lvl().L,earned:d.earned||0,inv:own.length,myth:own.some(id=>ITEM[id].r==="m"),
       kit:KITS.some(k=>k.items.every(id=>(d.inv||[]).includes(id))),fav3:(d.favTracks||[]).length>=3,shares:st.shares||0,green:st.green||0,puMax:st.puMax||0,gifts:st.gifts||0,notes:tr.filter(t=>t.note).length,
       low4:tr.filter(t=>t.total<4).length,morn:!!st.morn,kits:KITS.filter(k=>k.items.every(id=>(d.inv||[]).includes(id))).length,quotes:tr.filter(t=>t.note&&t.noteK==="q").length,
-      fav10:(d.favTracks||[]).length>=10,frN:st.frN||0,msgs:st.msgs||0,bets:st.bets||0};
+      fav10:(d.favTracks||[]).length>=10,frN:st.frN||0,msgs:st.msgs||0,bets:st.bets||0,buys:st.buys||0,
+      favA10:(d.favArtists||[]).length>=10,favL10:(d.favAlbums||[]).length>=10,
+      decs:new Set(tr.map(t=>+t.year).filter(y=>y>1900).map(y=>Math.floor(y/10))).size,old:tr.some(t=>+t.year>1900&&+t.year<2000),
+      fresh:tr.filter(t=>+t.year===new Date().getFullYear()).length};
   }
   function checkAch(silent){
     const d=D();d.ach=d.ach||{};const S=stats(),got=[];
@@ -10812,6 +10869,7 @@ const SH=(()=>{
   }
   async function drawTop(K){
     try{await document.fonts.load('32px "Noto Color Emoji"',"😀")}catch(e){}
+    K={...K,rows:K.all.slice(0,K.k)};
     const story=fmtK==="story",W=1080,H=story?1920:1350,cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
     const ims=await Promise.all([load(ME.avUrl()),...K.rows.map(r=>load(r.u))]),av=ims[0];
     const cs=getComputedStyle(document.documentElement),g0=cs.getPropertyValue("--g0").trim()||"#c2002e",g2=cs.getPropertyValue("--g2").trim()||"#ff3b5c";
@@ -10823,12 +10881,12 @@ const SH=(()=>{
     let y=story?112:72;
     c.fillStyle="rgba(255,255,255,.9)";c.font=`900 ${story?34:30}px ${F}`;c.textAlign="center";
     if("letterSpacing" in c) c.letterSpacing="10px";c.fillText("PULSE RATER",W/2,y);if("letterSpacing" in c) c.letterSpacing="0px";
-    y+=story?150:100;c.fillStyle="#fff";c.font=`900 ${story?96:76}px ${F}`;c.fillText("ТОП-10",W/2,y);
+    y+=story?150:100;c.fillStyle="#fff";c.font=`900 ${story?96:76}px ${F}`;c.fillText("ТОП-"+K.k,W/2,y);
     y+=story?62:48;c.fillStyle="rgba(255,255,255,.7)";c.font=`700 ${story?36:30}px ${F}`;c.fillText("артистов"+(K.g?" · "+K.g:"")+" по средней оценке",W/2,y);
-    const top=y+(story?70:44),fy=H-(story?130:70),bottom=fy-(story?110:84),n=K.rows.length,rh=Math.min(story?118:84,(bottom-top)/Math.max(n,1)),bx=90,bw=W-2*bx;
+    const top=y+(story?70:44),fy=H-(story?130:70),bottom=fy-(story?110:84),n=K.rows.length,rh=Math.min(n<=5?(story?190:150):(story?118:84),(bottom-top)/Math.max(n,1)),bx=90,bw=W-2*bx;
     const off=Math.max(0,(bottom-top-n*rh)/2.4);
     K.rows.forEach((r,i)=>{
-      const yy=top+off+i*rh,cy=yy+rh/2,col=rgCol(r.a),ar=Math.min(rh*.36,story?38:30);
+      const yy=top+off+i*rh,cy=yy+rh/2,col=rgCol(r.a),ar=Math.min(rh*.36,n<=5?(story?56:46):(story?38:30));
       if(i<3){c.fillStyle=["rgba(255,212,90,.16)","rgba(223,230,239,.12)","rgba(233,162,106,.12)"][i];rr(c,bx-24,yy+rh*.08,bw+48,rh*.84,22);c.fill()}
       c.textAlign="center";c.font=`900 ${Math.round(rh*.36)}px ${F}`;c.fillStyle=i===0?"#ffd45a":i===1?"#dfe6ef":i===2?"#e9a26a":"rgba(255,255,255,.5)";c.fillText(String(i+1),bx+18,cy+rh*.13);
       const ax=bx+70+ar,im=ims[i+1];
@@ -10850,15 +10908,17 @@ const SH=(()=>{
     return cv;
   }
   async function topExt(K){
-    const rows=[];for(const r of K.rows) rows.push({n:r.n,a:Math.round(r.a*100)/100,c:r.c,b:r.b,i:await thumbData(r.u,64)});
-    return{t:"k",ti:"Топ-10 артистов",g:K.g||"",rows};
+    const rows=[];for(const r of K.all.slice(0,K.k)) rows.push({n:r.n,a:Math.round(r.a*100)/100,c:r.c,b:r.b,i:await thumbData(r.u,64)});
+    return{t:"k",ti:`Топ-${K.k} артистов`,g:K.g||"",k:K.k,rows};
   }
   function openTop(K){
-    if(!K||!K.rows||!K.rows.length) return;
+    if(!K||!K.all||!K.all.length) return;
     mode="k";cur=K;blob=null;
-    el.innerHTML=`<div class="shc" role="dialog" aria-label="Топ-10"><div class="qhd"><div><b>Поделиться топ-10</b><span id="shSub"></span></div>
+    const kk=(n,dis)=>`<button class="psb${K.k===n?" on":""}" data-tk="${n}" type="button"${dis?" disabled":""}>Топ-${n}</button>`;
+    el.innerHTML=`<div class="shc" role="dialog" aria-label="Поделиться топом"><div class="qhd"><div><b>Поделиться топом</b><span id="shSub"></span></div>
       <button class="pround" data-x type="button" title="Закрыть (Esc)"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="shg"><div class="shp ld"></div><div class="shs">
+        <div class="psort shm">${kk(5)}${kk(10,K.all.length<=5)}</div>
         <div class="psort"><button class="psb${fmtK==="story"?" on":""}" data-f="story" type="button">Сторис 9:16</button><button class="psb${fmtK==="post"?" on":""}" data-f="post" type="button">Пост 4:5</button></div>
         <p id="shTxt"></p>
         <button class="gbtn" data-a="dl" type="button">Скачать PNG</button><button class="gbtn ghost" data-a="cp" type="button">Скопировать картинку</button>
@@ -10891,7 +10951,7 @@ const SH=(()=>{
     el.classList.remove("out");el.hidden=false;subs();render();
   }
   function subs(){
-    if(mode==="k"){$("#shSub").textContent=`Общий рейтинг артистов${cur.g?" · "+cur.g:""}`;$("#shTxt").textContent="Десять лучших артистов по средней оценке — с фото, числом оценок и твоим ником. Подходит для сторис, Telegram и чатов.";return}
+    if(mode==="k"){const n=Math.min(cur.k,cur.all.length);$("#shSub").textContent=`Топ-${cur.k} · общий рейтинг артистов${cur.g?" · "+cur.g:""}`;$("#shTxt").textContent=`${n===5?"Пять":n===10?"Десять":n} ${n<5?"лучших артистов":"лучших артистов"} по средней оценке — с фото, числом оценок и твоим ником. Подходит для сторис, Telegram и чатов.`;return}
     const R=cur.albumId?relOf(cur.albumId):null;
     $("#shSub").textContent=mode==="a"?`${R.ep?"EP":"Альбом"} «${R.name}» — ${R.art}`:`${cur.artist} — ${cur.title}`;
     $("#shTxt").textContent=mode==="a"?`Обложка, общая оценка ${R.ep?"EP":"альбома"}, все треки с оценками (лучший отмечен звездой) и твой ник. Подходит для сторис, Telegram и чатов.`:"Картинка с обложкой, итоговой оценкой, всеми критериями и твоим ником. Подходит для сторис, Telegram и чатов.";
@@ -10901,12 +10961,13 @@ const SH=(()=>{
   el.addEventListener("click",async e=>{
     if(e.target===el||e.target.closest("[data-x]")){close();return}
     const mm=e.target.closest("[data-m]");if(mm&&!mm.disabled){mode=mm.dataset.m;el.querySelectorAll("[data-m]").forEach(b=>b.classList.toggle("on",b===mm));blob=null;subs();render();return}
+    const tk=e.target.closest("[data-tk]");if(tk&&!tk.disabled&&mode==="k"){cur.k=+tk.dataset.tk;el.querySelectorAll("[data-tk]").forEach(b=>b.classList.toggle("on",b===tk));blob=null;subs();render();return}
     const f=e.target.closest("[data-f]");if(f){fmtK=f.dataset.f;el.querySelectorAll("[data-f]").forEach(b=>b.classList.toggle("on",b===f));blob=null;render();return}
     const a=e.target.closest("[data-a]");if(!a) return;
     if(a.dataset.a==="fr"){FR.shareTo(mode==="k"?topExt(cur):mode==="a"?albExt(cur.albumId):rateExt(cur));return}
     const b=await getBlob();if(!b){toast("Не получилось нарисовать карточку",true);return}
     if(a.dataset.a==="dl"){
-      const u=URL.createObjectURL(b),l=document.createElement("a");l.href=u;l.download=(mode==="k"?"Топ-10 артистов"+(cur.g?" — "+cur.g:""):mode==="a"?`${relOf(cur.albumId).art} — ${relOf(cur.albumId).name}`:`${cur.artist} — ${cur.title}`).replace(/[\\/:*?"<>|]+/g," ").slice(0,90)+".png";
+      const u=URL.createObjectURL(b),l=document.createElement("a");l.href=u;l.download=(mode==="k"?`Топ-${cur.k} артистов`+(cur.g?" — "+cur.g:""):mode==="a"?`${relOf(cur.albumId).art} — ${relOf(cur.albumId).name}`:`${cur.artist} — ${cur.title}`).replace(/[\\/:*?"<>|]+/g," ").slice(0,90)+".png";
       document.body.append(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("Картинка сохранена в «Загрузки»");
     }else{
       try{await navigator.clipboard.write([new ClipboardItem({"image/png":b})]);toast("Картинка скопирована — вставь её в Telegram (Ctrl+V)")}
@@ -11191,7 +11252,7 @@ function rateCardH(x,mine,mid){
   if(x.t==="k"){
     const rows=Array.isArray(x.rows)?x.rows.slice(0,10):[];
     return `<div class="chr chk"><div class="chrh"><div class="chrc chkc">🏆</div>
-      <div class="chrt"><em>Общий рейтинг${x.g?" · "+esc(x.g):""}</em><b>Топ-10 артистов</b><span>${rows.length} ${plural(rows.length,"артист","артиста","артистов")} · по средней оценке</span></div></div>
+      <div class="chrt"><em>Общий рейтинг${x.g?" · "+esc(x.g):""}</em><b>${esc(x.ti||"Топ артистов")}</b><span>${rows.length} ${plural(rows.length,"артист","артиста","артистов")} · по средней оценке</span></div></div>
       <div class="chrl chkl">${rows.map((r,i)=>`<div><i class="${i<3?"t"+(i+1):""}">${i+1}</i><span><u style="${r.i?`background-image:url(${r.i})`:`background:${coverBg(r.n||"","")}`}">${r.i?"":esc(String(r.n||"?").charAt(0).toUpperCase())}</u>${esc(r.n)}<small>${+r.c||0} ${plural(+r.c||0,"оценка","оценки","оценок")}</small></span><b style="color:${rgCol(+r.a||0)}">${fmt(+r.a||0)}</b></div>`).join("")}</div></div>`;
   }
   if(x.t==="a"){
@@ -12344,7 +12405,8 @@ def dz_track(x, alb=None, art_=None):
             "album": al.get("title", ""), "albumId": al.get("id"),
             "cover": al.get("cover_medium") or al.get("cover") or "",
             "coverBig": al.get("cover_xl") or al.get("cover_big") or al.get("cover_medium") or "",
-            "preview": x.get("preview") or "", "link": x.get("link") or "", "dur": x.get("duration", 0)}
+            "preview": x.get("preview") or "", "link": x.get("link") or "", "dur": x.get("duration", 0),
+            "year": (x.get("release_date") or al.get("release_date") or "")[:4]}
 
 
 def dz_artist(x):
@@ -12370,7 +12432,7 @@ def it_track(x):
             "album": x.get("collectionName", ""), "albumId": x.get("collectionId"),
             "cover": art(cv, 300), "coverBig": art(cv, 1000), "preview": x.get("previewUrl") or "",
             "link": x.get("trackViewUrl") or "", "dur": int((x.get("trackTimeMillis") or 0) / 1000),
-            "genre": genre_ru(x.get("primaryGenreName"))}
+            "genre": genre_ru(x.get("primaryGenreName")), "year": (x.get("releaseDate") or "")[:4]}
 
 
 def it_artist(x):
@@ -12529,7 +12591,8 @@ def sc_track(x):
             "cover": sc_art(cv, "t300x300"), "coverBig": sc_art(cv, "t500x500"),
             "preview": f"{SC_API}/tracks/{tid}/pulse-stream" if tid else "", "link": x.get("permalink_url") or "",
             "dur": int((x.get("full_duration") or x.get("duration") or 0) / 1000), "genre": genre_ru(x.get("genre") or ""),
-            "plays": x.get("playback_count") or 0, "snip": x.get("policy") == "SNIP", "drm": sc_drm(x)}
+            "plays": x.get("playback_count") or 0, "snip": x.get("policy") == "SNIP", "drm": sc_drm(x),
+            "year": (x.get("release_date") or x.get("display_date") or x.get("created_at") or "")[:4]}
 
 
 def sc_drm(x):
@@ -12756,6 +12819,26 @@ def cat_cover_url(k):
         x = sc_get(f"/tracks/{tid}", 3600)
         return sc_art(x.get("artwork_url") or (x.get("user") or {}).get("avatar_url") or "", "t500x500")
     return ""
+
+
+def cat_year(k, alb=""):
+    """Год релиза трека из каталога: Deezer — по альбому, iTunes и SoundCloud — по треку."""
+    src, _, tid = str(k or "").partition(":")
+    tid = re.sub(r"\D", "", tid)[:20]
+    y = ""
+    try:
+        if src == "dz":
+            a = re.sub(r"\D", "", str(alb or ""))[:20]
+            y = (jget(f"{DZ}/album/{int(a)}", 86400).get("release_date") if a else jget(f"{DZ}/track/{int(tid)}", 86400).get("release_date")) or ""
+        elif src == "it" and tid:
+            r = (jget(f"{IT}/lookup?id={int(tid)}", 86400).get("results") or [{}])[0]
+            y = r.get("releaseDate") or ""
+        elif src == "sc" and tid:
+            x = sc_get(f"/tracks/{int(tid)}", 86400)
+            y = x.get("release_date") or x.get("display_date") or x.get("created_at") or ""
+    except Exception:
+        y = ""
+    return {"year": str(y)[:4]}
 
 
 def cat_genre(album_id):
@@ -13103,6 +13186,8 @@ class Handler(BaseHTTPRequestHandler):
                 data = sc_album_page(q.get("id", "")) if src == "sc" else cat_album(src, q.get("id", ""))
             elif u.path == "/api/cat/genre":
                 data = cat_genre(q.get("album", ""))
+            elif u.path == "/api/cat/year":
+                data = cat_year(q.get("k", ""), q.get("alb", ""))
             else:
                 return self._send(404)
             return self._send(200, json.dumps(data, ensure_ascii=False).encode("utf-8"))
