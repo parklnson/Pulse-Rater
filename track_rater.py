@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.3.2"
-APP_NOTES = "Новый матовый вид колеса рулетки · Артисты в альбоме кликабельные · У альбома указан только его автор"
+APP_VERSION = "5.4"
+APP_NOTES = "Онлайн-рулетка: колесо крутится для всех сразу — 10 секунд на ставки, видно ставки других игроков"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -479,9 +479,10 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.3.2";
+var APPV="5.4";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.4",add:["Онлайн-рулетка: колесо крутится постоянно и для всех игроков одновременно — 10 секунд на ставки, потом вращение","Можно ставить на несколько цветов в одном раунде","Видно, кто и сколько поставил на каждый цвет"],chg:[],fix:[],del:[]},
  {v:"5.3.2",add:["Артисты в списке треков альбома кликабельные — открывают профиль"],chg:["Новый вид колеса рулетки — матовый чёрный диск с цветным кольцом секторов","У альбома теперь указан только его автор, без гостей из фитов","Окно уровней кэшбэка стало аккуратнее"],fix:[],del:[]},
  {v:"5.3.1",add:["Новые курсоры: Навигатор, Чёрная стрела, Голограмма, Радуга, Синтвейв","«Оценить самому» в ленте и чате: если у друга нет аудио, трек ищется в каталоге и сразу попадает в плеер"],chg:["Колесо фортуны показывает, во сколько ты крутил сегодня и когда следующее вращение","Убраны курсоры Контур, Перо, Мягкий, Пиксель и Неон"],fix:["Сердечко в списке треков альбома стоит ровно по центру"],del:[]},
  {v:"5.3",add:["Переезд на новый сервер в России: программа сама переключится на новый адрес, аккаунт, пульсы, друзья и переписка сохранятся"],chg:[],fix:[],del:[]},
@@ -3740,6 +3741,31 @@ body.czon #balPill{opacity:0;transform:scale(.85);pointer-events:none}
 .czbal.bump{animation:czBump .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes czBump{40%{transform:scale(1.07);box-shadow:inset 0 0 0 1px rgba(255,210,100,.8),0 0 40px -6px rgba(255,190,60,.9)}}
 .rwside{min-width:0}
+.rwst{position:relative;margin-bottom:10px;padding:12px 14px 16px;border-radius:14px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);overflow:hidden}
+.rwst b{font-size:16px;font-weight:900;font-variant-numeric:tabular-nums}
+.rwst em{float:right;font-style:normal;font-size:11.5px;color:var(--sub);margin-top:3px}
+.rwbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.06)}
+.rwbar i{display:block;height:100%;width:0;background:#20e88b;box-shadow:0 0 10px #20e88b}
+.rwbar i.sp{background:#ffc531;box-shadow:0 0 10px #ffc531}.rwbar i.rs{background:rgba(255,255,255,.35);box-shadow:none}
+.closed .rub{opacity:.45;pointer-events:none;filter:grayscale(.35)}
+.rub .rubm{display:block;min-height:15px;margin-top:3px;font-size:11.5px;font-weight:800;color:#fff;opacity:.95}
+.rub.has{box-shadow:inset 0 0 0 3px rgba(255,255,255,.85),0 0 24px -6px rgba(255,255,255,.6)}
+.rwhub.cd b{color:#fff}
+.rubets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
+.rwcol{padding:10px;border-radius:14px;background:rgba(0,0,0,.3);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);min-width:0}
+.rwch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.rwch i{width:10px;height:10px;border-radius:50%}
+.rwcol.k .rwch i{background:#e8e8f0}.rwcol.y .rwch i{background:#ffc531}.rwcol.r .rwch i{background:#ff3d5e}.rwcol.z .rwch i{background:#20e88b}
+.rwch b{font-size:13px}.rwch span{font-size:11px;color:var(--sub);flex-basis:100%}
+.rwbr{display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:12.5px;animation:pgItem .35s var(--ease) backwards}
+.rwbr>.rwnk{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rwbr .mav{flex:none}
+.rwbr b{font-variant-numeric:tabular-nums}
+.rwbr.me{color:#ffc531}
+.rwbr .av,.rwav{flex:none;width:24px;height:24px}
+.rwav{display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.1);font-size:11px;font-weight:900}
+.rwmore{font-size:11px;color:var(--sub);padding-top:4px}
+@container (max-width:780px){.rubets{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .rwside .cres{text-align:left;margin-top:0}
 .rubtns{grid-template-columns:1fr 1fr!important}
 .rub.y{background:linear-gradient(180deg,#ffd84a,#b37800);color:#2a1800}
@@ -4517,7 +4543,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
       <div class="czhead"><div><h2>Игры на пульсы</h2></div>
         <div class="czbal"><svg class="coin" viewBox="0 0 64 64" aria-hidden="true"><use href="#pcoin"/></svg><div><span>Баланс</span><b data-bal>0</b></div></div></div>
       <div class="czgames" id="czTabs">
-        <button class="czg g-roul" data-g="roul" type="button"><span class="czart"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="#1a1013" stroke="#ffcf55" stroke-width="2.5"/><path d="M32 5a27 27 0 0 1 19 8L32 32z" fill="#e5263f"/><path d="M51 13a27 27 0 0 1 8 19H32z" fill="#23232b"/><path d="M59 32a27 27 0 0 1-8 19L32 32z" fill="#e5263f"/><path d="M51 51a27 27 0 0 1-19 8V32z" fill="#23232b"/><path d="M32 59a27 27 0 0 1-19-8l19-19z" fill="#1fb35c"/><path d="M13 51a27 27 0 0 1-8-19h27z" fill="#e5263f"/><path d="M5 32a27 27 0 0 1 8-19l19 19z" fill="#23232b"/><path d="M13 13a27 27 0 0 1 19-8v27z" fill="#e5263f"/><circle cx="32" cy="32" r="9" fill="#ffcf55"/><circle cx="32" cy="32" r="4" fill="#8a5a10"/></svg></span><b>Рулетка</b><span>до ×48</span></button>
+        <button class="czg g-roul" data-g="roul" type="button"><span class="czart"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="#1a1013" stroke="#ffcf55" stroke-width="2.5"/><path d="M32 5a27 27 0 0 1 19 8L32 32z" fill="#e5263f"/><path d="M51 13a27 27 0 0 1 8 19H32z" fill="#23232b"/><path d="M59 32a27 27 0 0 1-8 19L32 32z" fill="#e5263f"/><path d="M51 51a27 27 0 0 1-19 8V32z" fill="#23232b"/><path d="M32 59a27 27 0 0 1-19-8l19-19z" fill="#1fb35c"/><path d="M13 51a27 27 0 0 1-8-19h27z" fill="#e5263f"/><path d="M5 32a27 27 0 0 1 8-19l19 19z" fill="#23232b"/><path d="M13 13a27 27 0 0 1 19-8v27z" fill="#e5263f"/><circle cx="32" cy="32" r="9" fill="#ffcf55"/><circle cx="32" cy="32" r="4" fill="#8a5a10"/></svg></span><b>Рулетка</b><span>онлайн · до ×48</span></button>
         <button class="czg g-pulse" data-g="pulse" type="button"><span class="czart"><svg viewBox="0 0 64 64"><path d="M32 54C10 40 6 28 10 19c4-9 16-11 22-2 6-9 18-7 22 2 4 9 0 21-22 35z" fill="#ff3b5c"/><path d="M4 34h14l4-9 6 18 5-12 3 3h24" fill="none" stroke="#9dffc9" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/></svg></span><b>Пульс</b><span>до ×1000</span></button>
         <button class="czg g-mines" data-g="mines" type="button"><span class="czart"><svg viewBox="0 0 64 64"><path d="M18 12h28l12 14-26 30L6 26z" fill="#5fe3ff"/><path d="M6 26h52L32 56z" fill="#1676d6"/><path d="M18 12l6 14h16l6-14M24 26l8 30 8-30" fill="none" stroke="#e8fdff" stroke-width="1.8" stroke-linejoin="round"/></svg></span><b>Минки</b><span>риск на выбор</span></button>
         <button class="czg g-plinko" data-g="plinko" type="button"><span class="czart"><svg viewBox="0 0 64 64"><g fill="#fff" opacity=".85"><circle cx="32" cy="12" r="3"/><circle cx="24" cy="22" r="3"/><circle cx="40" cy="22" r="3"/><circle cx="16" cy="32" r="3"/><circle cx="32" cy="32" r="3"/><circle cx="48" cy="32" r="3"/><circle cx="8" cy="42" r="3"/><circle cx="24" cy="42" r="3"/><circle cx="40" cy="42" r="3"/><circle cx="56" cy="42" r="3"/></g><circle cx="28" cy="27" r="5" fill="#ff4d6d"/><rect x="2" y="50" width="12" height="9" rx="3" fill="#ff2e63"/><rect x="18" y="50" width="12" height="9" rx="3" fill="#ffc23d"/><rect x="34" y="50" width="12" height="9" rx="3" fill="#ffc23d"/><rect x="50" y="50" width="12" height="9" rx="3" fill="#ff2e63"/></svg></span><b>Plinko</b><span>до ×1000</span></button>
@@ -7926,27 +7952,27 @@ const CAS=(()=>{
   return{rndU,betUI,takeBet,betRow,snd,coins,big,record,paintSide,cbLevel,cbPot,cbClaim,unbet,CBL,COIN,GN};
 })();
 
-/* ---------- «Рулетка»: колесо из 50 секторов — чёрный ×2, жёлтый ×3, красный ×5, зелёный ×48 ---------- */
+/* ---------- «Рулетка» онлайн: колесо крутится для всех сразу — 10 секунд ставки, потом вращение ---------- */
 const RU=(()=>{
   const pane=$("#pane-roul");
   const ORDER="zykrkykykrkykyrkkykrykkykrykkyrkykkyrkykkyrkykrkyk",N=ORDER.length,SEG=360/N;
-  const X={k:2,y:3,r:5,z:48},NM={k:"Чёрное",y:"Жёлтое",r:"Красное",z:"Зелёное"},CNT={k:24,y:16,r:9,z:1};
-  const COL={k:["#3a3a46","#101015"],y:["#ffe066","#c98700"],r:["#ff4d63","#9c0d24"],z:["#3ff08f","#0a7034"]};
-  pane.innerHTML=`<div class="czgh"><div><b>Рулетка</b><span>Выбери цвет — колесо закрутится сразу</span></div><div class="ruhist" id="ruHist" title="Последние выпадения"></div></div>
+  const X={k:2,y:3,r:5,z:48},NM={k:"Чёрное",y:"Жёлтое",r:"Красное",z:"Зелёное"},CNT={k:24,y:16,r:9,z:1},CS=["k","y","r","z"];
+  const EP=Date.UTC(2026,0,1);let CYC=20000,BET=10000,SPIN=6000;
+  pane.innerHTML=`<div class="czgh"><div><b>Рулетка</b><span>Колесо крутится для всех игроков сразу: 10 секунд на ставки, потом вращение</span></div><div class="ruhist" id="ruHist" title="Последние выпадения"></div></div>
     <div class="rwl">
       <div class="rwwrap" id="ruW"><canvas id="ruFrame" width="1000" height="1000"></canvas><canvas id="ruWheel" width="1000" height="1000"></canvas><i class="rwhl"></i>
         <svg class="rwptr" viewBox="0 0 40 52" aria-hidden="true"><path d="M6 3h28a3 3 0 0 1 2.4 4.8L22.4 47a3 3 0 0 1-4.8 0L3.6 7.8A3 3 0 0 1 6 3z" fill="#ffc531"/><path d="M9 7h22L20 40z" fill="rgba(255,255,255,.28)"/></svg>
-        <div class="rwhub" id="ruHub"><b>?</b><span>крути</span></div></div>
+        <div class="rwhub" id="ruHub"><b>—</b><span>загрузка</span></div></div>
       <div class="rwside">
-        <div class="cres" id="ruRes">Ставка списывается сразу, выигрыш — после остановки колеса</div>
+        <div class="rwst" id="ruSt"><b id="ruPh">Подключаюсь…</b><em id="ruRn"></em><div class="rwbar"><i id="ruBar"></i></div></div>
+        <div class="cres" id="ruRes">Можно ставить на несколько цветов сразу</div>
         ${CAS.betRow("ruBet")}
-        <div class="rubtns">${["k","y","r","z"].map(c=>`<button class="rub ${c}" data-c="${c}" type="button"><b>${NM[c]}</b><em>×${X[c]}</em><small>${CNT[c]} из ${N} · ${(CNT[c]/N*100).toFixed(CNT[c]>1?0:0)}%</small></button>`).join("")}</div>
+        <div class="rubtns">${CS.map(c=>`<button class="rub ${c}" data-c="${c}" type="button"><b>${NM[c]}</b><em>×${X[c]}</em><small>${CNT[c]} из ${N} · ${Math.round(CNT[c]/N*100)}%</small><span class="rubm" data-mine="${c}"></span></button>`).join("")}</div>
         <div class="rustat" id="ruStat"></div>
       </div>
-    </div>`;
-  const cv=$("#ruWheel"),res=$("#ruRes"),inp=$("#ruBet"),hist=$("#ruHist"),stat=$("#ruStat"),W=$("#ruW"),hub=$("#ruHub");
-  let rot=0,busy=false,pending=null,H=[],tickRaf=0;
-  try{H=JSON.parse(localStorage.getItem("ruHist2")||"[]").filter(c=>X[c])}catch(e){}
+    </div>
+    <div class="rubets" id="ruBets"></div>`;
+  const cv=$("#ruWheel"),res=$("#ruRes"),inp=$("#ruBet"),hist=$("#ruHist"),stat=$("#ruStat"),W=$("#ruW"),hub=$("#ruHub"),ph=$("#ruPh"),bar=$("#ruBar"),rn=$("#ruRn"),betsEl=$("#ruBets");
   const MC={k:"#e8e8f0",y:"#ffc531",r:"#ff3d5e",z:"#20e88b"};
   /* неподвижная основа: матовый диск, свет всегда сверху-слева */
   (function drawBase(){
@@ -7980,56 +8006,122 @@ const RU=(()=>{
     for(let i=0;i<N;i++){const a=rad(i+.5);g.beginPath();g.moveTo(Math.cos(a)*R*.925,Math.sin(a)*R*.925);g.lineTo(Math.cos(a)*R*.945,Math.sin(a)*R*.945);g.stroke()}
     g.restore();
   })();
+  let H=[];try{H=JSON.parse(localStorage.getItem("ruHist3")||"[]").filter(c=>X[c])}catch(e){}
+  let skew=0,curRnd=-1,mine={k:0,y:0,r:0,z:0},bets=[],resN=null,resRnd=-1,shownRnd=-1,lastPoll=0,polling=false,loopOn=false;
+  let rot=0,spinFrom=null,spinTo=null,lastIdx=-1,lastT=0,localRes=new Map(),localBets=new Map();
+  const now=()=>Date.now()+skew;
+  const rndOf=t=>Math.floor((t-EP)/CYC),startOf=r=>EP+r*CYC;
+  const ease=p=>1-Math.pow(1-p,4);
+  const visible=()=>{try{return CZ.isOpen()&&!pane.hidden&&!document.hidden}catch(e){return false}};
   function paintHist(){
     hist.innerHTML=H.slice(-14).map((c,i,a)=>`<i class="${c}${i===a.length-1?" last":""}">×${X[c]}</i>`).join("");
-    const L=H.slice(-100),k={k:0,y:0,r:0,z:0};L.forEach(c=>k[c]++);const n=L.length||1;
-    stat.innerHTML=L.length?`<span>Последние ${L.length}</span><div class="rubar">${["k","y","r","z"].map(c=>`<i class="${c}" style="flex:${k[c]||.001}"></i>`).join("")}</div>${["k","y","r","z"].map(c=>`<em class="${c}">${Math.round(k[c]/n*100)}%</em>`).join("")}`:"";
+    const L=H.slice(-60),k={k:0,y:0,r:0,z:0};L.forEach(c=>k[c]++);const n=L.length||1;
+    stat.innerHTML=L.length?`<span>Последние ${L.length}</span><div class="rubar">${CS.map(c=>`<i class="${c}" style="flex:${k[c]||.001}"></i>`).join("")}</div>${CS.map(c=>`<em class="${c}">${Math.round(k[c]/n*100)}%</em>`).join("")}`:"";
   }
-  const setRot=(deg,ms)=>{cv.style.transition=ms?`transform ${ms}ms cubic-bezier(.12,.66,.08,1)`:"none";cv.style.transform=`rotate(${deg}deg)`};
-  const curAngle=()=>{const m=getComputedStyle(cv).transform;if(!m||m==="none") return 0;const p=m.match(/matrix\(([^)]+)\)/);if(!p) return 0;const v=p[1].split(",").map(Number);return Math.atan2(v[1],v[0])*180/Math.PI};
-  function ticker(){
-    let last=-1;cancelAnimationFrame(tickRaf);
-    const f=()=>{const a=((-curAngle())%360+360)%360,idx=Math.floor(a/SEG);if(idx!==last){if(last>=0){CAS.snd("tick");W.classList.remove("tk");void W.offsetWidth;W.classList.add("tk")}last=idx}if(busy) tickRaf=requestAnimationFrame(f)};
-    tickRaf=requestAnimationFrame(f);
+  function paintMine(){pane.querySelectorAll("[data-mine]").forEach(x=>{const v=mine[x.dataset.mine];x.textContent=v?`твоя ставка ${ME.fmtN(v)}`:"";x.parentNode.classList.toggle("has",!!v)})}
+  function paintBets(){
+    const me=NET.on?NET.st.uid:"me";
+    const list=NET.on?bets:CS.filter(c=>mine[c]).map(c=>({uid:"me",c,v:mine[c],nick:ME.data.nick||"Ты"}));
+    betsEl.innerHTML=CS.map(c=>{
+      const L=list.filter(b=>b.c===c),sum=L.reduce((a,b)=>a+b.v,0);
+      return `<div class="rwcol ${c}"><div class="rwch"><i></i><b>${NM[c]}</b><span>${L.length?`${L.length} ${plural(L.length,"игрок","игрока","игроков")} · ${ME.fmtN(sum)}`:"нет ставок"}</span></div>
+        ${L.slice(0,7).map(b=>`<div class="rwbr${b.uid===me?" me":""}">${NET.on&&b.uid!=="me"?ME.avatar(24,{},{u:NET.avUrl(b.uid,b.avv),nick:b.nick}):`<span class="rwav">${esc((b.nick||"?")[0])}</span>`}<span class="rwnk">${esc(b.uid===me?"Ты":b.nick||"Игрок")}</span><b>${ME.fmtN(b.v)}</b></div>`).join("")}
+        ${L.length>7?`<div class="rwmore">и ещё ${L.length-7}</div>`:""}</div>`;
+    }).join("");
   }
-  function settle(){
-    if(!pending) return;const p=pending;pending=null;cancelAnimationFrame(tickRaf);
-    const c=ORDER[p.n],win=c===p.c?p.v*X[c]:0;
-    H.push(c);if(H.length>100) H=H.slice(-100);try{localStorage.setItem("ruHist2",JSON.stringify(H))}catch(e){}
-    rot=((p.to%360)+360)%360;setRot(rot,0);
-    paintHist();
-    hub.className="rwhub "+c;hub.innerHTML=`<b>×${X[c]}</b><span>${NM[c].toLowerCase()}</span>`;
-    W.style.setProperty("--wc",MC[c]);
-    W.classList.remove("won","lost");void W.offsetWidth;W.classList.add(win?"won":"lost");
-    if(win){ME.payout(win);res.innerHTML=`<span class="${c}">${NM[c]}</span> — выигрыш <b>+${ME.fmtN(win)}</b>`;res.className="cres win";CAS.snd("win");CAS.coins(hub,c==="z"?26:12)}
-    else{res.innerHTML=`<span class="${c}">${NM[c]}</span> — ставка ${ME.fmtN(p.v)} сгорела`;res.className="cres lose";CAS.snd("lose")}
-    CAS.record("roul",p.v,win,win?X[c]:0,{c});
-    busy=false;pane.classList.remove("busy");ME.netSettle();
-    pane.querySelectorAll(".rub").forEach(b=>b.classList.remove("pick"));
+  function targetFor(n){const jit=(((n*9301+49297)%233280)/233280-.5)*SEG*.7;return -(n+.5)*SEG+jit}
+  function newRound(r){
+    curRnd=r;mine={k:0,y:0,r:0,z:0};bets=[];paintMine();paintBets();spinFrom=null;spinTo=null;
+    W.classList.remove("won","lost");pane.classList.remove("closed");
+    rn.textContent="раунд №"+(r%100000);
+    res.className="cres";res.textContent="Можно ставить на несколько цветов сразу";
   }
-  async function spin(c,btn){
-    if(busy) return;
+  async function sync(){
+    if(polling) return;polling=true;lastPoll=Date.now();
+    try{
+      if(!NET.on){localSync();return}
+      const a=Date.now(),j=await NET.call("rw/state",{});skew=j.now-(a+Date.now())/2;
+      if(j.rwc){CYC=j.rwc;BET=j.rwb;SPIN=j.rws}
+      if(j.rnd!==curRnd) newRound(j.rnd);
+      bets=j.bets||[];
+      const my=bets.filter(b=>b.uid===NET.st.uid);mine={k:0,y:0,r:0,z:0};my.forEach(b=>mine[b.c]=b.v);
+      if(Array.isArray(j.hist)){H=j.hist.slice().reverse();try{localStorage.setItem("ruHist3",JSON.stringify(H))}catch(e){}}
+      if(j.res!=null){resN=j.res;resRnd=j.rnd}
+      paintMine();paintBets();paintHist();
+      if(j.settled&&j.settled.length) settleShow(j.settled);
+    }catch(e){}
+    finally{polling=false}
+  }
+  function localSync(){
+    const t=now(),r=rndOf(t);if(r!==curRnd) newRound(r);
+    if(t-startOf(r)>=BET){if(!localRes.has(r)) localRes.set(r,Math.floor(CAS.rndU()*N));resN=localRes.get(r);resRnd=r}
+    // расчёт своих ставок у прошлых раундов
+    const out=[];for(const [rr,bs] of localBets){if(t>=startOf(rr)+BET+SPIN){const n=localRes.has(rr)?localRes.get(rr):Math.floor(CAS.rndU()*N),col=ORDER[n];
+      if(rr===r||!localRes.has(rr)) localRes.set(rr,n);
+      CS.forEach(c=>{if(bs[c]) out.push({rnd:rr,c,v:bs[c],win:col===c?bs[c]*X[c]:0,col})});localBets.delete(rr)}}
+    if(out.length) settleShow(out,true);
+  }
+  function settleShow(list,local){
+    let won=0,lost=0,col=null,rr=-1;
+    for(const s of list){
+      if(s.win){if(local) ME.payout(s.win);else ME.payout(s.win);won+=s.win}else lost+=s.v;
+      CAS.record("roul",s.v,s.win,s.win?X[s.c]:0,{c:s.c});
+      if(s.rnd>rr){rr=s.rnd;col=s.col}
+    }
+    if(rr===curRnd||rr===curRnd-1){
+      if(won){res.innerHTML=`<span class="${col}">${NM[col]}</span> — выигрыш <b>+${ME.fmtN(won)}</b>${lost?` · сгорело ${ME.fmtN(lost)}`:""}`;res.className="cres win";CAS.snd("win");CAS.coins(hub,col==="z"?26:12)}
+      else{res.innerHTML=`<span class="${col}">${NM[col]}</span> — ставки сгорели: ${ME.fmtN(lost)}`;res.className="cres lose";CAS.snd("lose")}
+      W.classList.remove("won","lost");void W.offsetWidth;W.classList.add(won?"won":"lost");
+    }else if(won) toast(`Рулетка: выигрыш +${ME.fmtN(won)} за прошлые раунды`);
+    if(NET.on) ME.netSettle();
+  }
+  async function place(c,btn){
+    const t=now();
+    if(t-startOf(curRnd)>BET-400||rndOf(t)!==curRnd){toast("Ставки на этот раунд закрыты — жди следующий",true);return}
     const v=CAS.takeBet(inp,btn);if(!v) return;
-    busy=true;pane.classList.add("busy");btn.classList.add("pick");CAS.snd("chip");
-    W.classList.remove("won","lost");hub.className="rwhub spin";hub.innerHTML=`<b>×${X[c]}</b><span>${NM[c].toLowerCase()}</span>`;
-    let n;
+    mine[c]+=v;paintMine();CAS.snd("chip");
     if(NET.on){
-      res.className="cres";res.textContent="Связываемся с сервером…";
-      try{const j=await NET.call("g/roul",{bet:v,c});n=j.n;if(j.col&&ORDER[n]!==j.col) n=ORDER.indexOf(j.col)}
-      catch(e){CAS.unbet(v);toast(e.msg,true);res.className="cres";res.textContent="Не получилось сделать ставку — попробуй ещё раз";busy=false;pane.classList.remove("busy");btn.classList.remove("pick");hub.className="rwhub";return}
-    }else n=Math.floor(CAS.rndU()*N);
-    const jit=(CAS.rndU()-.5)*SEG*.76,base=-(n+.5)*SEG+jit;
-    let to=rot+360*7+((((base-rot)%360)+360)%360);
-    pending={n,c,v,to};
-    res.className="cres spin";res.textContent=`Ставка ${ME.fmtN(v)} на ${NM[c].toLowerCase()}… крутим`;
-    setRot(rot,0);void cv.offsetWidth;setRot(to,5600);
-    ticker();
-    clearTimeout(spin.t);spin.t=setTimeout(settle,5700);
+      try{const j=await NET.call("rw/bet",{rnd:curRnd,c,bet:v});if(j.mine){mine={k:0,y:0,r:0,z:0};j.mine.forEach(b=>mine[b.c]=b.v)};paintMine();sync()}
+      catch(e){mine[c]=Math.max(0,mine[c]-v);paintMine();CAS.unbet(v);toast(e.msg,true)}
+    }else{const b=localBets.get(curRnd)||{k:0,y:0,r:0,z:0};b[c]+=v;localBets.set(curRnd,b);paintBets()}
   }
-  pane.addEventListener("click",e=>{const b=e.target.closest("[data-c]");if(b) spin(b.dataset.c,b)});
+  function frame(){
+    if(!loopOn) return;requestAnimationFrame(frame);
+    const t=now(),r=rndOf(t),el=t-startOf(r),dt=Math.min(.1,(performance.now()-lastT)/1000);lastT=performance.now();
+    if(r!==curRnd){newRound(r);sync()}
+    if(el<BET){
+      const left=(BET-el)/1000;ph.textContent=`Ставки принимаются · ${left.toFixed(1)} с`;bar.style.width=(left/(BET/1000)*100)+"%";bar.className="";
+      hub.className="rwhub cd";hub.innerHTML=`<b>${Math.ceil(left)}</b><span>ставки</span>`;
+      rot+=dt*9;
+      if(Date.now()-lastPoll>2600) sync();
+    }else if(el<BET+SPIN){
+      pane.classList.add("closed");
+      ph.textContent="Ставки закрыты · крутим колесо";const p=(el-BET)/SPIN;bar.style.width=(p*100)+"%";bar.className="sp";
+      if(resRnd!==r||resN==null){if(Date.now()-lastPoll>500) sync();hub.className="rwhub spin";hub.innerHTML=`<b>?</b><span>крутим</span>`;rot+=dt*120}
+      else{
+        if(spinTo==null){const base=targetFor(resN),e0=ease(Math.min(.98,p));spinTo=rot+360*6+((((base-rot)%360)+360)%360);spinFrom=(rot-spinTo*e0)/(1-e0);hub.className="rwhub spin";hub.innerHTML=`<b>?</b><span>крутим</span>`}
+        rot=spinFrom+(spinTo-spinFrom)*ease(p);
+      }
+    }else{
+      pane.classList.add("closed");
+      const left=(CYC-el)/1000;ph.textContent=`Следующий раунд через ${Math.ceil(left)} с`;bar.style.width=(left/((CYC-BET-SPIN)/1000)*100)+"%";bar.className="rs";
+      if(resRnd===r&&resN!=null){
+        if(spinTo!=null) rot=spinTo;else if(shownRnd!==r) rot=targetFor(resN);
+        if(shownRnd!==r){shownRnd=r;const c=ORDER[resN];hub.className="rwhub "+c;hub.innerHTML=`<b>×${X[c]}</b><span>${NM[c].toLowerCase()}</span>`;W.style.setProperty("--wc",MC[c]);
+          if(!NET.on) sync();else setTimeout(sync,250);
+          if(!CS.some(x=>mine[x])){res.className="cres";res.innerHTML=`Выпало <span class="${c}">${NM[c].toLowerCase()}</span> · ×${X[c]}`}
+          if(!NET.on){H.push(c);H=H.slice(-60);try{localStorage.setItem("ruHist3",JSON.stringify(H))}catch(e){}paintHist()}}
+      }else if(Date.now()-lastPoll>800) sync();
+    }
+    cv.style.transform=`rotate(${rot}deg)`;
+    const idx=Math.floor((((-rot)%360)+360)%360/SEG);
+    if(idx!==lastIdx){if(lastIdx>=0&&el>=BET&&el<BET+SPIN){CAS.snd("tick");W.classList.remove("tk");void W.offsetWidth;W.classList.add("tk")}lastIdx=idx}
+  }
+  pane.addEventListener("click",e=>{const b=e.target.closest("[data-c]");if(b&&!b.disabled) place(b.dataset.c,b)});
   CAS.betUI(pane,inp);
-  function enter(){paintHist();if(!busy) setRot(rot,0)}
-  function pause(){if(busy){clearTimeout(spin.t);settle()}}
+  function enter(){paintHist();paintBets();if(!loopOn){loopOn=true;lastT=performance.now();requestAnimationFrame(frame)}sync()}
+  function pause(){loopOn=false}
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&loopOn) sync()});
   return{enter,pause};
 })();
 
