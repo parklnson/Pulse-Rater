@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.2.2"
-APP_NOTES = "Кэшбэк летит прямо в баланс игр · На странице игр один баланс · Плавная анимация центра колеса"
+APP_VERSION = "5.3.1"
+APP_NOTES = "Пять новых курсоров · «Оценить самому» из ленты — трек сразу в плеере · Понятный таймер колеса фортуны"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -138,9 +138,54 @@ def net_store(d):
     tmp.replace(NET_FILE)
 
 
+NET_MOVE_F = DATA_DIR / "net_moved.json"
+NET_URL_RE = r"^(https://[\w.-]+(:\d+)?|http://(127\.0\.0\.1|localhost)(:\d+)?)$"
+
+
+def net_moved():
+    """Переезд сервера: {"url": новый адрес, "from": [старые адреса]} — берётся из server.json рядом с обновлением на GitHub."""
+    try:
+        d = json.loads(NET_MOVE_F.read_text("utf-8"))
+        if isinstance(d, dict) and re.match(NET_URL_RE, str(d.get("url") or "")):
+            return d
+    except Exception:
+        pass
+    return {}
+
+
 def net_url(c=None):
     c = net_cfg() if c is None else c
-    return str(c.get("url") or NET_DEFAULT or "").strip().rstrip("/")
+    u = str(c.get("url") or NET_DEFAULT or "").strip().rstrip("/")
+    m = net_moved()
+    if m and u in [str(x).strip().rstrip("/") for x in (m.get("from") or [])]:
+        return str(m["url"]).rstrip("/")
+    return u
+
+
+def net_follow():
+    """Раз в 15 минут смотрит server.json на GitHub. Если сервер переехал — переключается, аккаунт сохраняется."""
+    while True:
+        try:
+            src = os.environ.get("PULSE_SERVER_JSON") or (upd_url().rsplit("/", 1)[0] + "/server.json")
+            if src.startswith("http"):
+                req = urllib.request.Request(src + ("&" if "?" in src else "?") + "t=%d" % int(time.time() // 300), headers={"User-Agent": UA})
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    d = json.loads(r.read().decode("utf-8"))
+            else:
+                d = json.loads(Path(src).read_text("utf-8"))
+            if isinstance(d, dict) and re.match(NET_URL_RE, str(d.get("url") or "").rstrip("/")) and isinstance(d.get("from"), list):
+                new = {"url": str(d["url"]).rstrip("/"), "from": [str(x).rstrip("/") for x in d["from"]][:20]}
+                if new != net_moved():
+                    DATA_DIR.mkdir(parents=True, exist_ok=True)
+                    NET_MOVE_F.write_text(json.dumps(new), "utf-8")
+                c = net_cfg()
+                if c.get("url") and str(c["url"]).rstrip("/") in new["from"]:
+                    c["url"] = new["url"]
+                    net_store(c)
+                    launch_log("сервер переехал: " + new["url"])
+        except Exception:
+            pass
+        time.sleep(900)
 
 
 def net_state():
@@ -434,9 +479,11 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.2.2";
+var APPV="5.3.1";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.3.1",add:["Новые курсоры: Навигатор, Чёрная стрела, Голограмма, Радуга, Синтвейв","«Оценить самому» в ленте и чате: если у друга нет аудио, трек ищется в каталоге и сразу попадает в плеер"],chg:["Колесо фортуны показывает, во сколько ты крутил сегодня и когда следующее вращение","Убраны курсоры Контур, Перо, Мягкий, Пиксель и Неон"],fix:["Сердечко в списке треков альбома стоит ровно по центру"],del:[]},
+ {v:"5.3",add:["Переезд на новый сервер в России: программа сама переключится на новый адрес, аккаунт, пульсы, друзья и переписка сохранятся"],chg:[],fix:[],del:[]},
  {v:"5.2.2",add:[],chg:["На странице игр остаётся один баланс — верхний, а монеты кэшбэка летят прямо в него","Центр колеса рулетки плавно показывает результат и больше не съезжает"],fix:[],del:[]},
  {v:"5.2.1",add:["Рулетка стала колесом фортуны: чёрное ×2, жёлтое ×3, красное ×5, зелёное ×48","Копилка кэшбэка: процент с каждой проигранной ставки откладывается и не сгорает от выигрышей — забирай, когда захочешь","Статистика «Сегодня» сохраняется до полуночи и считает каждую ставку"],chg:["Новое сердце в «Пульсе» — объёмное, с бликами и волной от удара","Поле авто-вывода стало крупнее и без стрелочек","Заголовок раздела без обрезанной «у»"],fix:["Минки, Plinko и другие игры больше не зависают после нескольких раундов «Пульса»","Ряды и риск в Plinko снова переключаются","Больше не просит «доиграть текущую игру», когда игра уже закончена","Плашка обновления показывает, что нового именно в этой версии"],del:[]},
  {v:"5.2",add:["Игры на пульсы — теперь отдельная страница, как остальные разделы: игры, баланс, кэшбэк и история ставок на одном экране","Кэшбэк: с каждой проигранной ставки процент откладывается в копилку — выигрыши её не уменьшают. 12 уровней — от 0 до 15%, уровень растёт от общей суммы ставок и никогда не падает","Рулетка стала колесом фортуны: чёрное ×2, жёлтое ×3, красное ×5, зелёное ×48","Новый дизайн всех пяти игр: кардиомонитор в «Пульсе», кристаллы и бомбы в «Минках», неоновое Plinko и настоящие карты в HiLo","Звуки в играх, монеты при выигрыше и экран «Крупный выигрыш» для ×10 и больше","Статистика за сегодня и лента последних ставок","20 новых достижений за игры на пульсы"],chg:["Игры запоминают ставку, количество мин, ряды и риск Plinko и авто-вывод в «Пульсе»"],fix:[],del:[]},
@@ -3935,9 +3982,12 @@ html[data-design=polar] .stp{background:linear-gradient(180deg,rgba(14,40,52,.98
 .avca{padding:14px 24px 22px}
 @media (max-width:620px){.avcb{grid-template-columns:1fr;justify-items:center}}
 /* любимые треки альбома */
-.afav{flex:none;font-style:normal;font-size:13px;line-height:1;color:rgba(255,255,255,.22);padding:0 4px;cursor:var(--cur-p);transition:color .2s,transform .2s var(--ease)}
+.whlast{margin-top:8px;font-size:12.5px;color:var(--sub)}
+.albr{align-items:center}
+.afav svg{display:block;width:13px;height:13px;fill:currentColor}
+.afav{flex:none;display:inline-flex;align-items:center;justify-content:center;height:18px;font-style:normal;font-size:13px;line-height:1;color:rgba(255,255,255,.22);padding:0 4px;cursor:var(--cur-p);transition:color .2s,transform .2s var(--ease)}
 .afav:hover{color:#ff9cc0;transform:scale(1.25)}
-.afav.on{color:#ff4d8d;text-shadow:0 0 8px rgba(255,77,141,.8)}
+.afav.on{color:#ff4d8d;filter:drop-shadow(0 0 5px rgba(255,77,141,.8))}
 .albr span{flex:1}
 .favb.on{color:#ff4d8d}
 .favb.on svg{fill:#ff4d8d;stroke:#ff4d8d;filter:drop-shadow(0 0 6px rgba(255,77,141,.7))}
@@ -5529,7 +5579,7 @@ function paintAlbum(){
   else{sc.textContent="—";sc.style.color=""}
   $("#albCap").textContent=a.complete?(a.n>=2&&a.n<=6?"общая оценка EP":"общая оценка альбома"):a.done?`пока ${fmt(a.avg)} — итог появится, когда оценишь все треки`:"итог появится, когда оценишь все треки";
   const albBestE=albBest(a.items);
-  $("#albList").innerHTML=a.items.slice().sort(byOrd).map(x=>`<div class="albr${x.id===state.editing?" on":""}${x.unrated?" un":""}" data-id="${x.id}"><span>${esc(x.title)}</span>${x===albBestE?'<i class="abst" title="Лучший трек альбома">★</i>':""}<i class="afav${x.fav?" on":""}" data-fav="${x.id}" title="${x.fav?"Убрать из любимых":"Отметить любимым"}">♥</i><b>${x.unrated?"—":fmt(x.total)}</b></div>`).join("");
+  $("#albList").innerHTML=a.items.slice().sort(byOrd).map(x=>`<div class="albr${x.id===state.editing?" on":""}${x.unrated?" un":""}" data-id="${x.id}"><span>${esc(x.title)}</span>${x===albBestE?'<i class="abst" title="Лучший трек альбома">★</i>':""}<i class="afav${x.fav?" on":""}" data-fav="${x.id}" title="${x.fav?"Убрать из любимых":"Отметить любимым"}"><svg viewBox="0 0 24 24"><path d="M12 21.3l-1.4-1.3C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.6 11.5z"/></svg></i><b>${x.unrated?"—":fmt(x.total)}</b></div>`).join("");
 }
 const artistNames=t=>{
   const seen=new Set(),out=[];
@@ -9143,7 +9193,7 @@ const CT=(()=>{
     if(stack.length) back();else close();
   });
   navBtn.addEventListener("click",()=>isOpen()?close():open());
-  return{open,close,isOpen,stopPv};
+  return{open,close,isOpen,stopPv,rate};
 })();
 
 /* ---------- страницы «Синглы» (исполнители → треки) и «Альбомы» (альбом → треки → оценка) ---------- */
@@ -11718,8 +11768,9 @@ const QA=(()=>{
   function wheelH(){
     const used=wheelUsed();
     return `<div class="whbox"><div class="whwrap"><div class="whptr"></div>${wheelSVG()}</div>
-      <div class="whside"><b>Колесо фортуны</b><p>Раз в день — бесплатно. На колесе от 50 до 3 000 пульсов, плюс 20 опыта за каждое вращение.</p>
-      <button class="gbtn whgo" data-spin type="button"${used||wBusy?" disabled":""}>${used?`Следующее вращение через ${untilTomorrow()}`:wBusy?"Крутится…":"Крутить колесо"}</button>
+      <div class="whside"><b>Колесо фортуны</b><p>Одно бесплатное вращение в сутки — новые сутки начинаются в полночь. На колесе от 50 до 3 000 пульсов, плюс 20 опыта за каждое вращение.</p>
+      <button class="gbtn whgo" data-spin type="button"${used||wBusy?" disabled":""}>${used?`Следующее — в 00:00, через ${untilTomorrow()}`:wBusy?"Крутится…":"Крутить колесо"}</button>
+      ${used&&D().whT&&new Date(D().whT).toDateString()===new Date().toDateString()?`<div class="whlast">Сегодня ты уже крутил в ${new Date(D().whT).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</div>`:""}
       <div class="whodds">${WHEEL.map((v,i)=>`<span style="--c:${WCOL[i][0]}">${ME.fmtN(v)}</span>`).join("")}</div></div></div>`;
   }
   async function spin(){
@@ -11727,7 +11778,7 @@ const QA=(()=>{
     let i,n,j=null;
     if(NET.on){try{j=await NET.call("wheel",{day:wDay()});i=j.i;n=j.n}catch(e){wBusy=false;if(/уже крутилось/.test(e.msg)){D().whDay=wDay();ME.save()}toast(e.msg,true);render();return}}
     else{const W=[20,14,22,8,18,4,12,2],tot=W.reduce((a,b)=>a+b,0);let r=Math.random()*tot;i=0;for(;i<W.length-1;i++){r-=W[i];if(r<0) break}n=WHEEL[i]}
-    D().whDay=wDay();ME.save();
+    D().whDay=wDay();D().whT=Date.now();ME.save();
     const seg=360/WHEEL.length,base=Math.ceil(wRot/360)*360+360*6;wRot=base-i*seg+(Math.random()*.6-.3)*seg;
     try{SND.play("click")}catch(e){}
     const g=el.querySelector(".whrot");if(g){g.style.transition="transform 5.2s cubic-bezier(.12,.67,.06,1)";requestAnimationFrame(()=>{g.style.transform=`rotate(${wRot}deg)`})}
@@ -12914,8 +12965,34 @@ const FR=(()=>{
       catch(er){b.disabled=false;toast(er.msg,true)}
     });
   }
+  /* у присланного трека нет аудио — ищем его в каталоге, чтобы можно было сразу послушать */
+  const nrm=s=>String(s||"").toLowerCase().replace(/\(.*?\)|\[.*?\]|feat\..*$|ft\..*$/g," ").replace(/[^\p{L}\p{N}]+/gu," ").trim();
+  async function findCat(ti,ar){
+    const T=nrm(ti),A=nrm(ar);if(!T) return null;
+    for(const src of ["sc","it"]){
+      try{
+        const r=await fetch(`/api/cat/search?src=${src}&q=`+encodeURIComponent(`${ar&&ar!=="—"?ar+" ":""}${ti}`));if(!r.ok) continue;
+        const j=await r.json();let best=null,bs=0;
+        for(const t of (j.tracks||[]).slice(0,25)){
+          if(!t.preview||t.drm) continue;
+          const tt=nrm(t.title),ta=nrm(t.artist);let sc=0;
+          if(tt===T) sc+=4;else if(tt.includes(T)||T.includes(tt)) sc+=2;else continue;
+          if(A&&(ta===A||ta.includes(A)||A.includes(ta)||A.split(" ").some(w=>w.length>2&&ta.includes(w)))) sc+=3;
+          if(sc>bs){bs=sc;best=t}
+        }
+        if(best&&bs>=5) return best;
+      }catch(e){}
+    }
+    return null;
+  }
   async function tryRate(x){
-    if(!x) return;close();stopPl();
+    if(!x) return;
+    if(!x.au&&!x.st&&x.ti){
+      toast("Ищу трек в каталоге, чтобы его можно было послушать…");
+      const t=await findCat(x.ti,x.ar);
+      if(t&&CT.rate){close();stopPl();CT.rate(t);toast("Трек найден в каталоге — уже в плеере, оцени его сам");return}
+    }
+    close();stopPl();
     newTrack();fillEditor({title:x.ti||"",artist:x.ar||"—",beat:x.be||"",genre:x.ge||"",unrated:true,...(x.st?{stream:x.st}:{}),...(x.cat?{cat:x.cat}:{}),...(x.em?{embed:x.em}:{})});state.editing=null;paintMode();
     try{titleEl.dispatchEvent(new Event("input",{bubbles:true}))}catch(e){}
     if(x.au){
@@ -12924,7 +13001,7 @@ const FR=(()=>{
       try{const r=await fetch(`/api/net/aud/${x.au.id}`);clearInterval(tm);if(!r.ok) throw 0;const b=await r.blob();
         AU.setFile(new File([b],x.au.name||`${x.ar} - ${x.ti}.${x.au.ext}`,{type:b.type||"audio/mpeg"}))}
       catch(e){clearInterval(tm);toast("Не удалось скачать аудиофайл",true)}
-    }else toast(x.st?"Трек с SoundCloud уже в плеере — оцени его сам":"Название и артист уже вписаны — оцени трек сам");
+    }else toast(x.st?"Трек с SoundCloud уже в плеере — оцени его сам":"В каталоге трек не нашёлся — название и артист уже вписаны, оцени его сам");
   }
   /* присланный альбом → в свою медиатеку неоценённым: аудиофайлы и SoundCloud подтягиваются, оцениваешь по очереди */
   async function tryAlbum(x,btn,o){
@@ -13754,23 +13831,29 @@ const CURS=(()=>{
   function acc(){const cs=getComputedStyle(document.documentElement);return (cs.getPropertyValue("--g2")||"#ff3347").trim()||"#ff3347"}
   const PIX=["B","BB","BWB","BWWB","BWWWB","BWWWWB","BWWWWWB","BWWWWWWB","BWWWWWWWB","BWWWWWWWWB","BWWWWWBBBBB","BWWBWWB","BWB.BWWB","BB..BWWB","B....BWWB",".....BWWB","......BB"];
   function pix(fill){let r="";PIX.forEach((row,y)=>[...row].forEach((ch,x)=>{if(ch==="B"||ch==="W") r+=`<rect x="${x*1.5}" y="${y*1.5}" width="1.5" height="1.5" fill="${ch==="B"?"#000":fill}"/>`}));return svg(28,`<g transform="translate(1 1)" shape-rendering="crispEdges">${r}</g>`)}
+  const NV="M4 4L24 11.5 14.6 14.6 11.5 24Z",PL="M5 3L24 13.2 14.4 14.8 9.6 24Z",NV2="M4 3V26L10.5 19.5 25 19Z";
+  const RB=`<linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3bff7a"/><stop offset=".35" stop-color="#f6ff3b"/><stop offset=".65" stop-color="#3be9ff"/><stop offset="1" stop-color="#3b6bff"/></linearGradient>`;
+  const SW=`<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff3bd4"/><stop offset=".55" stop-color="#9b5bff"/><stop offset="1" stop-color="#3bf0ff"/></linearGradient>`;
   const QU="M3 25C6 20 7 17 9 14 12 8 17 4 25 3 24 9 21 15 14 18 11 19.2 8.8 19.6 7 20Z";
   const QUILL=f=>`<path d="${QU}" fill="${f}" stroke="#1a1420" stroke-width="1.3" stroke-linejoin="round"/><path d="M3.5 24.5L20.5 6.8" stroke="#1a1420" stroke-width="1.1" stroke-linecap="round" opacity=".8"/><path d="M12 13.8l4.6-.4M14.6 10.6l4.4-.9M10.2 16.6l3.6.2" stroke="#1a1420" stroke-width=".8" opacity=".45" stroke-linecap="round"/>`;
   const L={
     classic:{n:"Классический",a:()=>svg(24,`<path d="${AR}" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>`),h:()=>svg(26,`<path d="${HD}" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>`),ah:"4 3",hh:"9 3"},
-    neon:{n:"Неон",a:()=>svg(28,`<path d="${AR}" transform="translate(2 1)" fill="${acc()}" opacity=".55" filter="url(#b)"/><path d="${AR}" transform="translate(2 1)" fill="${acc()}" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>`,`<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6"/></filter>`),
-      h:()=>svg(30,`<path d="${HD}" transform="translate(2 1)" fill="${acc()}" opacity=".55" filter="url(#b)"/><path d="${HD}" transform="translate(2 1)" fill="${acc()}" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>`,`<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6"/></filter>`),ah:"6 4",hh:"11 4"},
     gold:{n:"Золото",a:()=>svg(24,`<path d="${AR}" fill="url(#g)" stroke="#5a3300" stroke-width="1.2" stroke-linejoin="round"/>`,`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffc23f"/><stop offset="1" stop-color="#b8740c"/></linearGradient>`),
       h:()=>svg(26,`<path d="${HD}" fill="url(#g)" stroke="#5a3300" stroke-width="1.2" stroke-linejoin="round"/>`,`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffc23f"/><stop offset="1" stop-color="#b8740c"/></linearGradient>`),ah:"4 3",hh:"9 3"},
     dot:{n:"Прицел",a:()=>svg(24,`<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.6" opacity=".9"/><circle cx="12" cy="12" r="8" fill="none" stroke="#000" stroke-width="3.4" opacity=".25"/><circle cx="12" cy="12" r="2.2" fill="${acc()}" stroke="#fff" stroke-width=".8"/>`),
       h:()=>svg(24,`<circle cx="12" cy="12" r="9" fill="${acc()}" fill-opacity=".25" stroke="${acc()}" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#fff"/>`),ah:"12 12",hh:"12 12"},
-    pixel:{n:"Пиксель",a:()=>pix("#fff"),h:()=>pix(acc()),ah:"1 1",hh:"1 1"},
     dark:{n:"Тёмный",a:()=>svg(24,`<path d="${AR}" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>`),h:()=>svg(26,`<path d="${HD}" fill="#111" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>`),ah:"4 3",hh:"9 3"},
-    outline:{n:"Контур",a:()=>svg(26,`<path d="${AR}" transform="translate(1 1)" fill="rgba(0,0,0,.18)" stroke="#000" stroke-width="3.2" stroke-linejoin="round" opacity=".45"/><path d="${AR}" transform="translate(1 1)" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>`),
-      h:()=>svg(28,`<path d="${HD}" transform="translate(1 1)" fill="rgba(0,0,0,.18)" stroke="#000" stroke-width="3.2" stroke-linejoin="round" opacity=".45"/><path d="${HD}" transform="translate(1 1)" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>`),ah:"5 4",hh:"10 4"},
-    quill:{n:"Перо",a:()=>svg(28,QUILL("url(#g)"),`<linearGradient id="g" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#c5cbe8"/></linearGradient>`),h:()=>svg(28,QUILL(acc())),ah:"3 25",hh:"3 25"},
-    soft:{n:"Мягкий",a:()=>svg(30,`<path d="${AR}" transform="translate(3 3)" fill="#000" opacity=".35" filter="url(#b)"/><path d="${AR}" transform="translate(2 2)" fill="#fff" stroke="#2b2b2b" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>`,`<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3"/></filter>`),
-      h:()=>svg(32,`<path d="${HD}" transform="translate(3 3)" fill="#000" opacity=".35" filter="url(#b)"/><path d="${HD}" transform="translate(2 2)" fill="#fff" stroke="#2b2b2b" stroke-width="1.7" stroke-linejoin="round"/>`,`<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3"/></filter>`),ah:"6 5",hh:"11 5"},
+    nav:{n:"Навигатор",a:()=>svg(28,`<path d="${NV}" fill="#000" opacity=".25" transform="translate(1.5 1.5)"/><path d="${NV}" fill="#fff" stroke="#111" stroke-width="2.4" stroke-linejoin="round"/>`),
+      h:()=>svg(28,`<path d="${NV}" fill="#000" opacity=".25" transform="translate(1.5 1.5)"/><path d="${NV}" fill="${acc()}" stroke="#111" stroke-width="2.4" stroke-linejoin="round"/>`),ah:"4 4",hh:"4 4"},
+    jet:{n:"Чёрная стрела",a:()=>svg(28,`<path d="${PL}" fill="#0b0b0e" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>`),
+      h:()=>svg(28,`<path d="${PL}" fill="#0b0b0e" stroke="${acc()}" stroke-width="2" stroke-linejoin="round"/>`),ah:"5 3",hh:"5 3"},
+    holo:{n:"Голограмма",a:()=>svg(30,`<path d="${AR}" transform="translate(3 2)" fill="#b46bff" opacity=".7" filter="url(#b)"/><path d="${AR}" transform="translate(3 2)" fill="url(#p)" stroke="#c98bff" stroke-width="1.3" stroke-linejoin="round"/>`,
+        `<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4"/></filter><pattern id="p" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="3" fill="#1c1630"/><rect width="1" height="3" fill="#3a2d5c"/></pattern>`),
+      h:()=>svg(32,`<path d="${HD}" transform="translate(3 2)" fill="#b46bff" opacity=".7" filter="url(#b)"/><path d="${HD}" transform="translate(3 2)" fill="#1c1630" stroke="#c98bff" stroke-width="1.3" stroke-linejoin="round"/>`,`<filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4"/></filter>`),ah:"7 4",hh:"12 4"},
+    rainbow:{n:"Радуга",a:()=>svg(28,`<path d="${AR}" transform="translate(2 2)" fill="#14161c" stroke="url(#r)" stroke-width="2" stroke-linejoin="round"/>`,RB),
+      h:()=>svg(30,`<path d="${HD}" transform="translate(2 2)" fill="#14161c" stroke="url(#r)" stroke-width="2" stroke-linejoin="round"/>`,RB),ah:"6 4",hh:"11 4"},
+    synth:{n:"Синтвейв",a:()=>svg(30,`<path d="${NV2}" fill="#050507" stroke="url(#s)" stroke-width="3" stroke-linejoin="round"/>`,SW),
+      h:()=>svg(30,`<path d="${NV2}" fill="#050507" stroke="url(#s)" stroke-width="3" stroke-linejoin="round" filter="url(#gl)"/>`,SW+`<filter id="gl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation=".8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`),ah:"4 3",hh:"4 3"},
     system:{n:"Системный",sys:true}
   };
   function apply(){
@@ -16033,6 +16116,7 @@ def _bind_server():
 
 
 def main():
+    threading.Thread(target=net_follow, daemon=True).start()
     server = _bind_server()
     port = server.server_address[1]
     threading.Thread(target=server.serve_forever, daemon=True).start()
