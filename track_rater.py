@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.4"
-APP_NOTES = "Онлайн-рулетка: колесо крутится для всех сразу — 10 секунд на ставки, видно ставки других игроков"
+APP_VERSION = "5.4.1"
+APP_NOTES = "Онлайн-«Пульс»: сердце бьётся для всех сразу, видно кто и на чём забрал · Плашки ставок в рулетке больше не дёргаются"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -479,9 +479,10 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.4";
+var APPV="5.4.1";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.4.1",add:["Онлайн-«Пульс»: одно сердце на всех игроков — 10 секунд на ставки, потом каждый сам решает, когда забрать. Видно, кто сколько поставил и на каком множителе забрал"],chg:[],fix:["Плашки ставок в онлайн-рулетке больше не дёргаются при обновлении"],del:[]},
  {v:"5.4",add:["Онлайн-рулетка: колесо крутится постоянно и для всех игроков одновременно — 10 секунд на ставки, потом вращение","Можно ставить на несколько цветов в одном раунде","Видно, кто и сколько поставил на каждый цвет"],chg:[],fix:[],del:[]},
  {v:"5.3.2",add:["Артисты в списке треков альбома кликабельные — открывают профиль"],chg:["Новый вид колеса рулетки — матовый чёрный диск с цветным кольцом секторов","У альбома теперь указан только его автор, без гостей из фитов","Окно уровней кэшбэка стало аккуратнее"],fix:[],del:[]},
  {v:"5.3.1",add:["Новые курсоры: Навигатор, Чёрная стрела, Голограмма, Радуга, Синтвейв","«Оценить самому» в ленте и чате: если у друга нет аудио, трек ищется в каталоге и сразу попадает в плеер"],chg:["Колесо фортуны показывает, во сколько ты крутил сегодня и когда следующее вращение","Убраны курсоры Контур, Перо, Мягкий, Пиксель и Неон"],fix:["Сердечко в списке треков альбома стоит ровно по центру"],del:[]},
@@ -3757,7 +3758,18 @@ body.czon #balPill{opacity:0;transform:scale(.85);pointer-events:none}
 .rwch i{width:10px;height:10px;border-radius:50%}
 .rwcol.k .rwch i{background:#e8e8f0}.rwcol.y .rwch i{background:#ffc531}.rwcol.r .rwch i{background:#ff3d5e}.rwcol.z .rwch i{background:#20e88b}
 .rwch b{font-size:13px}.rwch span{font-size:11px;color:var(--sub);flex-basis:100%}
-.rwbr{display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:12.5px;animation:pgItem .35s var(--ease) backwards}
+.rwbr{display:flex;align-items:center;gap:7px;padding:4px 2px;font-size:12.5px}
+.rwbr.nw{animation:pgItem .35s var(--ease) backwards}
+.pubets{margin-top:14px;padding:12px 14px;border-radius:16px;background:rgba(0,0,0,.3);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.pubets:empty{display:none}
+.pbh{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}.pbh b{font-size:14px}.pbh span{font-size:12px;color:var(--sub)}
+.pbr{display:grid;grid-template-columns:26px minmax(0,1fr) auto 150px;gap:10px;align-items:center;padding:5px 0;font-size:13px;border-top:1px solid rgba(255,255,255,.04)}
+.pbr.nw{animation:pgItem .35s var(--ease) backwards}
+.pbr .mav{flex:none}.pbr.me .pbn{color:#ffc531}
+.pbn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbr b{font-variant-numeric:tabular-nums}
+.pbr em{font-style:normal;text-align:right;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.pbr em.g{color:#6df0a0;font-weight:800}.pbr em.r{color:#ff7088}
 .rwbr>.rwnk{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rwbr .mav{flex:none}
 .rwbr b{font-variant-numeric:tabular-nums}
@@ -4544,7 +4556,7 @@ body.sdrag .main{transition:opacity .4s ease,transform .55s var(--ease)}
         <div class="czbal"><svg class="coin" viewBox="0 0 64 64" aria-hidden="true"><use href="#pcoin"/></svg><div><span>Баланс</span><b data-bal>0</b></div></div></div>
       <div class="czgames" id="czTabs">
         <button class="czg g-roul" data-g="roul" type="button"><span class="czart"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="#1a1013" stroke="#ffcf55" stroke-width="2.5"/><path d="M32 5a27 27 0 0 1 19 8L32 32z" fill="#e5263f"/><path d="M51 13a27 27 0 0 1 8 19H32z" fill="#23232b"/><path d="M59 32a27 27 0 0 1-8 19L32 32z" fill="#e5263f"/><path d="M51 51a27 27 0 0 1-19 8V32z" fill="#23232b"/><path d="M32 59a27 27 0 0 1-19-8l19-19z" fill="#1fb35c"/><path d="M13 51a27 27 0 0 1-8-19h27z" fill="#e5263f"/><path d="M5 32a27 27 0 0 1 8-19l19 19z" fill="#23232b"/><path d="M13 13a27 27 0 0 1 19-8v27z" fill="#e5263f"/><circle cx="32" cy="32" r="9" fill="#ffcf55"/><circle cx="32" cy="32" r="4" fill="#8a5a10"/></svg></span><b>Рулетка</b><span>онлайн · до ×48</span></button>
-        <button class="czg g-pulse" data-g="pulse" type="button"><span class="czart"><svg viewBox="0 0 64 64"><path d="M32 54C10 40 6 28 10 19c4-9 16-11 22-2 6-9 18-7 22 2 4 9 0 21-22 35z" fill="#ff3b5c"/><path d="M4 34h14l4-9 6 18 5-12 3 3h24" fill="none" stroke="#9dffc9" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/></svg></span><b>Пульс</b><span>до ×1000</span></button>
+        <button class="czg g-pulse" data-g="pulse" type="button"><span class="czart"><svg viewBox="0 0 64 64"><path d="M32 54C10 40 6 28 10 19c4-9 16-11 22-2 6-9 18-7 22 2 4 9 0 21-22 35z" fill="#ff3b5c"/><path d="M4 34h14l4-9 6 18 5-12 3 3h24" fill="none" stroke="#9dffc9" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/></svg></span><b>Пульс</b><span>онлайн · до ×1000</span></button>
         <button class="czg g-mines" data-g="mines" type="button"><span class="czart"><svg viewBox="0 0 64 64"><path d="M18 12h28l12 14-26 30L6 26z" fill="#5fe3ff"/><path d="M6 26h52L32 56z" fill="#1676d6"/><path d="M18 12l6 14h16l6-14M24 26l8 30 8-30" fill="none" stroke="#e8fdff" stroke-width="1.8" stroke-linejoin="round"/></svg></span><b>Минки</b><span>риск на выбор</span></button>
         <button class="czg g-plinko" data-g="plinko" type="button"><span class="czart"><svg viewBox="0 0 64 64"><g fill="#fff" opacity=".85"><circle cx="32" cy="12" r="3"/><circle cx="24" cy="22" r="3"/><circle cx="40" cy="22" r="3"/><circle cx="16" cy="32" r="3"/><circle cx="32" cy="32" r="3"/><circle cx="48" cy="32" r="3"/><circle cx="8" cy="42" r="3"/><circle cx="24" cy="42" r="3"/><circle cx="40" cy="42" r="3"/><circle cx="56" cy="42" r="3"/></g><circle cx="28" cy="27" r="5" fill="#ff4d6d"/><rect x="2" y="50" width="12" height="9" rx="3" fill="#ff2e63"/><rect x="18" y="50" width="12" height="9" rx="3" fill="#ffc23d"/><rect x="34" y="50" width="12" height="9" rx="3" fill="#ffc23d"/><rect x="50" y="50" width="12" height="9" rx="3" fill="#ff2e63"/></svg></span><b>Plinko</b><span>до ×1000</span></button>
         <button class="czg g-hilo" data-g="hilo" type="button"><span class="czart"><svg viewBox="0 0 64 64"><rect x="8" y="10" width="30" height="42" rx="5" fill="#f4eee4" transform="rotate(-12 23 31)"/><rect x="26" y="12" width="30" height="42" rx="5" fill="#fff" transform="rotate(10 41 33)"/><text x="41" y="40" font-size="20" font-weight="900" text-anchor="middle" fill="#d6203a" transform="rotate(10 41 33)">A</text><text x="20" y="34" font-size="15" font-weight="900" text-anchor="middle" fill="#111" transform="rotate(-12 23 31)">K</text></svg></span><b>HiLo</b><span>серии карт</span></button>
@@ -8019,13 +8031,16 @@ const RU=(()=>{
     stat.innerHTML=L.length?`<span>Последние ${L.length}</span><div class="rubar">${CS.map(c=>`<i class="${c}" style="flex:${k[c]||.001}"></i>`).join("")}</div>${CS.map(c=>`<em class="${c}">${Math.round(k[c]/n*100)}%</em>`).join("")}`:"";
   }
   function paintMine(){pane.querySelectorAll("[data-mine]").forEach(x=>{const v=mine[x.dataset.mine];x.textContent=v?`твоя ставка ${ME.fmtN(v)}`:"";x.parentNode.classList.toggle("has",!!v)})}
+  let rbSig="",rbSeen=new Set();
   function paintBets(){
     const me=NET.on?NET.st.uid:"me";
     const list=NET.on?bets:CS.filter(c=>mine[c]).map(c=>({uid:"me",c,v:mine[c],nick:ME.data.nick||"Ты"}));
+    const sig=curRnd+JSON.stringify(list.map(b=>[b.uid,b.c,b.v]));if(sig===rbSig) return;rbSig=sig;
+    const fresh=new Set(list.map(b=>curRnd+":"+b.uid+":"+b.c)),seen=rbSeen;rbSeen=fresh;
     betsEl.innerHTML=CS.map(c=>{
       const L=list.filter(b=>b.c===c),sum=L.reduce((a,b)=>a+b.v,0);
       return `<div class="rwcol ${c}"><div class="rwch"><i></i><b>${NM[c]}</b><span>${L.length?`${L.length} ${plural(L.length,"игрок","игрока","игроков")} · ${ME.fmtN(sum)}`:"нет ставок"}</span></div>
-        ${L.slice(0,7).map(b=>`<div class="rwbr${b.uid===me?" me":""}">${NET.on&&b.uid!=="me"?ME.avatar(24,{},{u:NET.avUrl(b.uid,b.avv),nick:b.nick}):`<span class="rwav">${esc((b.nick||"?")[0])}</span>`}<span class="rwnk">${esc(b.uid===me?"Ты":b.nick||"Игрок")}</span><b>${ME.fmtN(b.v)}</b></div>`).join("")}
+        ${L.slice(0,7).map(b=>`<div class="rwbr${b.uid===me?" me":""}${seen.has(curRnd+":"+b.uid+":"+c)?"":" nw"}">${NET.on&&b.uid!=="me"?ME.avatar(24,{},{u:NET.avUrl(b.uid,b.avv),nick:b.nick}):`<span class="rwav">${esc((b.nick||"?")[0])}</span>`}<span class="rwnk">${esc(b.uid===me?"Ты":b.nick||"Игрок")}</span><b>${ME.fmtN(b.v)}</b></div>`).join("")}
         ${L.length>7?`<div class="rwmore">и ещё ${L.length-7}</div>`:""}</div>`;
     }).join("");
   }
@@ -8129,7 +8144,7 @@ const RU=(()=>{
 const PU=(()=>{
   const pane=$("#pane-pulse");
   const LAD=[1.5,2,3,5,10,25,100];
-  pane.innerHTML=`<div class="czgh"><div><b>Пульс</b><span>Множитель растёт, пока бьётся сердце. Забери до остановки</span></div><div class="puhist" id="puHist" title="На чём останавливалось сердце"></div></div>
+  pane.innerHTML=`<div class="czgh"><div><b>Пульс</b><span id="puSub">Множитель растёт, пока бьётся сердце. Забери до остановки</span></div><div class="puhist" id="puHist" title="На чём останавливалось сердце"></div></div>
     <div class="puw" id="puW"><canvas id="puc" width="1200" height="600"></canvas><div class="puscan"></div>
       <div class="puhud"><em>Множитель</em><b id="puX">1.00×</b><span id="puS">Сделай ставку — сердце запустится</span></div>
       <div class="pubpm"><i>♥</i><b id="puBpm">60</b><span>BPM</span></div>
@@ -8137,7 +8152,8 @@ const PU=(()=>{
       <div class="pudead">Сердце остановилось</div></div>
     ${CAS.betRow("puBet",`<label class="cauto" title="Автоматически забрать на этом множителе (0 — выключено)"><span>Авто-вывод</span><div><input id="puAuto" type="number" min="0" step="0.1" value="" placeholder="выкл"><em>×</em></div></label>`)}
     <button class="pubtn" id="puGo" type="button">Поставить</button>
-    <div class="ghint">Пробел — поставить / забрать · сердце может остановиться в любой момент</div>`;
+    <div class="ghint">Пробел — поставить / забрать · сердце может остановиться в любой момент</div>
+    <div class="pubets" id="puBets"></div>`;
   const cv=$("#puc"),ctx=cv.getContext("2d"),W=cv.width,Hh=cv.height,xEl=$("#puX"),sEl=$("#puS"),go=$("#puGo"),inp=$("#puBet"),auto=$("#puAuto"),hist=$("#puHist"),wrap=$("#puW"),bpmEl=$("#puBpm"),lad=$("#puLad");
   try{const a=+localStorage.getItem("puAuto");if(a>0) auto.value=a}catch(e){}
   auto.addEventListener("change",()=>{try{localStorage.setItem("puAuto",String(+auto.value||0))}catch(e){}});
@@ -8214,6 +8230,7 @@ const PU=(()=>{
   function frame(now){
     raf=requestAnimationFrame(frame);
     const dt=Math.min(.05,(now-last)/1000);last=now;
+    if(ON){oframe();step(dt);draw(now);return}
     if(st==="run"){
       const s=(now-t0)/1000;mult=mAt(s);
       if(mult>=crash){mult=crash;die(now)}
@@ -8268,7 +8285,113 @@ const PU=(()=>{
     setIdle();
   }
   function setIdle(){pane.classList.remove("busy");go.classList.remove("cash");go.innerHTML="Поставить ещё"}
+  /* ---------- онлайн: один раунд на всех, 10 секунд ставки ---------- */
+  let ON=false,R=null,oskew=0,crashV=null,crashAt=null,myB=null,oBets=[],oPoll=0,oBusy=false,acct=new Set(),betSig="",seenB=new Set();
+  const betsEl=$("#puBets");
+  function paintOBets(){
+    const me=NET.st.uid,sig=JSON.stringify(oBets.map(b=>[b.uid,b.v,b.cash]))+(crashV!=null);
+    if(sig===betSig) return;betSig=sig;
+    const fresh=new Set();
+    betsEl.innerHTML=oBets.length?`<div class="pbh"><b>Ставки раунда</b><span>${oBets.length} ${plural(oBets.length,"игрок","игрока","игроков")} · ${ME.fmtN(oBets.reduce((a,b)=>a+b.v,0))}</span></div>`+oBets.map(b=>{
+      const key=R.rnd+":"+b.uid,nw=!seenB.has(key);fresh.add(key);
+      const stt=b.cash?`<em class="g">×${(+b.cash).toFixed(2)} · +${ME.fmtN(b.win)}</em>`:crashV!=null?`<em class="r">сгорело</em>`:`<em>в игре</em>`;
+      return `<div class="pbr${b.uid===me?" me":""}${nw?" nw":""}">${ME.avatar(26,{},{u:NET.avUrl(b.uid,b.avv),nick:b.nick})}<span class="pbn">${esc(b.uid===me?"Ты":b.nick)}</span><b>${ME.fmtN(b.v)}</b>${stt}</div>`}).join(""):`<div class="pbh"><b>Ставки раунда</b><span>пока никто не поставил</span></div>`;
+    seenB=fresh;
+  }
+  function newRound(j){
+    R={rnd:j.prnd,t0:j.pt0,pb:j.pb,pp:j.pp,k:j.pk};crashV=null;crashAt=null;myB=null;stopWait();betSig="";
+    st="idle";wrap.classList.remove("dead","won","live");mult=1;paintLad();
+  }
+  async function osync(){
+    if(oBusy) return;oBusy=true;oPoll=Date.now();
+    try{
+      const a=Date.now(),j=await NET.call("pu2/state",{});oskew=j.now-(a+Date.now())/2;
+      if(!R||j.prnd!==R.rnd) newRound(j);
+      if(j.crash!=null){crashV=j.crash;crashAt=j.crashAt}
+      if(Array.isArray(j.hist)){H=j.hist.slice().reverse();paintHist()}
+      oBets=j.bets||[];
+      for(const x of (j.mine||[])){
+        if(x.rnd===R.rnd&&!myB) myB={v:x.v,auto:x.auto,cash:x.cash,win:x.win};
+        if(x.cash&&x.paid&&!acct.has(x.rnd)){acct.add(x.rnd);ME.payout(x.win);CAS.record("pulse",x.v,x.win,x.cash);toast(`«Пульс»: авто-вывод на ×${(+x.cash).toFixed(2)} — +${ME.fmtN(x.win)}`);if(myB&&x.rnd===R.rnd){myB.cash=x.cash;myB.win=x.win}}
+      }
+      paintOBets();
+    }catch(e){}
+    finally{oBusy=false}
+  }
+  function owait(){
+    if(!R) return;stopWait();const rn=R.rnd,ac=wAc=typeof AbortController!=="undefined"?new AbortController():null;
+    NET.call("pu2/wait",{rnd:rn},ac?{signal:ac.signal}:null).then(r=>{if(!R||R.rnd!==rn) return;if(r.again){owait();return}if(r.crash){crashV=r.crash;crashAt=r.crashAt}})
+      .catch(e=>{if(e&&e.abort) return;if(R&&R.rnd===rn&&crashV==null) setTimeout(owait,1500)});
+  }
+  function oplace(){
+    if(!R){osync();return}
+    const t=Date.now()+oskew;
+    if(t>R.t0+R.pb-400){toast("Ставки на этот раунд закрыты — жди следующий",true);return}
+    if(myB){toast("Ты уже поставил в этом раунде",true);return}
+    const v=CAS.takeBet(inp,go);if(!v) return;
+    const au=+auto.value>=1.01?+auto.value:null;
+    myB={v,auto:au,pending:true};go.disabled=true;CAS.snd("chip");
+    NET.call("pu2/bet",{rnd:R.rnd,bet:v,auto:au}).then(j=>{myB={v:j.v,auto:j.auto};osync()})
+      .catch(e=>{myB=null;go.disabled=false;CAS.unbet(v);toast(e.msg,true)});
+  }
+  function ocash(){
+    if(!myB||myB.cash||myB.lost||st!=="run") return;
+    st="cashing";const rn=R.rnd,m0=mult;go.disabled=true;
+    NET.call("pu2/cash",{rnd:rn,m:m0}).then(r=>{
+      if(st==="cashing") st="run";
+      if(r.m&&r.win&&!acct.has(rn)){acct.add(rn);myB.cash=r.m;myB.win=r.win;ME.payout(r.win);
+        sEl.innerHTML=`Забрал <b>+${ME.fmtN(r.win)}</b> на ×${(+r.m).toFixed(2)}`;
+        for(let i=0;i<50;i++){const a=Math.random()*6.283,s=2+Math.random()*7;sparks.push({x:W*.1,y:Hh*.3,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,r:2+Math.random()*3,l:1,c:Math.random()<.5?"#ffd45a":"#fff3c4"})}
+        CAS.snd("cash");CAS.coins(go,10);CAS.record("pulse",myB.v,r.win,r.m);setTimeout(()=>ME.netSettle(),60);osync()}
+      else if(r.lost){if(r.crash){crashV=r.crash}}
+    }).catch(e=>{if(st==="cashing") st="run";toast(e.msg,true)});
+  }
+  function odie(){
+    st="dead";endT=performance.now();mult=crashV;stopWait();CAS.snd("flat");
+    H.push(crashV);paintHist();
+    xEl.textContent=crashV.toFixed(2)+"×";xEl.style.color="";wrap.classList.add("dead");wrap.classList.remove("live");pane.classList.remove("busy");go.classList.remove("cash");
+    if(myB&&!myB.cash&&!myB.lost){
+      myB.lost=true;
+      if(myB.auto&&myB.auto<crashV){setTimeout(osync,400)}                 // сервер сам выплатит по авто-выводу
+      else{CAS.record("pulse",myB.v,0,0);acct.add(R.rnd);sEl.textContent=`Ставка ${ME.fmtN(myB.v)} сгорела`;setTimeout(()=>ME.netSettle(),80)}
+    }else if(!(myB&&myB.cash)) sEl.textContent=`Сердце остановилось на ${crashV.toFixed(2)}×`;
+    setTimeout(osync,300);
+  }
+  function oframe(){
+    if(!R){if(Date.now()-oPoll>1500) osync();return}
+    const t=Date.now()+oskew,el=t-R.t0;
+    if(el<R.pb){
+      if(st!=="idle"){st="idle";wrap.classList.remove("dead","won","live")}
+      const left=(R.pb-el)/1000;
+      xEl.textContent=left.toFixed(1)+" с";xEl.style.color="#fff";
+      sEl.textContent=myB?`Твоя ставка ${ME.fmtN(myB.v)} принята${myB.auto?` · авто-вывод ×${(+myB.auto).toFixed(2)}`:""} — ждём запуск`:"Ставки принимаются — сердце запустится для всех сразу";
+      go.disabled=!!myB;go.classList.remove("cash");go.innerHTML=myB?"Ставка принята ✓":"Поставить";
+      pane.classList.toggle("busy",!!myB);
+      if(Date.now()-oPoll>2500) osync();
+      return;
+    }
+    const m=Math.exp(R.k*(el-R.pb)/1000);
+    if(crashV==null||m<crashV){
+      if(st!=="run"&&st!=="cashing"){st="run";beatT=.5;wrap.classList.remove("dead","won");wrap.classList.add("live");owait()}
+      mult=m;xEl.textContent=m.toFixed(2)+"×";xEl.style.color=`hsl(${hueNow()},100%,66%)`;paintLad();
+      if(myB&&!myB.cash&&!myB.lost&&!myB.pending){
+        const pot=Math.floor(myB.v*m);go.disabled=st==="cashing";go.classList.add("cash");go.innerHTML=`Забрать <b>${ME.fmtN(pot)}</b>`;sEl.textContent=`Забрать сейчас: ${ME.fmtN(pot)}`;
+        if(myB.auto>=1.01&&m>=myB.auto) ocash();
+      }else{
+        go.disabled=true;go.classList.remove("cash");pane.classList.remove("busy");
+        if(myB&&myB.cash){go.innerHTML=`Забрал ×${(+myB.cash).toFixed(2)} ✓`}else{go.innerHTML="Раунд идёт — поставь в следующем";sEl.textContent="Смотри, кто успеет забрать"}
+      }
+      if(Date.now()-oPoll>1500) osync();
+    }else{
+      if(st!=="dead") odie();
+      const ca=crashAt||(R.t0+R.pb+Math.log(crashV)/R.k*1000),left=(ca+R.pp-t)/1000;
+      go.disabled=true;go.classList.remove("cash");go.innerHTML=`Следующий раунд через ${Math.max(0,Math.ceil(left))} с`;
+      if(left<=0&&Date.now()-oPoll>700) osync();
+    }
+  }
+
   function start(){
+    if(ON){if(st==="run"&&myB&&!myB.cash) ocash();else oplace();return}
     if(st==="run"){cash();return}
     if(st==="wait"||st==="cashing"||performance.now()<lockT) return;
     const v=CAS.takeBet(inp,go);if(!v) return;
@@ -8292,8 +8415,14 @@ const PU=(()=>{
     if(!CZ.isOpen()||CZ.cur!=="pulse"||e.ctrlKey||e.metaKey||e.altKey||OV.isOpen()) return;
     if(e.code==="Space"&&e.target.tagName!=="INPUT"){e.preventDefault();e.stopPropagation();if(!e.repeat) start()}
   },true);
-  function enter(){paintHist();if(!raf){last=performance.now();raf=requestAnimationFrame(frame)}}
-  function pause(){if(st==="run") cash();if(raf){cancelAnimationFrame(raf);raf=0}}
+  function enter(){
+    const was=ON;ON=NET.on&&(ON||(st!=="run"&&st!=="wait"&&st!=="cashing"));
+    pane.classList.toggle("online",ON);
+    $("#puSub").textContent=ON?"Сердце бьётся для всех игроков сразу: 10 секунд на ставки, потом забирай до остановки":"Множитель растёт, пока бьётся сердце. Забери до остановки";
+    if(ON){betSig="";osync()}else if(was){R=null;betsEl.innerHTML=""}
+    paintHist();if(!raf){last=performance.now();raf=requestAnimationFrame(frame)}
+  }
+  function pause(){if(ON){if(st==="run"&&myB&&!myB.cash) ocash()}else if(st==="run") cash();if(raf){cancelAnimationFrame(raf);raf=0}}
   return{enter,pause};
 })();
 
