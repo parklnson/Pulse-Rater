@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.3.1"
-APP_NOTES = "Пять новых курсоров · «Оценить самому» из ленты — трек сразу в плеере · Понятный таймер колеса фортуны"
+APP_VERSION = "5.3.2"
+APP_NOTES = "Новый матовый вид колеса рулетки · Артисты в альбоме кликабельные · У альбома указан только его автор"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -479,9 +479,10 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.3.1";
+var APPV="5.3.2";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.3.2",add:["Артисты в списке треков альбома кликабельные — открывают профиль"],chg:["Новый вид колеса рулетки — матовый чёрный диск с цветным кольцом секторов","У альбома теперь указан только его автор, без гостей из фитов","Окно уровней кэшбэка стало аккуратнее"],fix:[],del:[]},
  {v:"5.3.1",add:["Новые курсоры: Навигатор, Чёрная стрела, Голограмма, Радуга, Синтвейв","«Оценить самому» в ленте и чате: если у друга нет аудио, трек ищется в каталоге и сразу попадает в плеер"],chg:["Колесо фортуны показывает, во сколько ты крутил сегодня и когда следующее вращение","Убраны курсоры Контур, Перо, Мягкий, Пиксель и Неон"],fix:["Сердечко в списке треков альбома стоит ровно по центру"],del:[]},
  {v:"5.3",add:["Переезд на новый сервер в России: программа сама переключится на новый адрес, аккаунт, пульсы, друзья и переписка сохранятся"],chg:[],fix:[],del:[]},
  {v:"5.2.2",add:[],chg:["На странице игр остаётся один баланс — верхний, а монеты кэшбэка летят прямо в него","Центр колеса рулетки плавно показывает результат и больше не съезжает"],fix:[],del:[]},
@@ -3503,13 +3504,15 @@ html.netdown .netst.on>i{background:#ffb84a;box-shadow:0 0 10px #ffb84a}
 .czbc span{display:inline-flex;align-items:center;gap:10px;margin-top:10px;font-size:34px;font-weight:900;color:#fff}
 .czbc span .coin{width:36px;height:36px}
 .gmp{position:relative}
-.cblvw{width:min(560px,94vw)}
+.pvc.cblvw{width:min(560px,94vw);padding:24px 24px 22px;display:flex;flex-direction:column}
+.pvc.olpkw{padding:22px 24px}
 .cblv{display:flex;flex-direction:column;gap:12px}
 .cblvh{display:flex;align-items:center;justify-content:space-between}
 .cblvh b{font-size:22px;font-weight:900}
 .cblv p{margin:0;font-size:13px;color:var(--sub);line-height:1.5}
-.cblvl{display:flex;flex-direction:column;gap:5px;max-height:56vh;overflow:auto;padding-right:4px}
-.cblvl div{display:grid;grid-template-columns:30px 1fr auto auto;gap:12px;align-items:center;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.04)}
+.cblvl{display:flex;flex-direction:column;gap:5px;max-height:56vh;overflow:auto;padding-right:2px;margin-right:-2px}
+.cblvl div{display:grid;grid-template-columns:30px minmax(0,1fr) auto 56px;gap:12px;align-items:center;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.04)}
+.cblvl b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cblvl span{white-space:nowrap}
 .cblvl i{font-style:normal;width:28px;height:28px;display:grid;place-items:center;font-weight:900;font-size:13px;color:#140a02;background:var(--c);clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)}
 .cblvl b{font-size:14px;color:var(--c)}
 .cblvl span{font-size:12px;color:var(--sub)}
@@ -3712,23 +3715,24 @@ html.netdown .netst.on>i{background:#ffb84a;box-shadow:0 0 10px #ffb84a}
 .cauto small{font-size:11px;color:var(--sub);margin-left:6px}
 /* рулетка-колесо */
 .rwl{display:grid;grid-template-columns:minmax(260px,400px) minmax(0,1fr);gap:26px;align-items:center}
-.rwwrap{position:relative;width:100%;aspect-ratio:1;max-width:400px;margin:0 auto}
-.rwwrap canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;filter:drop-shadow(0 18px 40px rgba(0,0,0,.7));will-change:transform}
-.rwglow{position:absolute;inset:-6%;border-radius:50%;background:radial-gradient(circle,rgba(255,200,80,.22),transparent 65%);animation:rwG 3s ease-in-out infinite}
-@keyframes rwG{50%{opacity:.55}}
-.rwptr{position:absolute;left:50%;top:-14px;z-index:3;width:34px;height:44px;margin-left:-17px;background:linear-gradient(180deg,#fff3c4,#ffc23d 55%,#b07a14);clip-path:polygon(0 0,100% 0,50% 100%);filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,200,80,.8));transform-origin:50% 0}
+.rwwrap{position:relative;width:100%;aspect-ratio:1;max-width:400px;margin:0 auto;--wc:#ffc531}
+.rwwrap canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
+#ruFrame{filter:drop-shadow(0 22px 44px rgba(0,0,0,.7))}
+#ruWheel{will-change:transform}
+.rwhl{position:absolute;left:50%;top:1%;z-index:1;width:22%;height:16%;margin-left:-11%;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,var(--wc),transparent);opacity:0;mix-blend-mode:screen;transition:opacity .4s}
+.rwwrap.won .rwhl{opacity:.55;animation:rwHl 1s ease-in-out 3}
+@keyframes rwHl{50%{opacity:.25}}
+.rwptr{position:absolute;left:50%;top:-2.5%;z-index:3;width:7.5%;height:auto;margin-left:-3.75%;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7));transform-origin:50% 10%}
 .rwwrap.tk .rwptr{animation:rwTk .12s ease-out}
-@keyframes rwTk{40%{transform:rotate(-14deg)}}
-.rwhub{position:absolute;left:33%;top:33%;z-index:2;width:34%;height:34%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#3a2a18,#120a08 70%);box-shadow:inset 0 0 0 4px #ffd76a,inset 0 0 0 7px #6b4608,0 8px 24px rgba(0,0,0,.6);transition:background .4s}
-.rwhub b{font-size:clamp(26px,3.2vw,42px);font-weight:900;letter-spacing:-.03em;line-height:1;color:#ffd76a}
-.rwhub span{margin-top:4px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+@keyframes rwTk{40%{transform:rotate(-12deg)}}
+.rwhub{position:absolute;left:31%;top:31%;z-index:2;width:38%;height:38%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;box-shadow:none}
+.rwhub b{font-size:clamp(30px,4vw,54px);font-weight:900;letter-spacing:-.04em;line-height:1;color:#ffc531;transition:color .3s}
+.rwhub span{margin-top:6px;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.45)}
 .rwhub.spin b{animation:czPulse .8s ease-in-out infinite}
-.rwhub.k b{color:#e6e6ee}.rwhub.y b{color:#ffd23d}.rwhub.r b{color:#ff5a6e}.rwhub.z b{color:#3ff08f}
-.rwwrap.won .rwhub{animation:rwWin 1s ease-out 2}
-@keyframes rwWin{30%{box-shadow:inset 0 0 0 4px #ffd76a,inset 0 0 0 7px #6b4608,0 0 60px 10px rgba(255,200,80,.8)}}
+.rwhub.k b{color:#e8e8f0}.rwhub.y b{color:#ffc531}.rwhub.r b{color:#ff3d5e}.rwhub.z b{color:#20e88b}
+.rwwrap.won .rwhub b{text-shadow:0 0 30px currentColor}
 .rwwrap.lost .rwhub{animation:rwLost .5s ease-out}
 @keyframes rwLost{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
-.rwhub b,.rwhub span{transition:color .3s}
 .rwwrap.won .rwhub b,.rwwrap.lost .rwhub b{animation:rwPop .5s cubic-bezier(.2,1.5,.4,1)}
 @keyframes rwPop{from{transform:scale(.6);opacity:.3}}
 #balPill{transition:opacity .3s,transform .3s var(--ease)}
@@ -7930,7 +7934,9 @@ const RU=(()=>{
   const COL={k:["#3a3a46","#101015"],y:["#ffe066","#c98700"],r:["#ff4d63","#9c0d24"],z:["#3ff08f","#0a7034"]};
   pane.innerHTML=`<div class="czgh"><div><b>Рулетка</b><span>Выбери цвет — колесо закрутится сразу</span></div><div class="ruhist" id="ruHist" title="Последние выпадения"></div></div>
     <div class="rwl">
-      <div class="rwwrap" id="ruW"><div class="rwglow"></div><canvas id="ruWheel" width="1000" height="1000"></canvas><i class="rwptr"></i><div class="rwhub" id="ruHub"><b>?</b><span>крути</span></div></div>
+      <div class="rwwrap" id="ruW"><canvas id="ruFrame" width="1000" height="1000"></canvas><canvas id="ruWheel" width="1000" height="1000"></canvas><i class="rwhl"></i>
+        <svg class="rwptr" viewBox="0 0 40 52" aria-hidden="true"><path d="M6 3h28a3 3 0 0 1 2.4 4.8L22.4 47a3 3 0 0 1-4.8 0L3.6 7.8A3 3 0 0 1 6 3z" fill="#ffc531"/><path d="M9 7h22L20 40z" fill="rgba(255,255,255,.28)"/></svg>
+        <div class="rwhub" id="ruHub"><b>?</b><span>крути</span></div></div>
       <div class="rwside">
         <div class="cres" id="ruRes">Ставка списывается сразу, выигрыш — после остановки колеса</div>
         ${CAS.betRow("ruBet")}
@@ -7941,33 +7947,37 @@ const RU=(()=>{
   const cv=$("#ruWheel"),res=$("#ruRes"),inp=$("#ruBet"),hist=$("#ruHist"),stat=$("#ruStat"),W=$("#ruW"),hub=$("#ruHub");
   let rot=0,busy=false,pending=null,H=[],tickRaf=0;
   try{H=JSON.parse(localStorage.getItem("ruHist2")||"[]").filter(c=>X[c])}catch(e){}
+  const MC={k:"#e8e8f0",y:"#ffc531",r:"#ff3d5e",z:"#20e88b"};
+  /* неподвижная основа: матовый диск, свет всегда сверху-слева */
+  (function drawBase(){
+    const g=$("#ruFrame").getContext("2d"),S=1000,R=S/2;g.clearRect(0,0,S,S);g.save();g.translate(R,R);
+    let gr=g.createRadialGradient(-R*.35,-R*.4,R*.05,0,0,R);gr.addColorStop(0,"#2e2934");gr.addColorStop(.55,"#17131b");gr.addColorStop(1,"#0a080c");
+    g.fillStyle=gr;g.beginPath();g.arc(0,0,R-6,0,6.283);g.fill();
+    g.lineWidth=3;g.strokeStyle="rgba(255,255,255,.14)";g.beginPath();g.arc(0,0,R-8,0,6.283);g.stroke();
+    g.lineWidth=2;g.strokeStyle="rgba(0,0,0,.6)";g.beginPath();g.arc(0,0,R-12,0,6.283);g.stroke();
+    // желобок под цветным кольцом
+    g.lineWidth=R*.095;g.strokeStyle="rgba(0,0,0,.42)";g.beginPath();g.arc(0,0,R*.86,0,6.283);g.stroke();
+    g.lineWidth=1.5;g.strokeStyle="rgba(255,255,255,.07)";for(const k of [.812,.908]){g.beginPath();g.arc(0,0,R*k,0,6.283);g.stroke()}
+    // внутренний круг
+    g.lineWidth=2;g.strokeStyle="rgba(255,255,255,.09)";g.beginPath();g.arc(0,0,R*.42,0,6.283);g.stroke();
+    gr=g.createRadialGradient(0,-R*.1,0,0,0,R*.4);gr.addColorStop(0,"#151118");gr.addColorStop(1,"#09070b");g.fillStyle=gr;g.beginPath();g.arc(0,0,R*.4,0,6.283);g.fill();
+    g.restore();
+  })();
+  /* вращается только кольцо секторов и тонкие спицы */
   (function drawWheel(){
     const g=cv.getContext("2d"),S=cv.width,R=S/2;g.clearRect(0,0,S,S);g.save();g.translate(R,R);
-    // внешний золотой обод
-    let gr=g.createRadialGradient(0,0,R*.86,0,0,R);gr.addColorStop(0,"#5a3a08");gr.addColorStop(.35,"#ffd76a");gr.addColorStop(.6,"#b07a14");gr.addColorStop(.85,"#ffe9a6");gr.addColorStop(1,"#6b4608");
-    g.fillStyle=gr;g.beginPath();g.arc(0,0,R-4,0,6.283);g.fill();
-    g.fillStyle="#140c10";g.beginPath();g.arc(0,0,R*.885,0,6.283);g.fill();
-    // секторы
-    const r0=R*.87,r1=R*.42;
+    const rad=i=>-Math.PI/2+i*SEG*Math.PI/180;
+    for(let i=0;i<N;i++){const a=rad(i);g.strokeStyle="rgba(255,255,255,.055)";g.lineWidth=2;g.beginPath();g.moveTo(Math.cos(a)*R*.43,Math.sin(a)*R*.43);g.lineTo(Math.cos(a)*R*.8,Math.sin(a)*R*.8);g.stroke()}
     for(let i=0;i<N;i++){
-      const c=ORDER[i],a0=(-90+i*SEG)*Math.PI/180,a1=(-90+(i+1)*SEG)*Math.PI/180;
-      const sg=g.createRadialGradient(0,0,r1,0,0,r0);sg.addColorStop(0,COL[c][1]);sg.addColorStop(.75,COL[c][0]);sg.addColorStop(1,COL[c][1]);
-      g.fillStyle=sg;g.beginPath();g.arc(0,0,r0,a0,a1);g.arc(0,0,r1,a1,a0,true);g.closePath();g.fill();
-      if(c==="z"){g.save();g.rotate((a0+a1)/2);g.fillStyle="rgba(255,255,255,.95)";g.font=`900 ${R*.075}px "Segoe UI",sans-serif`;g.textAlign="center";g.textBaseline="middle";g.translate(r0*.83,0);g.rotate(Math.PI/2);g.fillText("★",0,0);g.restore()}
+      const c=ORDER[i],gap=.011,a0=rad(i)+gap,a1=rad(i+1)-gap;
+      if(c==="k"){g.globalAlpha=.42;g.strokeStyle=MC.k;g.lineWidth=R*.026}
+      else{g.globalAlpha=1;g.strokeStyle=MC[c];g.lineWidth=R*.062;g.shadowColor=MC[c];g.shadowBlur=c==="z"?R*.05:R*.022}
+      g.beginPath();g.arc(0,0,R*.86,a0,a1);g.stroke();g.shadowBlur=0;g.globalAlpha=1;
+      if(c!=="k"){g.strokeStyle="rgba(255,255,255,.35)";g.lineWidth=R*.006;g.beginPath();g.arc(0,0,R*.86+R*.024,a0+.004,a1-.004);g.stroke()}
     }
-    // разделители
-    g.strokeStyle="rgba(255,220,140,.55)";g.lineWidth=3;
-    for(let i=0;i<N;i++){const a=(-90+i*SEG)*Math.PI/180;g.beginPath();g.moveTo(Math.cos(a)*r1,Math.sin(a)*r1);g.lineTo(Math.cos(a)*r0,Math.sin(a)*r0);g.stroke()}
-    // блик сверху
-    gr=g.createLinearGradient(0,-r0,0,r0);gr.addColorStop(0,"rgba(255,255,255,.18)");gr.addColorStop(.5,"rgba(255,255,255,0)");gr.addColorStop(1,"rgba(0,0,0,.25)");
-    g.fillStyle=gr;g.beginPath();g.arc(0,0,r0,0,6.283);g.arc(0,0,r1,6.283,0,true);g.fill();
-    // внутреннее кольцо
-    g.lineWidth=R*.03;g.strokeStyle="#ffd76a";g.beginPath();g.arc(0,0,r1-R*.015,0,6.283);g.stroke();
-    g.fillStyle="#0d080a";g.beginPath();g.arc(0,0,r1-R*.03,0,6.283);g.fill();
-    // лампочки на ободе
-    for(let i=0;i<25;i++){const a=i/25*6.283,x=Math.cos(a)*R*.94,y=Math.sin(a)*R*.94;
-      const lg=g.createRadialGradient(x,y,0,x,y,R*.028);lg.addColorStop(0,"#fff");lg.addColorStop(.5,"#ffe9a6");lg.addColorStop(1,"rgba(255,200,80,0)");
-      g.fillStyle=lg;g.beginPath();g.arc(x,y,R*.028,0,6.283);g.fill()}
+    // мелкие риски снаружи
+    g.strokeStyle="rgba(255,255,255,.16)";g.lineWidth=2;
+    for(let i=0;i<N;i++){const a=rad(i+.5);g.beginPath();g.moveTo(Math.cos(a)*R*.925,Math.sin(a)*R*.925);g.lineTo(Math.cos(a)*R*.945,Math.sin(a)*R*.945);g.stroke()}
     g.restore();
   })();
   function paintHist(){
@@ -7989,6 +7999,7 @@ const RU=(()=>{
     rot=((p.to%360)+360)%360;setRot(rot,0);
     paintHist();
     hub.className="rwhub "+c;hub.innerHTML=`<b>×${X[c]}</b><span>${NM[c].toLowerCase()}</span>`;
+    W.style.setProperty("--wc",MC[c]);
     W.classList.remove("won","lost");void W.offsetWidth;W.classList.add(win?"won":"lost");
     if(win){ME.payout(win);res.innerHTML=`<span class="${c}">${NM[c]}</span> — выигрыш <b>+${ME.fmtN(win)}</b>`;res.className="cres win";CAS.snd("win");CAS.coins(hub,c==="z"?26:12)}
     else{res.innerHTML=`<span class="${c}">${NM[c]}</span> — ставка ${ME.fmtN(p.v)} сгорела`;res.className="cres lose";CAS.snd("lose")}
@@ -9230,7 +9241,11 @@ const LB=(()=>{
     if(keep){body.scrollTop=sc;return}
     void body.offsetWidth;body.classList.add("en");body.scrollTop=0;
   }
-  const artistsOf=a=>[...new Set(a.items.flatMap(artistNames))];
+  const artistsOf=a=>{                                   // автор альбома — главный артист треков, без гостей из фитов
+    const c=new Map();a.items.forEach(t=>{const f=artistNames(t)[0];if(f) c.set(f,(c.get(f)||0)+1)});
+    const s=[...c.entries()].sort((x,y)=>y[1]-x[1]);if(!s.length) return [];
+    const r=s.filter(([,k])=>k>=a.items.length/2).map(x=>x[0]);return r.length?r:[s[0][0]];
+  };
   const artLinks=a=>{const r=artistsOf(a);if(!r.length) return "без исполнителя";const sh=r.slice(0,4);
     return sh.map(n=>`<button class="artl" data-art="${esc(n)}" type="button" title="Открыть профиль артиста">${esc(n)}</button>`).join(", ")+(r.length>4?` и ещё ${r.length-4}`:"")};
   const artLine=a=>{const r=artistsOf(a);return r.length?(r.length>2?r.slice(0,2).join(", ")+" и др.":r.join(", ")):"без исполнителя"};
@@ -9241,7 +9256,7 @@ const LB=(()=>{
   const PEN='<svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
   function trackRow(t,i,o){
     o=o||{};
-    const sub=o.sub!==undefined?o.sub:`${esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}`;
+    const sub=o.sub!==undefined?o.sub:`${artistNames(t).length?artistNames(t).map(n=>`<button class="artl" data-art="${esc(n)}" type="button" title="Открыть профиль артиста">${esc(n)}</button>`).join(", "):esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}`;
     return `<div class="item" style="--i:${i+2}" data-id="${t.id}" tabindex="0"${o.mv?' draggable="true"':""}>
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
       <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}${o.num&&t.fav?'<i class="tmk fav" title="Любимый трек">♥</i>':""}${dlBadge(t.id)}${o.tie?`<button class="tmk best pk${o.best?" on":""}" data-bp="${t.id}" type="button" title="${o.best?"Лучший трек альбома":"Сделать лучшим треком альбома"}">${o.best?"★":"☆"}</button>`:o.best?'<i class="tmk best" title="Лучшая оценка в альбоме">★</i>':""}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
