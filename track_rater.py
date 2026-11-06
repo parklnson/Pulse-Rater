@@ -35,8 +35,8 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.4.1"
-APP_NOTES = "Онлайн-«Пульс»: сердце бьётся для всех сразу, видно кто и на чём забрал · Плашки ставок в рулетке больше не дёргаются"
+APP_VERSION = "5.4.2"
+APP_NOTES = "Онлайн-«Пульс» точнее: множитель не убегает вперёд при медленном интернете, остановка видна сразу"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
 NET_DEFAULT = "https://pulse-rater.amaterasucsdope.workers.dev"         # адрес общего сервера, например https://pulse-rater.ник.workers.dev — его увидят все, кто обновится
@@ -479,9 +479,10 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.4.1";
+var APPV="5.4.2";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.4.2",add:[],chg:["История «Пульса»: последний раунд теперь слева и выделен рамкой"],fix:["Онлайн-«Пульс»: при медленном интернете множитель на экране больше не убегает вперёд — часы сверяются с сервером по самым быстрым ответам, а остановка сердца показывается сразу"],del:[]},
  {v:"5.4.1",add:["Онлайн-«Пульс»: одно сердце на всех игроков — 10 секунд на ставки, потом каждый сам решает, когда забрать. Видно, кто сколько поставил и на каком множителе забрал"],chg:[],fix:["Плашки ставок в онлайн-рулетке больше не дёргаются при обновлении"],del:[]},
  {v:"5.4",add:["Онлайн-рулетка: колесо крутится постоянно и для всех игроков одновременно — 10 секунд на ставки, потом вращение","Можно ставить на несколько цветов в одном раунде","Видно, кто и сколько поставил на каждый цвет"],chg:[],fix:[],del:[]},
  {v:"5.3.2",add:["Артисты в списке треков альбома кликабельные — открывают профиль"],chg:["Новый вид колеса рулетки — матовый чёрный диск с цветным кольцом секторов","У альбома теперь указан только его автор, без гостей из фитов","Окно уровней кэшбэка стало аккуратнее"],fix:[],del:[]},
@@ -3563,8 +3564,9 @@ html.netdown .netst.on>i{background:#ffb84a;box-shadow:0 0 10px #ffb84a}
 .busy .rub:not(.pick){opacity:.4;pointer-events:none}
 .busy .rub.pick{pointer-events:none}
 /* пульс */
-.puhist{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:55%}
+.puhist{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:55%;padding:2px}
 .puhist em{font-style:normal;font-size:11.5px;font-weight:900;padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.06);font-variant-numeric:tabular-nums}
+.puhist em.last{outline:2px solid rgba(255,255,255,.85);outline-offset:1px}
 .puhist em.g{color:#6df0a0}.puhist em.r{color:#ff6b7f}.puhist em.p{color:#ffd45a;background:rgba(255,200,60,.14)}
 .puw{position:relative;height:360px;border-radius:22px;overflow:hidden;background:radial-gradient(70% 90% at 50% 60%,rgba(30,200,120,.13),transparent 70%),radial-gradient(130% 100% at 50% 50%,#04120b,#010402);box-shadow:inset 0 0 0 1px rgba(120,255,190,.14),inset 0 0 80px rgba(0,0,0,.9);transition:box-shadow .3s}
 .puw canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -8160,7 +8162,7 @@ const PU=(()=>{
   let lockT=0,st="idle",bet=0,crash=1,t0=0,mult=1,raf=0,beatT=0,trace=[],last=0,endT=0,H=[],sparks=[],bpm=60,glow=0;
   try{H=JSON.parse(localStorage.getItem("puHist")||"[]")}catch(e){}
   const k=.14,mAt=s=>Math.exp(k*s);
-  function paintHist(){hist.innerHTML=H.slice(-12).map(v=>`<em class="${v>=10?"p":v>=2?"g":"r"}">${v>=100?v.toFixed(0):v.toFixed(2)}×</em>`).join("")}
+  function paintHist(){hist.innerHTML=H.slice(-12).reverse().map((v,i)=>`<em class="${v>=10?"p":v>=2?"g":"r"}${i?"":" last"}" title="${i?"":"Последний раунд"}">${v>=100?v.toFixed(0):v.toFixed(2)}×</em>`).join("")}
   function ecg(p){const g=(c,w,a)=>a*Math.exp(-Math.pow((p-c)/w,2));return g(.18,.035,.12)-g(.33,.012,.18)+g(.36,.014,1)-g(.395,.016,.32)+g(.62,.06,.26)}
   const hueNow=()=>st==="dead"?355:st==="out"?45:Math.max(0,150-Math.log2(mult)*34);
   const HP=(()=>{const p=[];for(let i=0;i<=120;i++){const t=i/120*Math.PI*2;p.push([16*Math.pow(Math.sin(t),3),-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))])}return p})();
@@ -8286,6 +8288,12 @@ const PU=(()=>{
   }
   function setIdle(){pane.classList.remove("busy");go.classList.remove("cash");go.innerHTML="Поставить ещё"}
   /* ---------- онлайн: один раунд на всех, 10 секунд ставки ---------- */
+  let bestRtt=1e9,LAG=400,LATS=[];
+  function noteLate(late){if(!(late>=0&&late<4000)) return;LATS.push(late);if(LATS.length>6) LATS.shift();LAG=Math.max(150,Math.min(2000,Math.max(...LATS)+150))}                                    // экран чуть отстаёт от сервера на время доставки ответа — остановка приходит до того, как множитель её «перебежит»
+  function setSkew(a,srvNow){                                  // поправка часов: верим только самым быстрым ответам — медленная сеть не сбивает отсчёт
+    const rtt=Date.now()-a;bestRtt=Math.min(bestRtt*1.03,1e9);
+    if(rtt<=bestRtt*1.25||rtt<350){bestRtt=Math.min(bestRtt,rtt);oskew=srvNow-(a+rtt/2)}
+  }
   let ON=false,R=null,oskew=0,crashV=null,crashAt=null,myB=null,oBets=[],oPoll=0,oBusy=false,acct=new Set(),betSig="",seenB=new Set();
   const betsEl=$("#puBets");
   function paintOBets(){
@@ -8305,7 +8313,9 @@ const PU=(()=>{
   async function osync(){
     if(oBusy) return;oBusy=true;oPoll=Date.now();
     try{
-      const a=Date.now(),j=await NET.call("pu2/state",{});oskew=j.now-(a+Date.now())/2;
+      const a=Date.now(),j=await NET.call("pu2/state",{});setSkew(a,j.now);
+      if(j.crash!=null&&j.crashAt&&R&&j.prnd===R.rnd&&crashV==null)noteLate(Date.now()+oskew-j.crashAt)
+      if(R&&j.prnd!==R.rnd&&crashV==null&&(st==="run"||st==="cashing")&&Array.isArray(j.hist)&&j.hist.length){crashV=j.hist[0];odie()}
       if(!R||j.prnd!==R.rnd) newRound(j);
       if(j.crash!=null){crashV=j.crash;crashAt=j.crashAt}
       if(Array.isArray(j.hist)){H=j.hist.slice().reverse();paintHist()}
@@ -8320,7 +8330,9 @@ const PU=(()=>{
   }
   function owait(){
     if(!R) return;stopWait();const rn=R.rnd,ac=wAc=typeof AbortController!=="undefined"?new AbortController():null;
-    NET.call("pu2/wait",{rnd:rn},ac?{signal:ac.signal}:null).then(r=>{if(!R||R.rnd!==rn) return;if(r.again){owait();return}if(r.crash){crashV=r.crash;crashAt=r.crashAt}})
+    NET.call("pu2/wait",{rnd:rn},ac?{signal:ac.signal}:null).then(r=>{if(!R||R.rnd!==rn) return;if(r.again){owait();return}if(r.crash){crashV=r.crash;crashAt=r.crashAt;
+        noteLate(Date.now()+oskew-r.crashAt);
+        if((st==="run"||st==="cashing")&&mult>=crashV) odie()}})
       .catch(e=>{if(e&&e.abort) return;if(R&&R.rnd===rn&&crashV==null) setTimeout(owait,1500)});
   }
   function oplace(){
@@ -8370,7 +8382,7 @@ const PU=(()=>{
       if(Date.now()-oPoll>2500) osync();
       return;
     }
-    const m=Math.exp(R.k*(el-R.pb)/1000);
+    const m=Math.exp(R.k*Math.max(0,el-R.pb-LAG)/1000);
     if(crashV==null||m<crashV){
       if(st!=="run"&&st!=="cashing"){st="run";beatT=.5;wrap.classList.remove("dead","won");wrap.classList.add("live");owait()}
       mult=m;xEl.textContent=m.toFixed(2)+"×";xEl.style.color=`hsl(${hueNow()},100%,66%)`;paintLad();
@@ -8381,7 +8393,7 @@ const PU=(()=>{
         go.disabled=true;go.classList.remove("cash");pane.classList.remove("busy");
         if(myB&&myB.cash){go.innerHTML=`Забрал ×${(+myB.cash).toFixed(2)} ✓`}else{go.innerHTML="Раунд идёт — поставь в следующем";sEl.textContent="Смотри, кто успеет забрать"}
       }
-      if(Date.now()-oPoll>1500) osync();
+      if(Date.now()-oPoll>1000) osync();
     }else{
       if(st!=="dead") odie();
       const ca=crashAt||(R.t0+R.pb+Math.log(crashV)/R.k*1000),left=(ca+R.pp-t)/1000;
