@@ -35,7 +35,7 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.4.6"
+APP_VERSION = "5.4.7"
 APP_NOTES = "Онлайн-«Пульс» точнее: множитель не убегает вперёд при медленном интернете, остановка видна сразу"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
@@ -479,9 +479,10 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.4.6";
+var APPV="5.4.7";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.4.7",add:[],chg:["Оценки в медиатеке, альбомах и профилях артистов теперь в круглых значках с кольцом-индикатором"],fix:["Кнопка «назад» на странице «Друзья» снова возвращает на главный экран"],del:[]},
  {v:"5.4.6",add:[],chg:["В медиатеке под треком только исполнитель — без жанра, альбома и битмейкера"],fix:[],del:[]},
  {v:"5.4.5",add:[],chg:["Убраны надписи «Редактирование оценки» и «Оцени трек из альбома» над названием трека"],fix:[],del:[]},
  {v:"5.4.4",add:["Многоразовые промокоды"],chg:[],fix:[],del:[]},
@@ -987,6 +988,7 @@ body.pg .main{opacity:0;transform:scale(.985);pointer-events:none}
   .brand span,.navbtn span,.lib-h .t span,.cnt,.cats,.plates,.csw,.chips,.srow,.tx,.sc,.del,.gh{display:none}
   .grp.shut .gb{grid-template-rows:1fr;opacity:1}
   .item{grid-template-columns:48px;justify-content:center;padding:6px}
+  #list .sc.ring{display:none}
   .navbtn{justify-content:center;padding:10px 0}
   .brand{justify-content:center;padding:2px 0 14px}
   .lib-h{justify-content:center;padding:14px 0 8px}
@@ -3796,6 +3798,10 @@ body.czon #balPill{opacity:0;transform:scale(.85);pointer-events:none}
 .czmain{container-type:inline-size}
 @container (max-width:780px){.rwl{grid-template-columns:1fr}.rwwrap{max-width:340px}}
 .eyebrow.ebx{display:none}
+.sc.ring{position:relative;flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:800;letter-spacing:0;text-shadow:none;background:radial-gradient(circle,color-mix(in srgb,currentColor 16%,rgba(0,0,0,.35)) 0 58%,rgba(0,0,0,.28) 60%)}
+.sc.ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(currentColor calc(var(--p,0)*1%),rgba(255,255,255,.1) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));filter:drop-shadow(0 0 4px currentColor)}
+.sc.ring span{position:relative;text-shadow:0 0 10px color-mix(in srgb,currentColor 60%,transparent)}
+.sc.ring.un::before{filter:none}
 /* автообновление */
 #updb{position:fixed;right:22px;bottom:22px;z-index:70;display:flex;align-items:center;gap:14px;max-width:min(560px,calc(100vw - 44px));padding:14px 16px;border-radius:18px;background:linear-gradient(180deg,rgba(36,18,28,.97),rgba(16,8,12,.97));box-shadow:0 24px 60px rgba(0,0,0,.7),inset 0 0 0 1px rgba(var(--ar),.45),0 0 40px -16px rgba(var(--ar),.8);transform:translateY(20px);opacity:0;transition:transform .35s var(--ease),opacity .3s}
 #updb.on{transform:none;opacity:1}
@@ -5684,7 +5690,7 @@ function renderLib(){
     return `<div class="item${on?" on":""}" data-id="${t.id}">
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
       <div class="tx"><b>${esc(t.title)}${t.note?`<i class="tnt" title="${esc(noteTip(t))}">${NTI}</i>`:""}${dlBadge(t.id)}</b><span>${esc(t.artist)}</span></div>
-      ${t.unrated?'<div class="sc un" title="Ещё не оценён">—</div>':`<div class="sc" style="color:${rgCol(t.total)}">${fmt(t.total)}</div>`}
+      ${t.unrated?'<div class="sc un ring" style="--p:0" title="Ещё не оценён"><span>—</span></div>':`<div class="sc ring" style="color:${rgCol(t.total)};--p:${Math.max(0,Math.min(100,t.total*10))}"><span>${fmt(t.total)}</span></div>`}
       <button class="del" title="Удалить">${TRASH}</button>
     </div>`;
   };
@@ -7038,7 +7044,7 @@ const AP=(()=>{
         +items.map((t,i)=>`<div class="item" style="--i:${i+2}" data-id="${t.id}">
           <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
           <div class="tx"><b>${esc(t.title)}</b><span>${t.beat?'<em class="pb">prod. '+esc(t.beat)+'</em> · ':""}${t.genre?esc(t.genre):"без жанра"}${(o=>o.length?" · с "+esc(o.join(", ")):"")(names(t).filter(n=>n.toLowerCase()!==key))}</span></div>
-          <div class="sc" style="color:${scoreCol(t.total)}">${fmt(t.total)}</div>
+          <div class="sc ring" style="color:${scoreCol(t.total)};--p:${Math.max(0,Math.min(100,t.total*10))}"><span>${fmt(t.total)}</span></div>
           <div class="lk" title="${t.audio?"Есть аудиофайл":""}">${t.audio?'<svg class="ico" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>':""}</div>
         </div>`).join("");
       if(anim) body.scrollTop=0;
@@ -7180,7 +7186,7 @@ const TOP=(()=>{
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&isOpen()){e.preventDefault();close()}});
   return{open,close,isOpen,toggle:()=>isOpen()?close():open()};
 })();
-PAGE_CLOSE=()=>{AP.close();TOP.close();RK.close();CT.close();LB.close();try{RM.close()}catch(e){}try{PF.close();SHOP.close()}catch(e){}};
+PAGE_CLOSE=()=>{AP.close();TOP.close();RK.close();CT.close();LB.close();try{RM.close()}catch(e){}try{PF.close();SHOP.close()}catch(e){}try{FR.close()}catch(e){}try{OL.close();CZ.close()}catch(e){}};
 $("#brand").addEventListener("click",()=>{try{if(PAGE_CLOSE) PAGE_CLOSE()}catch(e){}try{SET.close()}catch(e){}main.scrollTo({top:0,behavior:"smooth"})});
 
 /* ---------- общий рейтинг артистов (с фильтром по жанру) ---------- */
@@ -9498,7 +9504,7 @@ const LB=(()=>{
     return `<div class="item" style="--i:${i+2}" data-id="${t.id}" tabindex="0"${o.mv?' draggable="true"':""}>
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
       <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}${o.num&&t.fav?'<i class="tmk fav" title="Любимый трек">♥</i>':""}${dlBadge(t.id)}${o.tie?`<button class="tmk best pk${o.best?" on":""}" data-bp="${t.id}" type="button" title="${o.best?"Лучший трек альбома":"Сделать лучшим треком альбома"}">${o.best?"★":"☆"}</button>`:o.best?'<i class="tmk best" title="Лучшая оценка в альбоме">★</i>':""}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
-      ${t.unrated?'<div class="sc un" title="Ещё не оценён">—</div>':`<div class="sc" style="color:${rgCol(t.total)}">${fmt(t.total)}</div>`}
+      ${t.unrated?'<div class="sc un ring" style="--p:0" title="Ещё не оценён"><span>—</span></div>':`<div class="sc ring" style="color:${rgCol(t.total)};--p:${Math.max(0,Math.min(100,t.total*10))}"><span>${fmt(t.total)}</span></div>`}
       ${o.mv?`<div class="mv"><button type="button" data-mv="-1" title="Выше">${UP}</button><button type="button" data-mv="1" title="Ниже">${DOWN}</button></div>`:'<div class="lk"></div>'}</div>`;
   }
   const empty=(t,p)=>`<div class="lbe"><b>${t}</b>${p}</div>`;
