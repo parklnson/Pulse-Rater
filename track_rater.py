@@ -35,7 +35,7 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.4.7"
+APP_VERSION = "5.4.8"
 APP_NOTES = "Онлайн-«Пульс» точнее: множитель не убегает вперёд при медленном интернете, остановка видна сразу"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
@@ -479,9 +479,10 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.4.7";
+var APPV="5.4.8";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.4.8",add:[],chg:["Числа в кружках оценок стоят ровно по центру и красиво светятся"],fix:[],del:[]},
  {v:"5.4.7",add:[],chg:["Оценки в медиатеке, альбомах и профилях артистов теперь в круглых значках с кольцом-индикатором"],fix:["Кнопка «назад» на странице «Друзья» снова возвращает на главный экран"],del:[]},
  {v:"5.4.6",add:[],chg:["В медиатеке под треком только исполнитель — без жанра, альбома и битмейкера"],fix:[],del:[]},
  {v:"5.4.5",add:[],chg:["Убраны надписи «Редактирование оценки» и «Оцени трек из альбома» над названием трека"],fix:[],del:[]},
@@ -3798,10 +3799,10 @@ body.czon #balPill{opacity:0;transform:scale(.85);pointer-events:none}
 .czmain{container-type:inline-size}
 @container (max-width:780px){.rwl{grid-template-columns:1fr}.rwwrap{max-width:340px}}
 .eyebrow.ebx{display:none}
-.sc.ring{position:relative;flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:800;letter-spacing:0;text-shadow:none;background:radial-gradient(circle,color-mix(in srgb,currentColor 16%,rgba(0,0,0,.35)) 0 58%,rgba(0,0,0,.28) 60%)}
-.sc.ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(currentColor calc(var(--p,0)*1%),rgba(255,255,255,.1) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));filter:drop-shadow(0 0 4px currentColor)}
-.sc.ring span{position:relative;text-shadow:0 0 10px color-mix(in srgb,currentColor 60%,transparent)}
-.sc.ring.un::before{filter:none}
+.sc.ring{position:relative;flex:none;width:44px;height:44px;padding:0;border-radius:50%;display:block;font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;font-size:14px;font-weight:800;line-height:1;letter-spacing:-.01em;text-shadow:none;background:radial-gradient(circle,color-mix(in srgb,currentColor 22%,rgba(0,0,0,.4)) 0,rgba(0,0,0,.35) 62%,transparent 64%);box-shadow:0 0 14px -2px color-mix(in srgb,currentColor 45%,transparent)}
+.sc.ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(currentColor calc(var(--p,0)*1%),rgba(255,255,255,.1) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 3px));filter:drop-shadow(0 0 5px currentColor)}
+.sc.ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;line-height:1;text-box:trim-both cap alphabetic;text-shadow:0 0 4px color-mix(in srgb,currentColor 80%,transparent),0 0 12px currentColor}
+.sc.ring.un{box-shadow:none}.sc.ring.un::before{filter:none}.sc.ring.un span{text-shadow:none}
 /* автообновление */
 #updb{position:fixed;right:22px;bottom:22px;z-index:70;display:flex;align-items:center;gap:14px;max-width:min(560px,calc(100vw - 44px));padding:14px 16px;border-radius:18px;background:linear-gradient(180deg,rgba(36,18,28,.97),rgba(16,8,12,.97));box-shadow:0 24px 60px rgba(0,0,0,.7),inset 0 0 0 1px rgba(var(--ar),.45),0 0 40px -16px rgba(var(--ar),.8);transform:translateY(20px);opacity:0;transition:transform .35s var(--ease),opacity .3s}
 #updb.on{transform:none;opacity:1}
