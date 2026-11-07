@@ -35,7 +35,7 @@ UPDATE_FILE = DATA_DIR / "update.json"
 
 # ---------- версия и автообновление ----------
 # Чтобы выпустить обновление: подними APP_VERSION, впиши APP_NOTES и выложи файл по ссылке UPDATE_URL.
-APP_VERSION = "5.4.4"
+APP_VERSION = "5.4.6"
 APP_NOTES = "Онлайн-«Пульс» точнее: множитель не убегает вперёд при медленном интернете, остановка видна сразу"
 UPDATE_URL = "https://github.com/parklnson/Pulse-Rater/blob/main/track_rater.py"          # ссылка на свежий track_rater.py, например https://github.com/ник/pulse-rater/blob/main/track_rater.py
 UPD = {"src": None, "ver": None}
@@ -479,9 +479,11 @@ var THEMES=[
  {id:"black",n:"Чёрный",t:"Графит и глубокий чёрный",h:0,cy:false,mono:"k"},
  {id:"white",n:"Белый",t:"Жемчуг, серебро и чистый свет",h:0,cy:false,mono:"w"}
 ];
-var APPV="5.4.4";
+var APPV="5.4.6";
 /* что изменилось в каждой версии — показывается один раз после обновления */
 var APP_CHANGES=[
+ {v:"5.4.6",add:[],chg:["В медиатеке под треком только исполнитель — без жанра, альбома и битмейкера"],fix:[],del:[]},
+ {v:"5.4.5",add:[],chg:["Убраны надписи «Редактирование оценки» и «Оцени трек из альбома» над названием трека"],fix:[],del:[]},
  {v:"5.4.4",add:["Многоразовые промокоды"],chg:[],fix:[],del:[]},
  {v:"5.4.3",add:["Новые промокоды"],chg:[],fix:[],del:[]},
  {v:"5.4.2",add:[],chg:["История «Пульса»: последний раунд теперь слева и выделен рамкой"],fix:["Онлайн-«Пульс»: при медленном интернете множитель на экране больше не убегает вперёд — часы сверяются с сервером по самым быстрым ответам, а остановка сердца показывается сразу"],del:[]},
@@ -3793,6 +3795,7 @@ body.czon #balPill{opacity:0;transform:scale(.85);pointer-events:none}
 .rustat em.y{color:#ffd23d}
 .czmain{container-type:inline-size}
 @container (max-width:780px){.rwl{grid-template-columns:1fr}.rwwrap{max-width:340px}}
+.eyebrow.ebx{display:none}
 /* автообновление */
 #updb{position:fixed;right:22px;bottom:22px;z-index:70;display:flex;align-items:center;gap:14px;max-width:min(560px,calc(100vw - 44px));padding:14px 16px;border-radius:18px;background:linear-gradient(180deg,rgba(36,18,28,.97),rgba(16,8,12,.97));box-shadow:0 24px 60px rgba(0,0,0,.7),inset 0 0 0 1px rgba(var(--ar),.45),0 0 40px -16px rgba(var(--ar),.8);transform:translateY(20px);opacity:0;transition:transform .35s var(--ease),opacity .3s}
 #updb.on{transform:none;opacity:1}
@@ -5680,7 +5683,7 @@ function renderLib(){
     const on=t.id===state.editing;
     return `<div class="item${on?" on":""}" data-id="${t.id}">
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
-      <div class="tx"><b>${esc(t.title)}${t.note?`<i class="tnt" title="${esc(noteTip(t))}">${NTI}</i>`:""}${dlBadge(t.id)}</b><span>${esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}${t.album&&state.sort!=="album"?" · «"+esc(t.album)+"»":""}</span></div>
+      <div class="tx"><b>${esc(t.title)}${t.note?`<i class="tnt" title="${esc(noteTip(t))}">${NTI}</i>`:""}${dlBadge(t.id)}</b><span>${esc(t.artist)}</span></div>
       ${t.unrated?'<div class="sc un" title="Ещё не оценён">—</div>':`<div class="sc" style="color:${rgCol(t.total)}">${fmt(t.total)}</div>`}
       <button class="del" title="Удалить">${TRASH}</button>
     </div>`;
@@ -5846,7 +5849,7 @@ function coverCss(t){
 }
 function paintMode(){
   const ed=state.editing!==null,cur=ed&&state.tracks.find(x=>x.id===state.editing);
-  $("#eyebrow").textContent=ed?(cur&&cur.unrated?"Оцени трек из альбома":"Редактирование оценки"):"Новая оценка";
+  $("#eyebrow").textContent=ed?"":"Новая оценка";{const w=$("#eyebrow").closest(".eyebrow");if(w) w.classList.toggle("ebx",!!ed)}
   $("#eqTop").hidden=!ed;
   $("#delCur").hidden=!ed;
   paintLater();
@@ -9491,7 +9494,7 @@ const LB=(()=>{
   const PEN='<svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
   function trackRow(t,i,o){
     o=o||{};
-    const sub=o.sub!==undefined?o.sub:`${artistNames(t).length?artistNames(t).map(n=>`<button class="artl" data-art="${esc(n)}" type="button" title="Открыть профиль артиста">${esc(n)}</button>`).join(", "):esc(t.artist)}${t.beat?' <em class="pb">prod. '+esc(t.beat)+'</em>':""}${t.genre?" · "+esc(t.genre):""}`;
+    const sub=o.sub!==undefined?o.sub:`${artistNames(t).length?artistNames(t).map(n=>`<button class="artl" data-art="${esc(n)}" type="button" title="Открыть профиль артиста">${esc(n)}</button>`).join(", "):esc(t.artist)}`;
     return `<div class="item" style="--i:${i+2}" data-id="${t.id}" tabindex="0"${o.mv?' draggable="true"':""}>
       <div class="cv" style="${coverCss(t)}">${hasCov(t)?"":NOTE}</div>
       <div class="tx"><b>${o.num?`<i class="tno">${i+1}</i>`:""}${esc(t.title)}${o.num&&t.fav?'<i class="tmk fav" title="Любимый трек">♥</i>':""}${dlBadge(t.id)}${o.tie?`<button class="tmk best pk${o.best?" on":""}" data-bp="${t.id}" type="button" title="${o.best?"Лучший трек альбома":"Сделать лучшим треком альбома"}">${o.best?"★":"☆"}</button>`:o.best?'<i class="tmk best" title="Лучшая оценка в альбоме">★</i>':""}</b><span>${sub}</span>${t.note?`<q class="tnq${t.noteK==="q"?" q":""}" title="${esc(noteTip(t))}">${esc(t.note)}</q>`:""}</div>
